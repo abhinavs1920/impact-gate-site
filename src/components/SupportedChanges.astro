@@ -1,13 +1,7 @@
 ---
 import Fact from "./Fact.astro";
 import siteFacts from "../data/site-facts.json";
-const changes = [
-  ["Type changes", "Response or request types that change the assumptions a consumer must make."],
-  ["Required fields", "New required inputs that existing callers may not provide."],
-  ["Field removal or rename", "Removed or renamed fields that consumer code may still read."],
-  ["Enum changes", "Contract value changes that need review in callers."],
-  ["Status changes", "Documented response status changes that alter client handling."]
-];
+const changes = siteFacts.contract.changes;
 ---
 <section class="section" id="changes">
   <div class="container">
