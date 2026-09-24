@@ -33,5 +33,16 @@
     "status": "planned",
     "label": "Optional model assistance",
     "copy": "Optional model assistance is not required for the deterministic core and is not part of the default site promise."
+  },
+  "videos": {
+    "status": "planned",
+    "impactLabel": "Context video",
+    "impactTitle": "Why shared API changes need a wider review.",
+    "impactCopy": "This video is optional context for the problem space, not independent product evidence.",
+    "impactCaption": "A short visual explanation of the cross-repository review problem.",
+    "howLabel": "How it works",
+    "howTitle": "See the review path in motion.",
+    "howCopy": "This video is optional context for the mechanics described above.",
+    "howCaption": "A short walkthrough of the intended review flow."
   }
 }

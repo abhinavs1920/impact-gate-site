@@ -1,0 +1,66 @@
+---
+interface Props {
+  title: string;
+  caption: string;
+  uid?: string;
+  customerCode?: string;
+}
+
+const { title, caption, uid = "", customerCode = "" } = Astro.props;
+const configured = Boolean(uid && customerCode);
+const poster = configured
+  ? `https://customer-${customerCode}.cloudflarestream.com/${uid}/thumbnails/thumbnail.jpg`
+  : "";
+const iframe = configured
+  ? `https://customer-${customerCode}.cloudflarestream.com/${uid}/iframe?autoplay=true`
+  : "";
+---
+<div class="video-facade" data-video-facade data-iframe={iframe} data-configured={configured}>
+  <div class="video-poster">
+    {configured && <img src={poster} alt="" width="1280" height="720" loading="lazy" />}
+    <div class="poster-grid" aria-hidden="true"></div>
+    <div class="poster-copy">
+      <span class="eyebrow">Private pilot video</span>
+      <strong>{title}</strong>
+      {!configured && <small>Video UID pending</small>}
+    </div>
+    <button type="button" class="play-button" data-video-play aria-label={`Play ${title}`}>
+      <span aria-hidden="true">▶</span>
+    </button>
+  </div>
+  <p class="video-caption">{caption}</p>
+</div>
+
+<script>
+  for (const facade of document.querySelectorAll<HTMLElement>("[data-video-facade]")) {
+    const button = facade.querySelector<HTMLButtonElement>("[data-video-play]");
+    const iframeUrl = facade.dataset.iframe;
+    if (!button || !iframeUrl) {
+      if (button) button.disabled = true;
+      continue;
+    }
+    button.addEventListener("click", () => {
+      const iframe = document.createElement("iframe");
+      iframe.src = iframeUrl;
+      iframe.title = facade.querySelector(".poster-copy strong")?.textContent ?? "Impact Gate video";
+      iframe.allow = "accelerometer; autoplay; encrypted-media; picture-in-picture";
+      iframe.allowFullscreen = true;
+      facade.replaceChildren(iframe);
+    }, { once: true });
+  }
+</script>
+
+<style>
+  .video-facade { margin-top: var(--space-8); }
+  .video-poster { position: relative; isolation: isolate; min-height: 18rem; overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-navy); }
+  .video-poster img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; opacity: .72; }
+  .poster-grid { position: absolute; inset: 0; z-index: -1; opacity: .42; background: linear-gradient(90deg, transparent 49.5%, var(--brand-mark-green) 50%, transparent 50.5%), linear-gradient(var(--color-navy) 1px, transparent 1px), linear-gradient(90deg, var(--color-navy) 1px, transparent 1px); background-size: 100% 100%, 2.5rem 2.5rem, 2.5rem 2.5rem; }
+  .poster-copy { position: absolute; left: var(--space-6); bottom: var(--space-6); display: grid; gap: var(--space-2); color: white; }
+  .poster-copy .eyebrow { color: var(--color-action); }
+  .poster-copy strong { max-width: 20rem; font: 700 var(--text-2xl)/1.1 var(--font-display); }
+  .poster-copy small { color: #c5d0df; font: 500 var(--text-xs)/1 var(--font-mono); }
+  .play-button { position: absolute; inset: 50% auto auto 50%; width: 4rem; height: 4rem; min-height: 0; transform: translate(-50%, -50%); border: 1px solid white; border-radius: 50%; background: var(--color-action); color: var(--color-navy); cursor: pointer; font-size: 1.2rem; }
+  .play-button:disabled { cursor: not-allowed; opacity: .62; }
+  .video-facade iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; border-radius: var(--radius-md); background: var(--color-navy); }
+  .video-caption { margin: var(--space-3) 0 0; color: var(--color-secondary); font-size: var(--text-sm); line-height: 1.5; }
+</style>
