@@ -1,0 +1,37 @@
+{
+  "stage": {
+    "status": "in_testing",
+    "label": "Private pilot in preparation",
+    "copy": "Impact Gate is being prepared for a small private pilot."
+  },
+  "warnOnly": {
+    "status": "available",
+    "label": "Warn-only",
+    "copy": "Impact Gate posts review information and does not block a merge."
+  },
+  "mechanism": {
+    "status": "available",
+    "label": "Contract diff to evidence",
+    "copy": "It reads an API contract diff, finds downstream callers in an indexed graph, traces consumer code, and surfaces the evidence for review."
+  },
+  "policy": {
+    "status": "available",
+    "label": "Uncertainty is visible",
+    "copy": "When tracing cannot establish an answer, the result remains visible as uncertain rather than being presented as a clean finding."
+  },
+  "contract": {
+    "status": "available",
+    "label": "OpenAPI contract changes",
+    "copy": "The current site describes OpenAPI contract review. Other contract formats are not presented as available here."
+  },
+  "analysis": {
+    "status": "in_testing",
+    "label": "Static consumer tracing",
+    "copy": "Consumer tracing is being prepared for a private pilot and should be reviewed with the limits of the connected codebase in mind."
+  },
+  "model": {
+    "status": "planned",
+    "label": "Optional model assistance",
+    "copy": "Optional model assistance is not required for the deterministic core and is not part of the default site promise."
+  }
+}

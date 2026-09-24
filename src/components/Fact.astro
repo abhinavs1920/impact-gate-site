@@ -1,0 +1,19 @@
+---
+type FactStatus = "available" | "in_testing" | "planned" | "not_planned_for_pilot";
+interface Props { status: FactStatus; label: string; copy?: string; compact?: boolean; }
+const { status, label, copy, compact = false } = Astro.props;
+const statusLabel = { available: "Available", in_testing: "In testing", planned: "Planned", not_planned_for_pilot: "Not planned for pilot" }[status];
+---
+<span class:list={["fact", { compact }]} data-fact-status={status} title={copy}>
+  <span class="fact-dot" aria-hidden="true"></span>
+  <span>{label}</span>
+  {!compact && <small>{statusLabel}</small>}
+</span>
+<style>
+  .fact { display: inline-flex; align-items: center; gap: .45rem; color: inherit; font: 700 var(--text-xs)/1 var(--font-mono); letter-spacing: .04em; text-transform: uppercase; }
+  .fact small { color: var(--color-secondary); font: 500 var(--text-xs)/1 var(--font-body); text-transform: none; letter-spacing: 0; }
+  .fact-dot { width: .5rem; height: .5rem; border-radius: 50%; background: var(--color-action); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-action) 20%, transparent); }
+  [data-fact-status="in_testing"] .fact-dot { background: var(--color-gold); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-gold) 20%, transparent); }
+  [data-fact-status="planned"] .fact-dot { background: var(--color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 20%, transparent); }
+  [data-fact-status="not_planned_for_pilot"] .fact-dot { background: var(--color-secondary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-secondary) 20%, transparent); }
+</style>

@@ -1,0 +1,20 @@
+---
+import Fact from "./Fact.astro";
+import siteFacts from "../data/site-facts.json";
+const limits = [
+  ["Dynamic access", "Dynamic reflection and opaque access can remain uncertain."],
+  ["No merge control", "The site describes a warn-only review surface; the team decides what happens next."],
+  ["Not runtime monitoring", "The product surface here reviews pull requests rather than live traffic."],
+  ["Pilot stage", siteFacts.stage.copy]
+];
+---
+<section class="section" id="limits">
+  <div class="container">
+    <div class="section-heading"><span class="eyebrow">Transparency and constraints</span><h2>Honest limits are part of the interface.</h2><p>{siteFacts.policy.copy}</p></div>
+    <div class="limits">{limits.map(([title, copy]) => <article><Fact status={title === "Pilot stage" ? siteFacts.stage.status : siteFacts.policy.status} label={title} compact /><p>{copy}</p></article>)}</div>
+  </div>
+</section>
+<style>
+  .limits { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); margin-top: var(--space-12); } .limits article { padding: var(--space-5); border: 1px solid var(--color-border); background: var(--color-surface); } .limits p { margin: var(--space-8) 0 0; color: var(--color-secondary); line-height: 1.6; }
+  @media (max-width: 48rem) { .limits { grid-template-columns: 1fr 1fr; } } @media (max-width: 30rem) { .limits { grid-template-columns: 1fr; } }
+</style>

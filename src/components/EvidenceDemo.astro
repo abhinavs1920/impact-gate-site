@@ -1,0 +1,19 @@
+---
+import Fact from "./Fact.astro";
+import siteFacts from "../data/site-facts.json";
+---
+<section class="section evidence-demo" id="demo">
+  <div class="container demo-grid">
+    <div class="section-heading"><span class="eyebrow">Review surface</span><h2>A comment should show its work.</h2><p>{siteFacts.mechanism.copy}</p></div>
+    <div class="demo-panel">
+      <div class="demo-header"><span class="mono">review summary</span><Fact status={siteFacts.warnOnly.status} label="Warn-only" compact /></div>
+      <div class="demo-body"><div class="demo-row"><span class="demo-icon green"></span><div><strong>Contract change located</strong><small>Changed field is attached to the review path.</small></div></div><div class="demo-row"><span class="demo-icon gold"></span><div><strong>Caller requires review</strong><small>Evidence state remains visible to the reviewer.</small></div></div><div class="demo-row"><span class="demo-icon slate"></span><div><strong>Uncertainty is not hidden</strong><small>No synthetic file, line, or customer result is shown here.</small></div></div></div>
+    </div>
+  </div>
+</section>
+<style>
+  .evidence-demo { background: var(--color-navy); color: white; } .demo-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: var(--space-12); align-items: center; } .evidence-demo .eyebrow { color: var(--color-action); } .evidence-demo h2 { color: white; } .evidence-demo p { color: #c5d0df; }
+  .demo-panel { overflow: hidden; border: 1px solid #38506f; border-radius: var(--radius-md); background: #132642; } .demo-header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-4) var(--space-5); border-bottom: 1px solid #38506f; } .demo-body { padding: var(--space-5); }
+  .demo-row { display: flex; gap: var(--space-4); padding: var(--space-4) 0; border-bottom: 1px solid #38506f; } .demo-row:last-child { border-bottom: 0; } .demo-row strong, .demo-row small { display: block; } .demo-row small { margin-top: .35rem; color: #aebdd0; } .demo-icon { width: .75rem; height: .75rem; margin-top: .25rem; border-radius: 50%; flex: 0 0 auto; } .green { background: var(--color-action); } .gold { background: var(--color-gold); } .slate { background: #8fa1b8; }
+  @media (max-width: 48rem) { .demo-grid { grid-template-columns: 1fr; } }
+</style>

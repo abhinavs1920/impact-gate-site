@@ -1,0 +1,12 @@
+---
+const { inverse = false } = Astro.props;
+---
+<a class:list={["brand", { inverse }]} href="/" aria-label="Impact Gate home">
+  <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 3 27 9v14l-11 6L5 23V9l11-6Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M11 16h10M16 11v10" stroke="currentColor" stroke-width="2"/></svg>
+  <span>Impact Gate</span>
+</a>
+<style>
+  .brand { display: inline-flex; align-items: center; gap: .65rem; color: var(--color-navy); font: 700 1.15rem/1 var(--font-body); text-decoration: none; }
+  .brand svg { width: 1.75rem; height: 1.75rem; }
+  .brand.inverse { color: white; }
+</style>

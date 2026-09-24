@@ -1,0 +1,13 @@
+---
+import BrandMark from "./BrandMark.astro";
+---
+<footer>
+  <div class="container footer-grid">
+    <div><BrandMark inverse /><p>Static API consumer verification for a private pilot in preparation.</p></div>
+    <div class="footer-links"><a href="#how-it-works">How it works</a><a href="#evidence">Evidence states</a><a href="#changes">Supported changes</a><a href="#limits">Limits</a><a href="#faq">FAQ</a></div>
+  </div>
+  <div class="container legal"><p>GitHub and the GitHub logo are registered trademarks of GitHub, Inc. Impact Gate is not affiliated with, endorsed by, or sponsored by GitHub, Inc.</p><p>© 2026 Impact Gate. All rights reserved.</p></div>
+</footer>
+<style>
+  footer { padding: var(--space-12) 0 var(--space-8); background: var(--color-navy); color: #dbe2ed; } .footer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-8); } footer p { max-width: 24rem; color: #9eacc0; line-height: 1.6; } .footer-links { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); align-content: start; } footer a { text-decoration: none; } footer a:hover, footer a:focus-visible { color: var(--color-action); } .legal { display: flex; justify-content: space-between; gap: var(--space-6); margin-top: var(--space-12); padding-top: var(--space-5); border-top: 1px solid #38506f; font-size: var(--text-xs); } .legal p { margin: 0; max-width: 42rem; } @media (max-width: 42rem) { .footer-grid, .legal { grid-template-columns: 1fr; display: grid; } }
+</style>

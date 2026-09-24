@@ -1,0 +1,20 @@
+---
+const steps = [
+  ["PR opened", "The contract change enters review."],
+  ["Contract diff", "Changed API surface is isolated."],
+  ["Consumer evidence", "Connected callers are traced."],
+  ["Comment posted", "Review information appears for the team."]
+];
+---
+<section class="section lifecycle">
+  <div class="container">
+    <div class="section-heading"><span class="eyebrow">Lifecycle</span><h2>From change to triage.</h2><p>A focused review path for shared API changes.</p></div>
+    <div class="timeline">{steps.map(([title, copy], index) => <article><span class="timeline-index">{String(index + 1).padStart(2, "0")}</span><h3>{title}</h3><p>{copy}</p></article>)}</div>
+  </div>
+</section>
+<style>
+  .lifecycle { background: var(--color-background); } .timeline { display: grid; grid-template-columns: repeat(4, 1fr); margin-top: var(--space-12); border-top: 1px solid var(--color-border-strong); }
+  .timeline article { position: relative; padding: var(--space-6) var(--space-4) 0 0; } .timeline article::before { content: ""; position: absolute; top: -.35rem; left: 0; width: .6rem; height: .6rem; border-radius: 50%; background: var(--color-primary); }
+  .timeline-index { color: var(--color-primary); font: 700 var(--text-xs)/1 var(--font-mono); } .timeline h3 { margin: var(--space-4) 0 var(--space-2); font-size: var(--text-lg); } .timeline p { margin: 0; color: var(--color-secondary); line-height: 1.5; }
+  @media (max-width: 48rem) { .timeline { grid-template-columns: 1fr 1fr; gap: var(--space-4); } } @media (max-width: 30rem) { .timeline { grid-template-columns: 1fr; } }
+</style>
