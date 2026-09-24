@@ -1,12 +1,16 @@
 ---
 import Fact from "./Fact.astro";
 import siteFacts from "../data/site-facts.json";
-const changes = siteFacts.contract.changes;
+const changes = siteFacts.contract.changes.slice(0, 4);
+const manyMore = siteFacts.contract.manyMore;
 ---
 <section class="section" id="changes">
   <div class="container">
     <div class="section-heading"><span class="eyebrow">Scope of analysis</span><h2>Supported contract changes.</h2><p>{siteFacts.contract.copy}</p></div>
-    <div class="change-list">{changes.map(([title, copy]) => <article><div><h3>{title}</h3><Fact status={siteFacts.contract.status} label="OpenAPI" compact /></div><p>{copy}</p></article>)}</div>
+    <div class="change-list">
+      {changes.map(([title, copy]) => <article><div><h3>{title}</h3><Fact status={siteFacts.contract.status} label="OpenAPI" compact /></div><p>{copy}</p></article>)}
+      <article class="more-card"><div><h3>{manyMore.title}</h3><Fact status={siteFacts.contract.status} label="OpenAPI" compact /></div><p>{manyMore.copy}</p></article>
+    </div>
   </div>
 </section>
 <style>

@@ -36,7 +36,11 @@
       ["Status changes", "Documented response status changes that alter client handling."],
       ["Request body changes", "Changed payload requirements or content types for submitted data."],
       ["Response body changes", "Changed payload requirements or content types for returned data."]
-    ]
+    ],
+    "manyMore": {
+      "title": "And many more",
+      "copy": "Additional OpenAPI changes can be reviewed when they affect the contract assumptions of connected consumers."
+    }
   },
   "analysis": {
     "status": "in_testing",
