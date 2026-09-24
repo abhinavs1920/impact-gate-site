@@ -3,11 +3,11 @@ import LogoMark from "./LogoMark.astro";
 const { inverse = false } = Astro.props;
 ---
 <a class:list={["brand", { inverse }]} href="/" aria-label="Impact Gate home">
-  <LogoMark size={56} interactive={true} />
+  <LogoMark size={56} width={76} interactive={true} />
   <span>Impact Gate</span>
 </a>
 <style>
   .brand { display: inline-flex; align-items: center; gap: .65rem; color: var(--color-navy); font: 700 1.15rem/1 var(--font-body); text-decoration: none; }
-  .brand .logo-mark { width: 3.5rem; height: 3.5rem; color: var(--logo-mark-ink); }
+  .brand .logo-mark { color: var(--logo-mark-ink); }
   .brand.inverse { color: white; }
 </style>

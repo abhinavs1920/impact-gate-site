@@ -1,17 +1,19 @@
 ---
 interface Props {
   size?: number;
+  width?: number;
   interactive?: boolean;
   animate?: boolean;
   label?: string;
 }
 
-const { size = 32, interactive = false, animate = true, label = "Impact Gate" } = Astro.props;
+const { size = 32, width = size, interactive = false, animate = true, label = "Impact Gate" } = Astro.props;
 ---
 <svg
   class:list={["logo-mark", { interactive, animate }]}
-  width={size}
+  width={width}
   height={size}
+  style={`width: ${width}px; height: ${size}px; flex: 0 0 auto;`}
   viewBox="0 0 100 100"
   role="img"
   aria-label={label}
