@@ -2,9 +2,9 @@
 
 ## Source mapping
 
-The primary Stitch Home Page desktop export is implemented by `src/pages/index.astro` and the section components under `src/components/`. The mobile Home Page exports use the same source with responsive CSS. The Ledger dark review variant maps to `Hero.astro` and `EvidenceDemo.astro`; the Blast Radius direction maps to the problem and evidence-state sections.
+The primary Stitch Home Page desktop export is implemented by the React page in `src/App.tsx`. The mobile Home Page exports use the same source with responsive CSS in `src/styles/site.css`. The Ledger dark review variant maps to the hero evidence card; the Blast Radius direction maps to the problem and evidence-state sections.
 
-The Stitch comparison index is intentionally not a live route because it is a design-review artifact rather than the waitlist page. The raster logo exports are rebuilt as inline SVG in `BrandMark.astro`.
+The Stitch comparison index is intentionally not a live route because it is a design-review artifact rather than the waitlist page. The raster logo exports are rebuilt as inline SVG in the React wordmark.
 
 ## Honesty changes
 
@@ -12,7 +12,7 @@ Synthetic incident copy, customer-like service names, line numbers, audit hashes
 
 ## Performance
 
-No Lighthouse result is claimed. The environment used for this build did not provide `node` or `pnpm`, so the production build and Lighthouse run could not execute in this session. `pnpm verify:site` is the intended gate once dependencies are installed; it builds the site, checks rendered content, and leaves the Lighthouse run as an explicit required production verification step rather than fabricating a result.
+`pnpm verify:site` builds and prerenders the React page, runs the TypeScript check, and checks rendered content. No Lighthouse result is claimed.
 
 ## Deployment
 

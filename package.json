@@ -2,15 +2,25 @@
   "name": "impact-gate-site",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.4.1",
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "verify:site": "node tests/content-scan.mjs && node scripts/verify-site.mjs"
+    "dev": "vite",
+    "build": "vite build && node scripts/prerender.mjs",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "verify:site": "pnpm build && pnpm typecheck && node tests/content-scan.mjs && node scripts/verify-site.mjs",
+    "deploy:cloudflare": "pnpm verify:site && wrangler deploy"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^12.6.0",
-    "astro": "^5.14.0",
-    "typescript": "^5.9.3"
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.0",
+    "wrangler": "^4.143.0"
   }
 }
