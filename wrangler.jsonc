@@ -6,6 +6,13 @@
     "binding": "ASSETS",
     "run_worker_first": ["/api/*"]
   },
+  "send_email": [
+    {
+      "name": "EMAIL",
+      "allowed_destination_addresses": ["abxh1920@gmail.com"],
+      "allowed_sender_addresses": ["pilot@impactgate.in"]
+    }
+  ],
   "routes": [
     { "pattern": "impactgate.in", "custom_domain": true },
     { "pattern": "www.impactgate.in", "custom_domain": true }

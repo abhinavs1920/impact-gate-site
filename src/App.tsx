@@ -203,9 +203,11 @@ function Hero() {
             you merge<span className="period">.</span>
           </h1>
           <p className="hero-lede">
-            API contract changes can affect code beyond the repository where
-            they were made. Impact Gate is being built to trace connected
-            consumer code and surface evidence for human review.
+            Impact Gate is an API change impact analysis tool being prepared for
+            a private pilot. It reviews OpenAPI contract changes, traces
+            connected downstream consumers, and surfaces evidence and
+            uncertainty for engineering teams. It is warn-only: your team
+            stays in control of merge decisions.
           </p>
           <div className="hero-actions">
             <a className="button primary" href="#pilot">
@@ -724,7 +726,8 @@ function PilotForm() {
             {status.message}
           </p>
           <p className="form-privacy">
-            Your details are used to respond to this pilot request.
+            Your request is emailed to the Impact Gate team so they can follow
+            up about the pilot.
           </p>
         </form>
       </div>
@@ -734,6 +737,10 @@ function PilotForm() {
 
 const questions = [
   [
+    "What is Impact Gate?",
+    "Impact Gate is an API change impact analysis tool being prepared for a private pilot. It reviews OpenAPI contract changes, traces consumers in connected code, and surfaces evidence and uncertainty for engineering teams. It is warn-only.",
+  ],
+  [
     "Is Impact Gate generally available?",
     "No. Impact Gate is being prepared for a small private pilot. Join the waitlist for updates.",
   ],
@@ -742,7 +749,7 @@ const questions = [
     "No. The current product posture is warn-only: it presents review information and leaves merge decisions with your team.",
   ],
   [
-    "Which contracts are in scope?",
+    "Which API contract formats does Impact Gate review?",
     "The current site describes OpenAPI contract review. Other contract formats are not presented as available.",
   ],
   [
@@ -750,7 +757,7 @@ const questions = [
     "The result should remain uncertain when source coverage, dynamic behavior, or resolution limits prevent a clear conclusion.",
   ],
   [
-    "Does the example on this page come from a real repository?",
+    "Does the evidence example on this page come from a real repository?",
     "No. The evidence path on this page is explicitly illustrative and is not a live customer finding.",
   ],
 ];

@@ -15,7 +15,11 @@ Veo prompts alone do not produce a finished file containing mixed real footage, 
 
 ## Website development
 
-The public site is a React/Vite application. The Cloudflare Worker in `src/worker.ts` serves the Vite `dist/` assets and handles `/api/waitlist`.
+The public site is a React/Vite application. The Cloudflare Worker in `src/worker.ts` serves the Vite `dist/` assets and handles `/api/waitlist`. Valid pilot requests are sent to `abxh1920@gmail.com` through Cloudflare Email Service; the reply-to address is set to the applicant.
+
+The public homepage is indexable. `public/robots.txt` permits search and AI-answer crawlers while excluding the API, and `public/sitemap.xml` lists the canonical URL. The homepage includes canonical/social metadata and structured software and FAQ data. Indexing and search rankings are controlled by the search engines and are not guaranteed.
+
+Before waitlist emails can be delivered, onboard `impactgate.in` under **Cloudflare Dashboard → Compute → Email Service → Email Sending**. Configure the DNS records Cloudflare provides and wait for sending-domain verification. The Worker binding is restricted to `pilot@impactgate.in` as sender and `abxh1920@gmail.com` as recipient.
 
 ```sh
 pnpm install --frozen-lockfile

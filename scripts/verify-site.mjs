@@ -8,7 +8,12 @@ const required = [
   "src/worker.ts",
   "src/data/site-facts.json",
   "public/robots.txt",
+  "public/sitemap.xml",
+  "public/og-image.svg",
   "dist/index.html",
+  "dist/robots.txt",
+  "dist/sitemap.xml",
+  "dist/og-image.svg",
 ];
 const missing = required.filter((file) => !existsSync(file));
 if (missing.length)
@@ -19,8 +24,47 @@ const banned =
   /\b(revolutionary|seamless|powerful|effortless|supercharge|unlock|game-changing|next-gen|cutting-edge|10x|safe|guaranteed|no risk|bulletproof|AI-powered)\b/i;
 if (banned.test(html))
   throw new Error("Banned marketing language found in rendered HTML.");
-if (!html.includes('name="robots" content="noindex"'))
-  throw new Error("Rendered page must remain noindex.");
+for (const metadata of [
+  '<meta name="robots" content="index, follow, max-image-preview:large" />',
+  '<link rel="canonical" href="https://impactgate.in/" />',
+  '<meta property="og:type" content="website" />',
+  '<meta name="twitter:card" content="summary_large_image" />',
+  '"@type": "SoftwareApplication"',
+  '"@type": "FAQPage"',
+  "API Change Impact Analysis for Engineering Teams",
+]) {
+  if (!html.includes(metadata))
+    throw new Error(`Expected SEO metadata is missing: ${metadata}`);
+}
+const structuredData = html.match(
+  /<script type="application\/ld\+json">([\s\S]*?)<\/script>/,
+);
+if (!structuredData) throw new Error("Structured SEO data is missing.");
+const graph = JSON.parse(structuredData[1])["@graph"];
+const faq = graph.find((entry) => entry["@type"] === "FAQPage");
+if (!faq || faq.mainEntity.length !== 6)
+  throw new Error("Structured FAQ data does not match the visible FAQ.");
+for (const question of faq.mainEntity) {
+  if (!html.includes(question.name) || !html.includes(question.acceptedAnswer.text))
+    throw new Error(`Structured FAQ is not visible on the page: ${question.name}`);
+}
+const robots = readFileSync("dist/robots.txt", "utf8");
+if (!robots.includes("Allow: /") || !robots.includes("Disallow: /api/"))
+  throw new Error("Robots policy must allow indexing while excluding the API.");
+for (const crawler of [
+  "OAI-SearchBot",
+  "ChatGPT-User",
+  "PerplexityBot",
+  "Claude-SearchBot",
+]) {
+  if (!robots.includes(`User-agent: ${crawler}`))
+    throw new Error(`AI search crawler ${crawler} is not explicitly allowed.`);
+}
+const sitemap = readFileSync("dist/sitemap.xml", "utf8");
+if (!sitemap.includes("<loc>https://impactgate.in/</loc>"))
+  throw new Error("The sitemap must include the canonical homepage URL.");
+if (!readFileSync("dist/og-image.svg", "utf8").includes('width="1200" height="630"'))
+  throw new Error("The social sharing image must use the expected dimensions.");
 if (!html.includes('id="root"'))
   throw new Error("React application root is missing.");
 for (const id of [

@@ -7,7 +7,7 @@
 - React/Vite static site migrated from Astro, server-rendered at build time, and deployed through the Cloudflare Worker.
 - GitHub Actions verifies pull requests and deploys pushes to `main` with Wrangler; configure `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the GitHub repository first.
 - Capability copy is sourced from `src/data/site-facts.json`.
-- Robots are noindex/disallow-all.
+- The public homepage is indexable, listed in the sitemap, and includes social and structured search metadata.
 - Google Fonts loads from Google Fonts with local system fallbacks; no third-party JavaScript or embedded video is included.
 - Cloudflare Workers configuration and waitlist route are included.
 

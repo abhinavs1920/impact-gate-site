@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
+  <title id="title">Impact Gate</title>
+  <desc id="description">API change impact analysis for engineering teams.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#101722"/>
+      <stop offset="1" stop-color="#1d2939"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0" stop-color="#adb5ff" stop-opacity=".2"/>
+      <stop offset="1" stop-color="#adb5ff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#background)"/>
+  <circle cx="1030" cy="112" r="330" fill="url(#glow)"/>
+  <circle cx="1030" cy="112" r="230" fill="none" stroke="#adb5ff" stroke-opacity=".11"/>
+  <circle cx="1030" cy="112" r="170" fill="none" stroke="#adb5ff" stroke-opacity=".08"/>
+  <g transform="translate(86 80)">
+    <path d="M27 17 11 34l16 17M73 17l16 17-16 17" fill="none" stroke="#f4f6fb" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="34" y="12" width="7" height="44" rx="3.5" fill="#26ba66"/>
+    <rect x="59" y="12" width="7" height="44" rx="3.5" fill="#26ba66"/>
+    <circle cx="24" cy="34" r="3" fill="#f4f6fb"/>
+    <circle cx="34" cy="34" r="3" fill="#f4f6fb"/>
+    <circle cx="44" cy="34" r="3" fill="#26ba66"/>
+    <circle cx="56" cy="34" r="3" fill="#26ba66"/>
+    <circle cx="66" cy="34" r="3" fill="#f4f6fb"/>
+    <circle cx="76" cy="34" r="3" fill="#f4f6fb"/>
+    <text x="112" y="42" fill="#f4f6fb" font-family="Arial, Helvetica, sans-serif" font-size="32" font-weight="700">Impact Gate</text>
+  </g>
+  <text x="88" y="284" fill="#adb5ff" font-family="Arial, Helvetica, sans-serif" font-size="21" font-weight="700" letter-spacing="3">API CHANGE IMPACT ANALYSIS</text>
+  <text x="84" y="382" fill="#f4f6fb" font-family="Georgia, serif" font-size="66">Know who breaks</text>
+  <text x="84" y="462" fill="#f4f6fb" font-family="Georgia, serif" font-size="66">before you merge.</text>
+  <text x="88" y="534" fill="#b8c3d2" font-family="Arial, Helvetica, sans-serif" font-size="24">Evidence for the API changes that travel beyond your repository.</text>
+  <rect x="88" y="574" width="148" height="3" rx="1.5" fill="#26ba66"/>
+</svg>
