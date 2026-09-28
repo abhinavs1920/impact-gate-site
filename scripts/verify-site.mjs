@@ -78,6 +78,10 @@ if (!css.includes("prefers-reduced-motion"))
   throw new Error("Reduced-motion support is missing.");
 if (!css.includes("max-width:54rem") || !css.includes("max-width:34rem"))
   throw new Error("Responsive breakpoints are missing.");
+if (!css.includes(".hero-grid{"))
+  throw new Error("Hero layout styles are missing.");
+if (!css.includes(".hero-copy{"))
+  throw new Error("Hero content sizing styles are missing.");
 if (
   !js.includes("Switch to dark theme") ||
   !js.includes("Switch to light theme")
