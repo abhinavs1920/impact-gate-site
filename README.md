@@ -1,3 +1,9 @@
+# Impact Gate website
+
+Source for [impactgate.in](https://impactgate.in): the Impact Gate site, docs and workspace UI. Impact Gate is API change impact analysis for engineering teams.
+
+---
+
 # Impact Gate teaser assembly
 
 This folder contains a ground-truth record and an evidence-gated teaser plan. The current record says the required CLI and renderer commands could not run because `pnpm` was unavailable, so blocked screenshot steps must be completed before any product-text shot is published.
