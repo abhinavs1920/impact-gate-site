@@ -1,7 +1,8 @@
 import { runtimeObservabilityDoc } from "./runtime-observability";
+import { guidePages } from "./guides";
 import { emailHref, emails } from "../ui/contact";
 
-export type DocGroup = "Get started" | "Connect & index" | "Review changes" | "Reference";
+export type DocGroup = "Get started" | "Connect & index" | "Review changes" | "Reference" | "Guides";
 
 export type DocBlock =
   | { type: "paragraph"; text: string }
@@ -929,4 +930,6 @@ export const docPages: DocPage[] = [
   },
 ];
 
-export const docGroups: DocGroup[] = ["Get started", "Connect & index", "Review changes", "Reference"];
+docPages.push(...guidePages);
+
+export const docGroups: DocGroup[] = ["Get started", "Connect & index", "Review changes", "Reference", "Guides"];
