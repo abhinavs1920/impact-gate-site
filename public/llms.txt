@@ -1,0 +1,23 @@
+# Impact Gate
+
+> Impact Gate is API change impact analysis for engineering teams. It reviews OpenAPI contract changes, traces downstream consumers in connected code, and shows evidence and uncertainty before merge. It is warn-only: it never blocks a pull request. Currently preparing a small private pilot; not generally available.
+
+## Key pages
+- [Home](https://impactgate.in/): what it does, how the analysis works, FAQ
+- [Docs](https://impactgate.in/docs): overview and quickstart
+- [Coverage and limitations](https://impactgate.in/docs/coverage-and-limitations): what the analysis can and cannot conclude
+- [Permissions and data](https://impactgate.in/docs/permissions-and-data): what access is needed and how data is handled
+- [Pull request reports](https://impactgate.in/docs/pull-request-reports): what a report looks like
+- [Detect breaking API changes in a pull request](https://impactgate.in/docs/detect-breaking-api-changes-in-pull-requests)
+- [Find who consumes your API before you change it](https://impactgate.in/docs/find-who-consumes-your-api-before-you-change-it)
+- [API deprecation checklist](https://impactgate.in/docs/api-deprecation-impact-analysis-checklist)
+- [Cross-repo API impact analysis](https://impactgate.in/docs/cross-repo-api-impact-analysis)
+- [API usage observability with Prometheus or Datadog](https://impactgate.in/docs/api-usage-observability-prometheus-datadog)
+- [How to deprecate a repository](https://impactgate.in/docs/how-to-deprecate-a-repository)
+- [Contact / pilot request](https://impactgate.in/contact): pilot@impactgate.in
+
+## Facts
+- Input: OpenAPI contract changes in a pull request
+- Output: a pull request report with evidence, inferred paths, coverage gaps and "no observed use"
+- Posture: warn-only, merge decisions stay with the team
+- Status: private pilot, join the waitlist for updates
