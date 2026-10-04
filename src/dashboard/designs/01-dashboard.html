@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DASHBOARD SUITE · 01 Home · Desktop</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<style>
+    body {
+      font-family: 'Geist', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #061521;
+      color: #e5edf4;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #03111c;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #183447;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex bg-[#f8f9fb] text-[#191c1e] antialiased selection:bg-[#dfe0ff] selection:text-[#0419af]">
+<!-- LEFT FIXED SIDEBAR (220px) -->
+<aside class="w-[220px] flex-shrink-0 bg-[#ffffff] border-r border-[#e0e4ea] flex flex-col justify-between h-screen sticky top-0 z-30 select-none"><div>
+<!-- Brand Header -->
+<div class="h-16 flex items-center px-5 gap-3 border-b border-[#e0e4ea]">
+<!-- Navy rounded square with angle brackets & green bars/dots -->
+<div class="w-8 h-8 rounded-lg bg-[#0419af] flex items-center justify-center text-white flex-shrink-0 shadow-sm">
+<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" viewbox="0 0 24 24">
+<path d="m7 8-4 4 4 4"></path>
+<path d="m17 8 4 4-4 4"></path>
+<line stroke="#84cc16" stroke-width="2.5" x1="10" x2="10" y1="7" y2="17"></line>
+<line stroke="#84cc16" stroke-width="2.5" x1="14" x2="14" y1="7" y2="17"></line>
+</svg>
+</div>
+<div class="flex flex-col">
+<span class="font-semibold text-[15px] tracking-tight text-[#191c1e] leading-tight">Impact Gate</span>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="p-3 space-y-1">
+<!-- 1. Home (Active: text #2b3ac4, bg #dfe0ff) -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-md bg-[#dfe0ff] text-[#2b3ac4] font-medium text-[13px] transition-colors" href="/dashboard">
+<svg class="w-4 h-4 text-[#2b3ac4] stroke-[2]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewbox="0 0 24 24">
+<rect height="9" rx="1" width="7" x="3" y="3"></rect>
+<rect height="5" rx="1" width="7" x="14" y="3"></rect>
+<rect height="9" rx="1" width="7" x="14" y="12"></rect>
+<rect height="5" rx="1" width="7" x="3" y="16"></rect>
+</svg>
+<span>Home</span>
+</a>
+<!-- 2. API Usage -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-[#535f6f] hover:text-[#191c1e] hover:bg-[#f1f3f6] font-medium text-[13px] transition-colors" href="/dashboard/api-usage">
+<svg class="w-4 h-4 stroke-[1.8]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewbox="0 0 24 24">
+<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+</svg>
+<span>API Usage</span>
+</a>
+<!-- 3. Dependency Graph -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-[#535f6f] hover:text-[#191c1e] hover:bg-[#f1f3f6] font-medium text-[13px] transition-colors" href="/dashboard/dependency-graph">
+<svg class="w-4 h-4 stroke-[1.8]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewbox="0 0 24 24">
+<circle cx="18" cy="5" r="3"></circle>
+<circle cx="6" cy="12" r="3"></circle>
+<circle cx="18" cy="19" r="3"></circle>
+<line x1="8.59" x2="15.42" y1="13.51" y2="17.49"></line>
+<line x1="15.41" x2="8.59" y1="6.51" y2="10.49"></line>
+</svg>
+<span>Dependency Graph</span>
+</a>
+<!-- 4. Deprecation Candidates -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-[#535f6f] hover:text-[#191c1e] hover:bg-[#f1f3f6] font-medium text-[13px] transition-colors" href="/dashboard/deprecation-candidates">
+<svg class="w-4 h-4 stroke-[1.8]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<line x1="12" x2="12" y1="8" y2="12"></line>
+<line x1="12" x2="12.01" y1="16" y2="16"></line>
+</svg>
+<span>Deprecation Candidates</span>
+</a>
+<!-- 5. Repositories -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-[#535f6f] hover:text-[#191c1e] hover:bg-[#f1f3f6] font-medium text-[13px] transition-colors" href="/dashboard/repositories">
+<svg class="w-4 h-4 stroke-[1.8]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewbox="0 0 24 24">
+<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+</svg>
+<span>Repositories</span>
+</a>
+<!-- 6. Settings -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-[#535f6f] hover:text-[#191c1e] hover:bg-[#f1f3f6] font-medium text-[13px] transition-colors" href="/dashboard/settings">
+<svg class="w-4 h-4 stroke-[1.8]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="3"></circle>
+<path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+</svg>
+<span>Settings</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Sidebar Status Pill -->
+</aside>
+<!-- MAIN AREA (Topbar + Content + Footer) -->
+<div class="flex-1 flex flex-col min-w-0 bg-[#f8f9fb]">
+<!-- TOPBAR (64px) -->
+<header class="h-16 px-6 bg-[#ffffff] border-b border-[#e0e4ea] flex items-center justify-between sticky top-0 z-20">
+<!-- Breadcrumbs & Workspace tag -->
+<div class="flex items-center gap-3">
+<nav aria-label="Breadcrumb" class="flex items-center gap-2 text-[13px] font-mono">
+<span class="text-[#535f6f]">Impact Gate</span>
+<span class="text-[#c6c5d7] font-bold">/</span>
+<span class="text-[#191c1e] font-medium">Home</span>
+</nav>
+<span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-mono bg-[#f1f3f6] text-[#535f6f] border border-[#e0e4ea]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
+          Demo workspace
+        </span>
+</div>
+<!-- Right actions: Quick Action, Theme toggle, Notification, Profile -->
+<div class="flex items-center gap-4">
+<!-- Import Repositories CTA (lime #b7f36b with dark navy #0d1e38 text) -->
+<a class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#b7f36b] hover:bg-[#a9ee56] text-[#0d1e38] font-semibold text-[13px] shadow-sm transition-all" href="/dashboard/repositories">
+<svg class="w-3.5 h-3.5 stroke-[2.5]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewbox="0 0 24 24">
+<line x1="12" x2="12" y1="5" y2="19"></line>
+<line x1="5" x2="19" y1="12" y2="12"></line>
+</svg>
+<span>Import repositories</span>
+</a>
+<div class="h-4 w-[1px] bg-[#e0e4ea]"></div>
+<!-- Theme Toggle Icon -->
+<button aria-label="Toggle theme" class="p-1.5 rounded-md text-[#535f6f] hover:text-[#191c1e] hover:bg-[#f1f3f6] transition-colors">
+<svg class="w-4 h-4 stroke-[1.8]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="5"></circle>
+<line x1="12" x2="12" y1="1" y2="3"></line>
+<line x1="12" x2="12" y1="21" y2="23"></line>
+<line x1="4.22" x2="5.64" y1="4.22" y2="5.64"></line>
+<line x1="18.36" x2="19.78" y1="18.36" y2="19.78"></line>
+<line x1="1" x2="3" y1="12" y2="12"></line>
+<line x1="21" x2="23" y1="12" y2="12"></line>
+<line x1="4.22" x2="5.64" y1="19.78" y2="18.36"></line>
+<line x1="18.36" x2="19.78" y1="5.64" y2="4.22"></line>
+</svg>
+</button>
+<!-- Notification Bell -->
+<button aria-label="View notifications" class="relative p-1.5 rounded-md text-[#535f6f] hover:text-[#191c1e] hover:bg-[#f1f3f6] transition-colors">
+<svg class="w-4 h-4 stroke-[1.8]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" viewbox="0 0 24 24">
+<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+<path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+</svg>
+<span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#0419af] ring-2 ring-[#ffffff]"></span>
+</button>
+<!-- User Avatar & Identity (Abhinav Sharma, no staff role) -->
+<div class="flex items-center gap-2.5 pl-1">
+<div class="w-8 h-8 rounded-full bg-[#dfe0ff] border border-[#bdc2ff] text-[#0419af] font-semibold text-[12px] flex items-center justify-center select-none shadow-sm">
+            AS
+          </div>
+<div class="flex flex-col text-left">
+<span class="text-[13px] font-medium text-[#191c1e] leading-tight">Abhinav Sharma</span>
+</div>
+</div>
+</div>
+</header>
+<!-- CONTENT BODY (Padding 24px, 16px gaps, fits clean in viewport) -->
+<main class="p-6 space-y-4 flex-1"><!-- Header Row: Title & Subtitle (Libre Caslon Text 28px, Hanken Grotesk 14px, no live syncing copy) -->
+<div>
+<h1 class="font-headline text-[28px] font-bold tracking-tight text-[#191c1e] leading-tight">Engineering Overview</h1>
+<p class="text-[14px] text-[#535f6f] mt-0.5">Cross-repository API and code usage intelligence</p>
+</div>
+<!-- ROW 1: FIVE COMPACT KPI CARDS (Light #ffffff, 1px border #e0e4ea, 8px radius, 28px semibold) -->
+<div class="grid grid-cols-5 gap-3.5">
+<!-- Card 1: Repositories -->
+<a class="block bg-[#ffffff] hover:border-[#bdc2ff] border border-[#e0e4ea] rounded-[8px] p-3.5 transition-all group shadow-sm" href="/dashboard/repositories">
+<div class="flex items-center justify-between mb-2">
+<span class="text-[12px] font-medium text-[#535f6f] group-hover:text-[#191c1e]">Repositories</span>
+<div class="w-6 h-6 rounded bg-[#f1f3f6] border border-[#e0e4ea] flex items-center justify-center text-[#2b3ac4]">
+<svg class="w-3.5 h-3.5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+</svg>
+</div>
+</div>
+<div class="text-[28px] font-semibold text-[#191c1e] tracking-tight leading-none mb-1.5">12</div>
+<p class="text-[11px] text-[#535f6f] font-mono truncate">11 indexed · 1 indexing</p>
+</a>
+<!-- Card 2: Services -->
+<a class="block bg-[#ffffff] hover:border-[#bdc2ff] border border-[#e0e4ea] rounded-[8px] p-3.5 transition-all group shadow-sm" href="/dashboard/dependency-graph">
+<div class="flex items-center justify-between mb-2">
+<span class="text-[12px] font-medium text-[#535f6f] group-hover:text-[#191c1e]">Services</span>
+<div class="w-6 h-6 rounded bg-[#f1f3f6] border border-[#e0e4ea] flex items-center justify-center text-[#10b981]">
+<svg class="w-3.5 h-3.5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<rect height="8" rx="2" width="20" x="2" y="2"></rect>
+<rect height="8" rx="2" width="20" x="2" y="14"></rect>
+<line x1="6" x2="6.01" y1="6" y2="6"></line>
+<line x1="6" x2="6.01" y1="18" y2="18"></line>
+</svg>
+</div>
+</div>
+<div class="text-[28px] font-semibold text-[#191c1e] tracking-tight leading-none mb-1.5">28</div>
+<p class="text-[11px] text-[#535f6f] font-mono truncate">Across selected repositories</p>
+</a>
+<!-- Card 3: APIs / Endpoints -->
+<a class="block bg-[#ffffff] hover:border-[#bdc2ff] border border-[#e0e4ea] rounded-[8px] p-3.5 transition-all group shadow-sm" href="/dashboard/api-usage">
+<div class="flex items-center justify-between mb-2">
+<span class="text-[12px] font-medium text-[#535f6f] group-hover:text-[#191c1e]">APIs / Endpoints</span>
+<div class="w-6 h-6 rounded bg-[#f1f3f6] border border-[#e0e4ea] flex items-center justify-center text-[#3b82f6]">
+<svg class="w-3.5 h-3.5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<polyline points="16 18 22 12 16 6"></polyline>
+<polyline points="8 6 2 12 8 18"></polyline>
+</svg>
+</div>
+</div>
+<div class="text-[28px] font-semibold text-[#191c1e] tracking-tight leading-none mb-1.5">342</div>
+<p class="text-[11px] text-[#535f6f] font-mono truncate">API inventory</p>
+</a>
+<!-- Card 4: Open Findings -->
+<div class="bg-[#ffffff] border border-[#e0e4ea] rounded-[8px] p-3.5 shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-2">
+<span class="text-[12px] font-medium text-[#535f6f]">Open Findings</span>
+<div class="w-6 h-6 rounded bg-[#fee2e2] border border-[#fecaca] flex items-center justify-center text-[#ef4444]">
+<svg class="w-3.5 h-3.5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+<line x1="12" x2="12" y1="9" y2="13"></line>
+<line x1="12" x2="12.01" y1="17" y2="17"></line>
+</svg>
+</div>
+</div>
+<div class="text-[28px] font-semibold text-[#ef4444] tracking-tight leading-none mb-1.5">6</div>
+</div>
+<a class="inline-flex items-center gap-1 text-[11px] text-[#2b3ac4] hover:underline font-medium transition-colors" href="#recent-findings">
+<span>View on GitHub →</span>
+</a>
+</div>
+<!-- Card 5: Deprecation Candidates -->
+<a class="block bg-[#ffffff] hover:border-[#bdc2ff] border border-[#e0e4ea] rounded-[8px] p-3.5 transition-all group shadow-sm" href="/dashboard/deprecation-candidates">
+<div class="flex items-center justify-between mb-2">
+<span class="text-[12px] font-medium text-[#535f6f] group-hover:text-[#191c1e]">Deprecation Candidates</span>
+<div class="w-6 h-6 rounded bg-[#f3e8ff] border border-[#e9d5ff] flex items-center justify-center text-[#8b5cf6]">
+<svg class="w-3.5 h-3.5 stroke-[2]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<circle cx="12" cy="12" r="10"></circle>
+<path d="m4.93 4.93 14.14 14.14"></path>
+</svg>
+</div>
+</div>
+<div class="text-[28px] font-semibold text-[#191c1e] tracking-tight leading-none mb-1.5">14</div>
+<p class="text-[11px] text-[#535f6f] font-mono truncate">3 strong · 6 rare · 5 building</p>
+</a>
+</div>
+<!-- ROW 2: THREE ANALYTICS PANELS (#ffffff, 8px radius, border #e0e4ea) -->
+<div class="grid grid-cols-3 gap-3.5">
+<!-- Panel 1: Findings by Severity Donut -->
+<div class="bg-[#ffffff] border border-[#e0e4ea] rounded-[8px] p-4 flex flex-col justify-between shadow-sm">
+<div class="flex items-center justify-between border-b border-[#e0e4ea] pb-2 mb-2">
+<span class="text-[13px] font-semibold text-[#191c1e]">Findings by Severity</span>
+<span class="text-[11px] font-mono text-[#535f6f]">Triage priority</span>
+</div>
+<div class="flex items-center justify-between gap-4 py-1">
+<!-- Donut Visual (SVG) centered with 6 Open Findings -->
+<div class="relative w-28 h-28 flex-shrink-0 flex items-center justify-center">
+<svg class="w-full h-full -rotate-90" viewbox="0 0 36 36">
+<!-- Track -->
+<circle cx="18" cy="18" fill="none" r="15.5" stroke="#f1f3f6" stroke-width="3.2"></circle>
+<!-- High (2 of 6) Red #ef4444 -->
+<circle cx="18" cy="18" fill="none" r="15.5" stroke="#ef4444" stroke-dasharray="32.5 67.5" stroke-dashoffset="0" stroke-width="3.2"></circle>
+<!-- Medium (3 of 6) Amber #f59e0b -->
+<circle cx="18" cy="18" fill="none" r="15.5" stroke="#f59e0b" stroke-dasharray="48.7 51.3" stroke-dashoffset="-32.5" stroke-width="3.2"></circle>
+<!-- Low (1 of 6) Blue #3b82f6 -->
+<circle cx="18" cy="18" fill="none" r="15.5" stroke="#3b82f6" stroke-dasharray="16.2 83.8" stroke-dashoffset="-81.2" stroke-width="3.2"></circle>
+</svg>
+<!-- Center label -->
+<div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+<span class="text-[16px] font-bold font-mono text-[#191c1e] leading-tight">6</span>
+<span class="text-[9px] text-[#535f6f] font-mono leading-tight">Open Findings</span>
+</div>
+</div>
+<!-- Legend List -->
+<div class="flex-1 space-y-2 text-[12px] font-mono">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-sm bg-[#ef4444]"></span>
+<span class="text-[#191c1e]">High</span>
+</div>
+<span class="text-[#191c1e] font-semibold">2</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-sm bg-[#f59e0b]"></span>
+<span class="text-[#191c1e]">Medium</span>
+</div>
+<span class="text-[#191c1e] font-semibold">3</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-sm bg-[#3b82f6]"></span>
+<span class="text-[#191c1e]">Low</span>
+</div>
+<span class="text-[#191c1e] font-semibold">1</span>
+</div>
+</div>
+</div>
+<div class="text-[10px] text-[#535f6f] font-mono pt-1 text-right">
+<span>Deterministic AST verdicts</span>
+</div>
+</div>
+<!-- Panel 2: API Usage Distribution VERTICAL Bar Chart -->
+<div class="bg-[#ffffff] border border-[#e0e4ea] rounded-[8px] p-4 flex flex-col justify-between shadow-sm">
+<div class="flex items-center justify-between border-b border-[#e0e4ea] pb-2 mb-2">
+<span class="text-[13px] font-semibold text-[#191c1e]">API Usage Distribution</span>
+<span class="text-[11px] font-mono text-[#535f6f]">264 active callers</span>
+</div>
+<!-- Vertical Bar Chart -->
+<div class="h-28 flex items-end justify-between gap-3 px-2 pt-2 pb-1">
+<!-- High (80) -->
+<div class="flex-1 flex flex-col items-center h-full justify-end">
+<span class="text-[11px] font-mono font-semibold text-[#191c1e] mb-1">80</span>
+<div class="w-full max-w-[32px] bg-[#10b981] rounded-t" style="height: 80%;"></div>
+<span class="text-[10px] font-mono text-[#535f6f] mt-1.5 truncate">High</span>
+</div>
+<!-- Medium (72) -->
+<div class="flex-1 flex flex-col items-center h-full justify-end">
+<span class="text-[11px] font-mono font-semibold text-[#191c1e] mb-1">72</span>
+<div class="w-full max-w-[32px] bg-[#3b82f6] rounded-t" style="height: 72%;"></div>
+<span class="text-[10px] font-mono text-[#535f6f] mt-1.5 truncate">Med</span>
+</div>
+<!-- Low (46) -->
+<div class="flex-1 flex flex-col items-center h-full justify-end">
+<span class="text-[11px] font-mono font-semibold text-[#191c1e] mb-1">46</span>
+<div class="w-full max-w-[32px] bg-[#60a5fa] rounded-t" style="height: 46%;"></div>
+<span class="text-[10px] font-mono text-[#535f6f] mt-1.5 truncate">Low</span>
+</div>
+<!-- No recent callers (66) -->
+<div class="flex-1 flex flex-col items-center h-full justify-end">
+<span class="text-[11px] font-mono font-semibold text-[#535f6f] mb-1">66</span>
+<div class="w-full max-w-[32px] bg-[#c6c5d7] rounded-t" style="height: 66%;"></div>
+<span class="text-[10px] font-mono text-[#535f6f] mt-1.5 truncate">None</span>
+</div>
+</div>
+<div class="text-[10px] text-[#535f6f] font-mono pt-1 text-right">
+<span>Endpoint caller volume classification</span>
+</div>
+</div>
+<!-- Panel 3: Deprecation Candidates Donut (14 Candidates) -->
+<div class="bg-[#ffffff] border border-[#e0e4ea] rounded-[8px] p-4 flex flex-col justify-between shadow-sm">
+<div class="flex items-center justify-between border-b border-[#e0e4ea] pb-2 mb-2">
+<span class="text-[13px] font-semibold text-[#191c1e]">Deprecation Candidates</span>
+<span class="text-[11px] font-mono text-[#535f6f]">Static callpath signal</span>
+</div>
+<div class="flex items-center justify-between gap-4 py-1">
+<!-- Donut Visual (SVG) centered with 14 Candidates -->
+<div class="relative w-28 h-28 flex-shrink-0 flex items-center justify-center">
+<svg class="w-full h-full -rotate-90" viewbox="0 0 36 36">
+<!-- Track -->
+<circle cx="18" cy="18" fill="none" r="15.5" stroke="#f1f3f6" stroke-width="3.2"></circle>
+<!-- Strong candidate (3 of 14) #8b5cf6 -->
+<circle cx="18" cy="18" fill="none" r="15.5" stroke="#8b5cf6" stroke-dasharray="20.8 79.2" stroke-dashoffset="0" stroke-width="3.2"></circle>
+<!-- Rare caller — verify (6 of 14) #f59e0b -->
+<circle cx="18" cy="18" fill="none" r="15.5" stroke="#f59e0b" stroke-dasharray="41.8 58.2" stroke-dashoffset="-20.8" stroke-width="3.2"></circle>
+<!-- Building confidence (5 of 14) #3b82f6 -->
+<circle cx="18" cy="18" fill="none" r="15.5" stroke="#3b82f6" stroke-dasharray="34.8 65.2" stroke-dashoffset="-62.6" stroke-width="3.2"></circle>
+</svg>
+<!-- Center label -->
+<div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+<span class="text-[16px] font-bold font-mono text-[#191c1e] leading-tight">14</span>
+<span class="text-[9px] text-[#535f6f] font-mono leading-tight">Candidates</span>
+</div>
+</div>
+<!-- Legend List -->
+<div class="flex-1 space-y-2 text-[12px] font-mono">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-sm bg-[#8b5cf6]"></span>
+<span class="text-[#191c1e]">Strong candidate</span>
+</div>
+<span class="text-[#191c1e] font-semibold">3</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-sm bg-[#f59e0b]"></span>
+<span class="text-[#191c1e]">Rare caller — verify</span>
+</div>
+<span class="text-[#191c1e] font-semibold">6</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-sm bg-[#3b82f6]"></span>
+<span class="text-[#191c1e]">Building confidence</span>
+</div>
+<span class="text-[#191c1e] font-semibold">5</span>
+</div>
+</div>
+</div>
+<div class="text-[10px] text-[#535f6f] font-mono pt-1 text-right">
+<span>Requires telemetry verification</span>
+</div>
+</div>
+</div>
+<!-- ROW 3: RECENT OPEN FINDINGS TABLE (Light Theme) -->
+<section class="bg-[#ffffff] border border-[#e0e4ea] rounded-[8px] overflow-hidden shadow-sm" id="recent-findings">
+<!-- Table Header Bar -->
+<div class="px-4 py-3 bg-[#ffffff] border-b border-[#e0e4ea] flex items-center justify-between">
+<div class="flex items-center gap-3">
+<h2 class="text-[13px] font-semibold text-[#191c1e]">Recent Open Findings</h2>
+<span class="text-[11px] font-mono px-2 py-0.5 rounded bg-[#f1f3f6] text-[#535f6f] border border-[#e0e4ea]">Showing 5 of 6 findings</span>
+</div>
+<div class="flex items-center gap-3 text-[12px]">
+<a class="text-[#2b3ac4] hover:underline font-mono text-[11px] flex items-center gap-1 font-medium" href="/dashboard/api-usage">
+<span>View all findings →</span>
+</a>
+</div>
+</div>
+<!-- Table View -->
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-[#e0e4ea] text-[11px] font-mono uppercase text-[#535f6f] bg-[#f8f9fb]">
+<th class="py-2.5 px-4 font-medium" scope="col">Service / Repository</th>
+<th class="py-2.5 px-4 font-medium" scope="col">Change</th>
+<th class="py-2.5 px-4 font-medium" scope="col">Severity</th>
+<th class="py-2.5 px-4 font-medium" scope="col">Status</th>
+<th class="py-2.5 px-4 font-medium text-right" scope="col">GitHub PR</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#e0e4ea] text-[13px]">
+<!-- Row 1: user-service / Response field removed / High / Open / #187 -->
+<tr class="hover:bg-[#f8f9fb] transition-colors">
+<td class="py-3 px-4 font-mono font-medium text-[#191c1e]">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-[#ef4444]"></span>
+<span>user-service</span>
+</div>
+</td>
+<td class="py-3 px-4 text-[#191c1e]">
+<span class="font-mono text-[12px] bg-[#f8f9fb] px-2 py-0.5 rounded border border-[#e0e4ea] text-[#ba1a1a]">Response field removed</span>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-[#fee2e2] text-[#ba1a1a] border border-[#fecaca]">
+                    High
+                  </span>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 text-[12px] text-[#535f6f] font-mono">
+<span class="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
+                    Open
+                  </span>
+</td>
+<td class="py-3 px-4 text-right">
+<a class="inline-flex items-center gap-1 text-[12px] font-mono text-[#2b3ac4] hover:underline bg-[#f8f9fb] px-2 py-1 rounded border border-[#e0e4ea]" href="https://github.com/example/user-service/pull/187" rel="noopener noreferrer" target="_blank">
+<svg class="w-3.5 h-3.5" fill="currentColor" viewbox="0 0 16 16">
+<path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
+</svg>
+<span>#187</span>
+</a>
+</td>
+</tr>
+<!-- Row 2: booking-service / Response type changed / Medium / Open / #192 -->
+<tr class="hover:bg-[#f8f9fb] transition-colors">
+<td class="py-3 px-4 font-mono font-medium text-[#191c1e]">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-[#f59e0b]"></span>
+<span>booking-service</span>
+</div>
+</td>
+<td class="py-3 px-4 text-[#191c1e]">
+<span class="font-mono text-[12px] bg-[#f8f9fb] px-2 py-0.5 rounded border border-[#e0e4ea] text-[#d97706]">Response type changed</span>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-[#fef3c7] text-[#b45309] border border-[#fde68a]">
+                    Medium
+                  </span>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 text-[12px] text-[#535f6f] font-mono">
+<span class="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
+                    Open
+                  </span>
+</td>
+<td class="py-3 px-4 text-right">
+<a class="inline-flex items-center gap-1 text-[12px] font-mono text-[#2b3ac4] hover:underline bg-[#f8f9fb] px-2 py-1 rounded border border-[#e0e4ea]" href="https://github.com/example/booking-service/pull/192" rel="noopener noreferrer" target="_blank">
+<svg class="w-3.5 h-3.5" fill="currentColor" viewbox="0 0 16 16">
+<path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
+</svg>
+<span>#192</span>
+</a>
+</td>
+</tr>
+<!-- Row 3: notification-service / New required field / Medium / Open / #189 -->
+<tr class="hover:bg-[#f8f9fb] transition-colors">
+<td class="py-3 px-4 font-mono font-medium text-[#191c1e]">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-[#f59e0b]"></span>
+<span>notification-service</span>
+</div>
+</td>
+<td class="py-3 px-4 text-[#191c1e]">
+<span class="font-mono text-[12px] bg-[#f8f9fb] px-2 py-0.5 rounded border border-[#e0e4ea] text-[#d97706]">New required field</span>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-[#fef3c7] text-[#b45309] border border-[#fde68a]">
+                    Medium
+                  </span>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 text-[12px] text-[#535f6f] font-mono">
+<span class="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
+                    Open
+                  </span>
+</td>
+<td class="py-3 px-4 text-right">
+<a class="inline-flex items-center gap-1 text-[12px] font-mono text-[#2b3ac4] hover:underline bg-[#f8f9fb] px-2 py-1 rounded border border-[#e0e4ea]" href="https://github.com/example/notification-service/pull/189" rel="noopener noreferrer" target="_blank">
+<svg class="w-3.5 h-3.5" fill="currentColor" viewbox="0 0 16 16">
+<path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
+</svg>
+<span>#189</span>
+</a>
+</td>
+</tr>
+<!-- Row 4: trainer-service / Enum value removed / High / Open / #176 -->
+<tr class="hover:bg-[#f8f9fb] transition-colors">
+<td class="py-3 px-4 font-mono font-medium text-[#191c1e]">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-[#ef4444]"></span>
+<span>trainer-service</span>
+</div>
+</td>
+<td class="py-3 px-4 text-[#191c1e]">
+<span class="font-mono text-[12px] bg-[#f8f9fb] px-2 py-0.5 rounded border border-[#e0e4ea] text-[#ba1a1a]">Enum value removed</span>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-[#fee2e2] text-[#ba1a1a] border border-[#fecaca]">
+                    High
+                  </span>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 text-[12px] text-[#535f6f] font-mono">
+<span class="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
+                    Open
+                  </span>
+</td>
+<td class="py-3 px-4 text-right">
+<a class="inline-flex items-center gap-1 text-[12px] font-mono text-[#2b3ac4] hover:underline bg-[#f8f9fb] px-2 py-1 rounded border border-[#e0e4ea]" href="https://github.com/example/trainer-service/pull/176" rel="noopener noreferrer" target="_blank">
+<svg class="w-3.5 h-3.5" fill="currentColor" viewbox="0 0 16 16">
+<path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
+</svg>
+<span>#176</span>
+</a>
+</td>
+</tr>
+<!-- Row 5: payment-service / Field renamed / Low / Open / #181 -->
+<tr class="hover:bg-[#f8f9fb] transition-colors">
+<td class="py-3 px-4 font-mono font-medium text-[#191c1e]">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-[#3b82f6]"></span>
+<span>payment-service</span>
+</div>
+</td>
+<td class="py-3 px-4 text-[#191c1e]">
+<span class="font-mono text-[12px] bg-[#f8f9fb] px-2 py-0.5 rounded border border-[#e0e4ea] text-[#2563eb]">Field renamed</span>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-mono font-medium bg-[#dbeafe] text-[#1d4ed8] border border-[#bfdbfe]">
+                    Low
+                  </span>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 text-[12px] text-[#535f6f] font-mono">
+<span class="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span>
+                    Open
+                  </span>
+</td>
+<td class="py-3 px-4 text-right">
+<a class="inline-flex items-center gap-1 text-[12px] font-mono text-[#2b3ac4] hover:underline bg-[#f8f9fb] px-2 py-1 rounded border border-[#e0e4ea]" href="https://github.com/example/payment-service/pull/181" rel="noopener noreferrer" target="_blank">
+<svg class="w-3.5 h-3.5" fill="currentColor" viewbox="0 0 16 16">
+<path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
+</svg>
+<span>#181</span>
+</a>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section></main>
+<!-- CALM ENGINEERING FOOTER -->
+<footer class="h-10 px-6 border-t border-[#e0e4ea] bg-[#ffffff] flex items-center justify-between text-[11px] font-mono text-[#535f6f]"><div class="flex items-center gap-2"><span class="w-1.5 h-1.5 rounded-full bg-[#10b981]"></span><span>Illustrative data · not connected</span></div></footer>
+</div>
+</body>
+</html>

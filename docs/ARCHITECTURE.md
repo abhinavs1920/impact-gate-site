@@ -3,6 +3,8 @@
 Status: Stage 0 complete
 Date: 2026-09-28
 
+This document records the original architecture baseline. The connected workspace is described in [WORKSPACE_UI.md](WORKSPACE_UI.md). Website Analytics and lead capture added on October 3, 2026 are described in [ANALYTICS.md](ANALYTICS.md).
+
 ## 1. Current architecture
 
 This repository is a React 19 single-page marketing site built with Vite and deployed as static assets through a Cloudflare Worker. The page is composed in `src/App.tsx` and shares product claims from `src/data/site-facts.json`.
@@ -11,10 +13,11 @@ The current runtime surfaces are:
 
 - A React single-page app with responsive CSS in `src/styles/site.css`.
 - A waitlist form at `/api/waitlist`, implemented as a Cloudflare Worker function.
-- Google Fonts is loaded externally; no third-party JavaScript or embedded video is included.
+- Google Fonts is loaded externally. Firebase Authentication powers account access, and Firebase Analytics loads when browser preferences allow usage collection. Embedded videos use the configured Cloudflare Stream assets.
 - Build/content/type verification through `pnpm verify:site`, `tests/content-scan.mjs`, and `scripts/verify-site.mjs`.
 - CI verification and main-branch deployment through GitHub Actions and Wrangler.
 - No analyzer service, parser, graph store, contract ingestion, GitHub integration, or findings API exists in this repository.
+- `/dependency-graph` and `/deprecation-candidates` are standalone screen prototypes. Their default state contains no connected product data; an explicit local evaluation preview is labeled as not live. The graph uses Cytoscape, and no analyzer or runtime-data integration is implied.
 
 The current site already communicates the intended product posture well: warn-only review, evidence-first output, visible uncertainty, OpenAPI scope, and private-pilot status. The repository is therefore a product surface, not yet the Impact Gate analysis engine.
 
@@ -347,3 +350,5 @@ OpenAPI response field removal
 ```
 
 Only after this path is tested should the project broaden into full interprocedural analysis, Java/Spring, persistent graph manifests, and PR integration.
+
+The `/dashboard` workspace uses locally compiled Stitch layouts and a shared first-party interaction module. See [WORKSPACE_UI.md](WORKSPACE_UI.md) for routes, build behavior and the preview data boundary.

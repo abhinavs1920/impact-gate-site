@@ -1,0 +1,7 @@
+[data-analytics-toggle] {
+  appearance: none; padding: 0; border: 0; background: none; color: inherit;
+  font: inherit; text-align: start; cursor: pointer; text-decoration: underline;
+  text-underline-offset: 3px;
+}
+[data-analytics-toggle]:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
+[data-analytics-toggle]:disabled { cursor: default; opacity: 0.65; }

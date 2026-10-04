@@ -1,16 +1,29 @@
 {
   "name": "impact-gate-site",
   "compatibility_date": "2026-09-25",
+  "observability": { "enabled": true, "logs": { "invocation_logs": false } },
+  "vars": { "IMPACT_GATE_API_ORIGIN": "https://impact-gate-api.eastus.cloudapp.azure.com" },
+  "kv_namespaces": [
+    { "binding": "WAITLIST", "id": "ac3f7ca15a61471da2a376c1a1590c0e" }
+  ],
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"]
   },
   "send_email": [
     {
       "name": "EMAIL",
       "allowed_destination_addresses": ["abxh1920@gmail.com"],
-      "allowed_sender_addresses": ["pilot@impactgate.in"]
+      "allowed_sender_addresses": [
+        "pilot@impactgate.in",
+        "support@impactgate.in",
+        "contact@impactgate.in",
+        "hello@impactgate.in",
+        "team@impactgate.in",
+        "security@impactgate.in"
+      ]
     }
   ],
   "routes": [

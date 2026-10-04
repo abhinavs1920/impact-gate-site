@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=1440, initial-scale=1.0" name="viewport"/>
+<title>DASHBOARD SUITE · 06 Settings · Desktop</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300..800;1,300..800&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<style>
+    body {
+      font-family: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f8f9fb;
+      color: #191c1e;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    .font-serif-heading {
+      font-family: 'Libre Caslon Text', Georgia, serif;
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Custom Toggle Switch styling */
+    .toggle-checkbox:checked {
+      right: 2px;
+      border-color: #2b3ac4;
+    }
+    .toggle-checkbox:checked + .toggle-label {
+      background-color: #2b3ac4;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex bg-[#f8f9fb] text-[#191c1e] text-[14px]">
+<!-- Fixed Left Sidebar (220px) -->
+<aside class="w-[220px] bg-[#ffffff] border-r border-[#e0e4ea] flex flex-col justify-between shrink-0 h-screen sticky top-0 z-20">
+<div>
+<!-- Brand Logo Header -->
+<div class="h-16 flex items-center px-5 border-b border-[#e0e4ea] gap-3">
+<!-- Exact website Code-to-Impact logo mark -->
+<div class="w-8 h-8 rounded-lg bg-[#0d1e38] flex items-center justify-center shrink-0 shadow-sm">
+<svg fill="none" height="20" viewbox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg">
+<!-- Left Bracket < -->
+<path d="M7 8L3.5 12L7 16" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<!-- Right Bracket > -->
+<path d="M17 8L20.5 12L17 16" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+<!-- Dual Green Bars with Nodes -->
+<line stroke="#26ba66" stroke-linecap="round" stroke-width="2" x1="10" x2="10" y1="7" y2="17"></line>
+<line stroke="#26ba66" stroke-linecap="round" stroke-width="2" x1="14" x2="14" y1="7" y2="17"></line>
+<circle cx="10" cy="7" fill="#b7f36b" r="1.5"></circle>
+<circle cx="14" cy="17" fill="#b7f36b" r="1.5"></circle>
+</svg>
+</div>
+<div class="flex flex-col">
+<span class="font-bold text-[15px] tracking-tight text-[#0d1e38] leading-none">Impact Gate</span>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="p-3 space-y-1">
+<!-- 1. Home -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-[#535f6f] hover:text-[#0d1e38] hover:bg-[#f2f4f6] font-medium transition-colors" href="/dashboard">
+<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+</svg>
+<span>Home</span>
+</a>
+<!-- 2. API Usage -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-[#535f6f] hover:text-[#0d1e38] hover:bg-[#f2f4f6] font-medium transition-colors" href="/dashboard/api-usage">
+<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M13 10V3L4 14h7v7l9-11h-7z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+</svg>
+<span>API Usage</span>
+</a>
+<!-- 3. Dependency Graph -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-[#535f6f] hover:text-[#0d1e38] hover:bg-[#f2f4f6] font-medium transition-colors" href="/dashboard/dependency-graph">
+<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M7 12l5 5L22 7M2 12l5 5m5-5l5-5" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+</svg>
+<span>Dependency Graph</span>
+</a>
+<!-- 4. Deprecation Candidates -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-[#535f6f] hover:text-[#0d1e38] hover:bg-[#f2f4f6] font-medium transition-colors" href="/dashboard/deprecation-candidates">
+<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+</svg>
+<span>Deprecation Candidates</span>
+</a>
+<!-- 5. Repositories -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-md text-[#535f6f] hover:text-[#0d1e38] hover:bg-[#f2f4f6] font-medium transition-colors" href="/dashboard/repositories">
+<svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+</svg>
+<span>Repositories</span>
+</a>
+<!-- 6. Settings (Active Item) -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-md bg-[#dfe0ff] text-[#2b3ac4] font-semibold transition-colors" href="/dashboard/settings">
+<svg class="w-4 h-4 shrink-0 text-[#2b3ac4]" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+</svg>
+<span>Settings</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Sidebar Status Badge -->
+</aside>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col min-w-0">
+<!-- Top Navigation Header (64px) -->
+<header class="h-16 bg-[#ffffff] border-b border-[#e0e4ea] px-8 flex items-center justify-between sticky top-0 z-10">
+<!-- Breadcrumbs & Workspace Pill -->
+<div class="flex items-center gap-3 text-[14px]">
+<span class="text-[#535f6f]">Impact Gate</span>
+<span class="text-[#535f6f]/50">/</span>
+<span class="font-medium text-[#0d1e38]">Settings</span>
+<span class="inline-flex items-center gap-1.5 ml-2 px-2.5 py-0.5 rounded-full text-[12px] bg-[#e8f5e9] text-[#26ba66] font-medium border border-[#c8e6c9]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#26ba66]"></span>
+          Demo workspace
+        </span>
+</div>
+<!-- Right Actions: Theme Toggle, Notifications, User Avatar -->
+<div class="flex items-center gap-4">
+<!-- Theme Toggle Icon -->
+<button aria-label="Toggle theme" class="w-8 h-8 rounded-md flex items-center justify-center text-[#535f6f] hover:text-[#0d1e38] hover:bg-[#f2f4f6] transition-colors" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+</svg>
+</button>
+<!-- Notification Bell -->
+<button aria-label="Notifications" class="w-8 h-8 rounded-md flex items-center justify-center text-[#535f6f] hover:text-[#0d1e38] hover:bg-[#f2f4f6] transition-colors relative" type="button">
+<svg class="w-4 h-4" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+<path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"></path>
+</svg>
+</button>
+<!-- User Profile Pill -->
+<div class="flex items-center gap-2 pl-2 border-l border-[#e0e4ea]">
+<div class="w-7 h-7 rounded-full bg-[#0d1e38] text-[#ffffff] font-medium text-[11px] flex items-center justify-center tracking-tight">
+            AS
+          </div>
+<span class="text-[13px] font-medium text-[#0d1e38]">Abhinav Sharma</span>
+</div>
+</div>
+</header>
+<!-- Page Body Area -->
+<main class="p-8 max-w-[1220px] w-full flex-1">
+<!-- Page Title & Header Actions -->
+<div class="flex items-start justify-between pb-6 border-b border-[#e0e4ea] mb-8">
+<div>
+<h1 class="font-serif-heading text-[28px] font-normal text-[#0d1e38] tracking-tight leading-tight">Settings</h1>
+<p class="text-[14px] text-[#535f6f] mt-1">Configure GitHub, analysis, and workspace preferences</p>
+</div>
+<div class="flex items-center gap-3">
+<!-- Small Warn-only Context Badge -->
+<div class="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-[#f2f4f6] rounded border border-[#e0e4ea] text-[12px] text-[#535f6f]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#26ba66]"></span>
+<span>Warn-only: analysis does not block merges</span>
+</div>
+<!-- Primary Save Action Button (Lime brand) -->
+<button class="inline-flex items-center justify-center px-4 py-2 bg-[#b7f36b] hover:bg-[#a6e65a] text-[#0d1e38] font-semibold text-[13px] rounded-md transition-colors shadow-sm" type="button">
+            Save preferences
+          </button>
+</div>
+</div>
+<!-- Settings Panel Container (780px max content aligned left) -->
+<div class="max-w-[780px] bg-[#ffffff] border border-[#e0e4ea] rounded-lg shadow-sm divide-y divide-[#e0e4ea]">
+<!-- Section 1: GitHub App -->
+<div class="p-6 flex items-start justify-between gap-6 hover:bg-[#fcfdfe] transition-colors">
+<div class="flex-1 pr-4">
+<div class="flex items-center gap-2.5 mb-1.5">
+<span class="font-semibold text-[#0d1e38] text-[15px]">GitHub App</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-[#e8f5e9] text-[#26ba66] border border-[#c8e6c9]">
+                Demo installation
+              </span>
+</div>
+<p class="text-[13px] text-[#535f6f] leading-relaxed">
+              Connected repository organization: <span class="font-mono-code text-[12px] bg-[#f2f4f6] text-[#0d1e38] px-1.5 py-0.5 rounded border border-[#e0e4ea]">demo-org</span>. Automatically discovers OpenAPI specifications and PR diffs across tracked repositories.
+            </p>
+</div>
+<div class="shrink-0 pt-0.5">
+<button class="px-3.5 py-1.5 rounded text-[13px] font-medium text-[#2b3ac4] bg-[#dfe0ff]/60 hover:bg-[#dfe0ff] border border-[#2b3ac4]/20 transition-colors" type="button">
+              Manage installation
+            </button>
+</div>
+</div>
+<!-- Section 2: Analysis Mode -->
+<div class="p-6 flex items-start justify-between gap-6 hover:bg-[#fcfdfe] transition-colors">
+<div class="flex-1 pr-4">
+<div class="flex items-center gap-2.5 mb-1.5">
+<span class="font-semibold text-[#0d1e38] text-[15px]">Analysis Mode</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-[#eef2ff] text-[#2b3ac4] border border-[#c7d2fe]">
+                Deterministic AST
+              </span>
+</div>
+<p class="text-[13px] text-[#535f6f] leading-relaxed mb-4">Deterministic AST syntax-tree analysis flags breaking contract changes.</p>
+<!-- Nested Sub-option: Model-Assisted Analysis Toggle -->
+<div class="bg-[#f8f9fb] border border-[#e0e4ea] rounded-md p-3.5 flex items-start justify-between gap-4">
+<div class="flex-1">
+<div class="text-[13px] font-medium text-[#0d1e38] mb-0.5">Model-assisted analysis</div>
+<div class="text-[12px] text-[#535f6f] leading-normal">
+                  Models may raise concerns; only deterministic evidence clears findings.
+                </div>
+</div>
+<div class="shrink-0 pt-0.5">
+<!-- Toggle Switch (OFF) -->
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" type="checkbox" value=""/>
+<div class="w-9 h-5 bg-[#e0e4ea] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#2b3ac4]"></div>
+</label>
+</div>
+</div>
+</div>
+<div class="shrink-0 pt-0.5">
+<select class="px-3 py-1.5 rounded text-[13px] font-medium text-[#0d1e38] bg-[#f8f9fb] border border-[#e0e4ea] focus:outline-none focus:border-[#2b3ac4]">
+<option selected="">Deterministic AST</option>
+<option disabled="">Hybrid (Preview)</option>
+</select>
+</div>
+</div>
+<!-- Section 3: Repository Sync -->
+<div class="p-6 flex items-start justify-between gap-6 hover:bg-[#fcfdfe] transition-colors">
+<div class="flex-1 pr-4">
+<div class="flex items-center gap-2.5 mb-1.5">
+<span class="font-semibold text-[#0d1e38] text-[15px]">Repository Sync</span>
+<span class="text-[12px] font-medium text-[#535f6f] bg-[#f2f4f6] px-2 py-0.5 rounded border border-[#e0e4ea]">
+                On default-branch changes
+              </span>
+</div>
+<p class="text-[13px] text-[#535f6f] leading-relaxed">
+              Triggers incremental call-graph re-indexing upon push to <span class="font-mono-code text-[12px]">main</span> or schema branch changes. Last sync: <span class="font-medium text-[#0d1e38]">Demo sample indexed</span>.
+            </p>
+</div>
+<div class="shrink-0 pt-0.5">
+<button class="px-3.5 py-1.5 rounded text-[13px] font-medium text-[#2b3ac4] bg-[#dfe0ff]/60 hover:bg-[#dfe0ff] border border-[#2b3ac4]/20 transition-colors" type="button">
+              Manage
+            </button>
+</div>
+</div>
+<!-- Section 4: Runtime Evidence -->
+<div class="p-6 flex items-start justify-between gap-6 hover:bg-[#fcfdfe] transition-colors">
+<div class="flex-1 pr-4">
+<div class="flex items-center gap-2.5 mb-1.5">
+<span class="font-semibold text-[#0d1e38] text-[15px]">Runtime Evidence</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-[#fef3c7] text-[#92400e] border border-[#fde68a]">
+                Not connected
+              </span>
+</div>
+<p class="text-[13px] text-[#535f6f] leading-relaxed">
+              Distinguishes static references from observed runtime calls. Connect distributed tracing or gateway logs to verify active consumer invocation volume alongside AST call sites.
+            </p>
+</div>
+<div class="shrink-0 pt-0.5">
+<button class="px-3.5 py-1.5 rounded text-[13px] font-medium text-[#2b3ac4] bg-[#dfe0ff]/60 hover:bg-[#dfe0ff] border border-[#2b3ac4]/20 transition-colors" type="button">
+              Connect source
+            </button>
+</div>
+</div>
+<!-- Section 5: Notifications -->
+<div class="p-6 flex items-start justify-between gap-6 hover:bg-[#fcfdfe] transition-colors">
+<div class="flex-1 pr-4">
+<div class="flex items-center gap-2.5 mb-1.5">
+<span class="font-semibold text-[#0d1e38] text-[15px]">Notifications</span>
+<span class="text-[12px] font-medium text-[#26ba66] bg-[#e8f5e9] px-2 py-0.5 rounded border border-[#c8e6c9]">
+                PR comments enabled
+              </span>
+</div>
+<p class="text-[13px] text-[#535f6f] leading-relaxed">
+              GitHub PR comments enabled in this example. Formats non-blocking contract triage warnings directly on pull requests. Optional Slack alerts: <span class="text-[#535f6f] font-medium">Not configured</span>.
+            </p>
+</div>
+<div class="shrink-0 pt-0.5">
+<button class="px-3.5 py-1.5 rounded text-[13px] font-medium text-[#2b3ac4] bg-[#dfe0ff]/60 hover:bg-[#dfe0ff] border border-[#2b3ac4]/20 transition-colors" type="button">
+              Configure
+            </button>
+</div>
+</div>
+<!-- Section 6: Criticality Rules -->
+<div class="p-6 flex items-start justify-between gap-6 hover:bg-[#fcfdfe] transition-colors">
+<div class="flex-1 pr-4">
+<div class="flex items-center gap-2.5 mb-1.5">
+<span class="font-semibold text-[#0d1e38] text-[15px]">Criticality Rules</span>
+</div>
+<p class="text-[13px] text-[#535f6f] leading-relaxed">
+              Review service criticality for risk tiers. Assign Tier 1 (Settlement / Core), Tier 2, or Tier 3 SLAs to downstream consumer services to determine triage urgency.
+            </p>
+</div>
+<div class="shrink-0 pt-0.5">
+<button class="px-3.5 py-1.5 rounded text-[13px] font-medium text-[#2b3ac4] bg-[#dfe0ff]/60 hover:bg-[#dfe0ff] border border-[#2b3ac4]/20 transition-colors" type="button">
+              Edit
+            </button>
+</div>
+</div>
+<!-- Section 7: Data Retention -->
+<div class="p-6 flex items-start justify-between gap-6 hover:bg-[#fcfdfe] transition-colors">
+<div class="flex-1 pr-4">
+<div class="flex items-center gap-2.5 mb-1.5">
+<span class="font-semibold text-[#0d1e38] text-[15px]">Data Retention</span>
+</div>
+<p class="text-[13px] text-[#535f6f] leading-relaxed">
+              Configure stored analysis and usage evidence. Sets retention boundaries for ephemeral PR scan logs and call-graph metadata in accordance with internal compliance protocols.
+            </p>
+</div>
+<div class="shrink-0 pt-0.5">
+<button class="px-3.5 py-1.5 rounded text-[13px] font-medium text-[#2b3ac4] bg-[#dfe0ff]/60 hover:bg-[#dfe0ff] border border-[#2b3ac4]/20 transition-colors" type="button">
+              Edit
+            </button>
+</div>
+</div>
+<!-- Section 8: Workspace Access -->
+<div class="p-6 flex items-start justify-between gap-6 hover:bg-[#fcfdfe] transition-colors">
+<div class="flex-1 pr-4">
+<div class="flex items-center gap-2.5 mb-1.5">
+<span class="font-semibold text-[#0d1e38] text-[15px]">Workspace Access</span>
+</div>
+<p class="text-[13px] text-[#535f6f] leading-relaxed">
+              Members and roles. Configure permissions for staff architects, engineering leads, and triage reviewers across your organization.
+            </p>
+</div>
+<div class="shrink-0 pt-0.5">
+<button class="px-3.5 py-1.5 rounded text-[13px] font-medium text-[#2b3ac4] bg-[#dfe0ff]/60 hover:bg-[#dfe0ff] border border-[#2b3ac4]/20 transition-colors" type="button">
+              Manage
+            </button>
+</div>
+</div>
+</div>
+<!-- Restrained Footer Note -->
+<div class="max-w-[780px] mt-8 pt-4 border-t border-[#e0e4ea] flex items-center justify-between text-[12px] text-[#535f6f]">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-[#26ba66]"></span>
+<span>Illustrative data · not connected</span>
+</div>
+</div>
+</main>
+</div>
+</body>
+</html>

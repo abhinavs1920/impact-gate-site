@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DASHBOARD SUITE · 04 Deprecation Candidates · Desktop</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300..900;1,300..900&amp;family=JetBrains+Mono:ital,wght@0,400..700;1,400..700&amp;family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&amp;family=Public+Sans:wght@400..700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-primary": "#ffffff",
+            "background": "#f8f9fc",
+            "surface-bright": "#f8f9fc",
+            "secondary-fixed-dim": "#b7c7e9",
+            "on-secondary-fixed": "#0a1b35",
+            "on-primary-fixed-variant": "#2231bd",
+            "surface-container": "#eceef0",
+            "on-tertiary-fixed": "#102000",
+            "surface-container-high": "#e7e8eb",
+            "surface-container-low": "#f2f4f6",
+            "error": "#ba1a1a",
+            "surface-container-lowest": "#ffffff",
+            "secondary": "#4f5f7c",
+            "error-container": "#ffdad6",
+            "surface-container-highest": "#e1e2e5",
+            "on-tertiary-fixed-variant": "#304f00",
+            "on-surface": "#191c1e",
+            "surface": "#f8f9fc",
+            "on-primary-fixed": "#000866",
+            "inverse-surface": "#2e3133",
+            "on-error-container": "#93000a",
+            "surface-tint": "#3f4ed5",
+            "tertiary-fixed-dim": "#9dd753",
+            "surface-variant": "#e1e2e5",
+            "inverse-on-surface": "#eff1f3",
+            "on-secondary-fixed-variant": "#384763",
+            "primary-fixed-dim": "#bdc2ff",
+            "tertiary-container": "#355700",
+            "primary-fixed": "#dfe0ff",
+            "primary": "#0419af",
+            "surface-dim": "#d8dadd",
+            "on-surface-variant": "#454654",
+            "on-tertiary-container": "#97d04d",
+            "on-secondary": "#ffffff",
+            "on-background": "#191c1e",
+            "tertiary": "#243e00",
+            "on-primary-container": "#b4baff",
+            "outline": "#757686",
+            "tertiary-fixed": "#b8f46c",
+            "on-secondary-container": "#505f7d",
+            "on-tertiary": "#ffffff",
+            "secondary-fixed": "#d6e3ff",
+            "secondary-container": "#cadafd",
+            "inverse-primary": "#bdc2ff",
+            "on-error": "#ffffff",
+            "outline-variant": "#c6c5d7",
+            "primary-container": "#2b3ac4"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "fontFamily": {
+            "headline": ["Libre Caslon Text", "serif"],
+            "display": ["Libre Caslon Text", "serif"],
+            "body": ["Hanken Grotesk", "sans-serif"],
+            "label": ["Public Sans", "sans-serif"],
+            "mono": ["JetBrains Mono", "monospace"]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-background text-on-surface font-body min-h-screen antialiased flex flex-col justify-between selection:bg-primary-fixed selection:text-primary">
+<div class="flex flex-1 w-full min-h-screen">
+<!-- PERSISTENT DESKTOP SIDEBAR (220px) -->
+<aside class="w-[220px] bg-surface-container-lowest border-r border-outline-variant/50 flex flex-col justify-between shrink-0 select-none">
+<div>
+<!-- Logo Header -->
+<div class="h-16 px-5 flex items-center gap-3 border-b border-surface-variant">
+<div class="w-8 h-8 rounded-lg bg-[#0d1e38] flex items-center justify-center relative shadow-sm">
+<span class="text-white text-xs font-mono font-bold tracking-tighter">&lt;</span>
+<div class="flex items-center gap-[2px] mx-[2px]">
+<span class="w-[2.5px] h-3.5 bg-[#26ba66] rounded-full inline-block"></span>
+<span class="w-[2.5px] h-3.5 bg-[#b7f36b] rounded-full inline-block"></span>
+</div>
+<span class="text-white text-xs font-mono font-bold tracking-tighter">&gt;</span>
+</div>
+<span class="font-headline font-semibold text-[17px] tracking-tight text-on-surface">Impact Gate</span>
+</div>
+<!-- Sidebar Navigation -->
+<nav class="p-3 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" href="/dashboard">
+<span class="material-symbols-outlined text-[19px]">home</span>
+<span>Home</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" href="/dashboard/api-usage">
+<span class="material-symbols-outlined text-[19px]">analytics</span>
+<span>API Usage</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" href="/dashboard/dependency-graph">
+<span class="material-symbols-outlined text-[19px]">hub</span>
+<span>Dependency Graph</span>
+</a>
+<!-- ACTIVE ITEM -->
+<a class="flex items-center gap-3 px-3 py-2 text-[13px] font-medium bg-primary-fixed text-primary-container rounded-lg transition-colors" href="/dashboard/deprecation-candidates">
+<span class="material-symbols-outlined text-[19px]" style="font-variation-settings: 'FILL' 1;">cleaning_services</span>
+<span class="font-semibold">Deprecation Candidates</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" href="/dashboard/repositories">
+<span class="material-symbols-outlined text-[19px]">source</span>
+<span>Repositories</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 text-[13px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" href="/dashboard/settings">
+<span class="material-symbols-outlined text-[19px]">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+</div>
+<!-- Bottom Sidebar Status Badge -->
+<div class="p-4 border-t border-surface-variant"><div class="flex items-center gap-2 px-2.5 py-2 rounded-lg bg-surface-container-low border border-outline-variant/60 text-[11px] font-medium text-on-surface"><span class="w-2 h-2 rounded-full bg-amber-500"></span><span>Warn-only</span></div></div>
+</aside>
+<!-- MAIN WRAPPER (Topbar + Content) -->
+<div class="flex-1 flex flex-col min-w-0 bg-background overflow-x-hidden">
+<!-- 64px TOPBAR -->
+<header class="h-16 px-6 bg-surface-container-lowest border-b border-outline-variant/50 flex items-center justify-between shrink-0">
+<!-- Left: Breadcrumb & Demo badge -->
+<div class="flex items-center gap-3">
+<div class="flex items-center gap-2 text-[13px] text-on-surface-variant">
+<span>Impact Gate</span>
+<span class="text-outline text-xs">/</span>
+<span class="font-medium text-on-surface">Deprecation Candidates</span>
+</div>
+<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-surface-container-low text-on-surface border border-outline-variant/60 ml-2">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+            Demo workspace
+          </span>
+</div>
+<!-- Right: Actions & User -->
+<div class="flex items-center gap-4">
+<button aria-label="Toggle theme" class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">light_mode</span>
+</button>
+<button aria-label="Notifications" class="p-1.5 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low rounded-lg transition-colors relative" type="button">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-error rounded-full"></span>
+</button>
+<div class="h-4 w-px bg-outline-variant"></div>
+<div class="flex items-center gap-2.5">
+<div class="w-8 h-8 rounded-lg bg-[#0d1e38] text-white flex items-center justify-center font-medium text-xs tracking-wider">
+              AS
+            </div>
+<span class="text-[13px] font-medium text-on-surface">Abhinav Sharma</span>
+</div>
+</div>
+</header>
+<!-- PAGE CONTENT CANVAS (Max 1440px viewport centered if needed) -->
+<main class="p-6 max-w-[1440px] w-full mx-auto space-y-6 flex-1">
+<!-- PAGE HEADER -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<div>
+<div class="flex items-center gap-3">
+<h1 class="text-[28px] font-headline font-semibold text-[#191c1e] tracking-tight leading-none">
+                Deprecation Candidates
+              </h1>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-200">
+<span class="material-symbols-outlined text-[14px]">info</span>
+                Candidates need verification before removal.
+              </span>
+</div>
+<p class="text-[14px] text-secondary mt-1.5">
+              APIs with low observed usage that deserve a closer look
+            </p>
+</div>
+<!-- Top-right Primary Action Button (Lime) -->
+<div class="flex items-center gap-2">
+<button class="inline-flex items-center gap-2 px-4 py-2 bg-[#b7f36b] hover:bg-[#9be84b] text-[#0d1e38] font-body text-[13px] font-semibold rounded-lg shadow-sm transition-all duration-150 active:scale-[0.98]" type="button">
+<span class="material-symbols-outlined text-[18px]">rule</span>
+<span>+ Review selected</span>
+</button>
+</div>
+</div>
+<!-- FILTER BAR & TOOLBAR -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-surface-container-lowest p-2.5 rounded-xl border border-outline-variant/60 shadow-sm">
+<!-- Filter Chips -->
+<div class="flex items-center gap-1.5 flex-wrap">
+<button class="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-[#0d1e38] text-white flex items-center gap-1.5 transition-colors" type="button">
+<span>All</span>
+<span class="text-[11px] opacity-75">14</span>
+</button>
+<button class="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-[#f3e8ff] text-[#7e22ce] border border-[#e9d5ff] flex items-center gap-1.5 hover:bg-[#ede0fe] transition-colors" type="button">
+<span class="w-1.5 h-1.5 rounded-full bg-[#7e22ce]"></span>
+<span>Strong candidate</span>
+<span class="text-[11px] font-mono px-1 bg-white/60 rounded">3</span>
+</button>
+<button class="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-[#fef3c7] text-[#b45309] border border-[#fde68a] flex items-center gap-1.5 hover:bg-[#fef0b3] transition-colors" type="button">
+<span class="w-1.5 h-1.5 rounded-full bg-[#b45309]"></span>
+<span>Rare caller — verify</span>
+<span class="text-[11px] font-mono px-1 bg-white/60 rounded">6</span>
+</button>
+<button class="px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-[#e0f2fe] text-[#0369a1] border border-[#bae6fd] flex items-center gap-1.5 hover:bg-[#d0ecfd] transition-colors" type="button">
+<span class="w-1.5 h-1.5 rounded-full bg-[#0369a1]"></span>
+<span>Building confidence</span>
+<span class="text-[11px] font-mono px-1 bg-white/60 rounded">5</span>
+</button>
+</div>
+<!-- Search & Sort Controls -->
+<div class="flex items-center gap-2">
+<div class="relative min-w-[240px]">
+<span class="material-symbols-outlined text-[18px] text-outline absolute left-2.5 top-1/2 -translate-y-1/2">search</span>
+<input class="w-full bg-surface-container-low border border-outline-variant/60 rounded-lg pl-8 pr-3 py-1.5 text-[12px] text-on-surface placeholder:text-outline focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary" placeholder="Search endpoints or services..." type="text"/>
+</div>
+<div class="relative">
+<button class="flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium bg-surface-container-low border border-outline-variant/60 rounded-lg text-on-surface hover:bg-surface-container" type="button">
+<span class="material-symbols-outlined text-[16px] text-secondary">sort</span>
+<span>Sort: Most evidence</span>
+<span class="material-symbols-outlined text-[16px] text-outline">expand_more</span>
+</button>
+</div>
+</div>
+</div>
+<!-- MAIN TABLE CONTAINER -->
+<div class="bg-surface-container-lowest border border-outline-variant/60 rounded-xl overflow-hidden shadow-sm">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low/70 border-b border-outline-variant/50 text-[11px] font-semibold text-secondary uppercase tracking-wider">
+<th class="py-3 px-4 w-10 text-center">
+<input class="rounded border-outline-variant text-primary focus:ring-0 cursor-pointer" type="checkbox"/>
+</th>
+<th class="py-3 px-4">Endpoint</th>
+<th class="py-3 px-4">Service</th>
+<th class="py-3 px-4">Known Callers</th>
+<th class="py-3 px-4">Last Observed Call</th>
+<th class="py-3 px-4">Status</th>
+<th class="py-3 px-4 text-right">Details</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/40 text-[13px]">
+<!-- ROW 1 (EXPANDED ROW) -->
+<tr class="bg-surface-container-low/30 hover:bg-surface-container-low/50 transition-colors">
+<td class="py-3 px-4 text-center">
+<input checked="" class="rounded border-outline-variant text-primary focus:ring-0 cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-3 px-4 font-mono text-[12px] text-on-surface">
+<div class="flex items-center gap-2">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-100 text-blue-800">GET</span>
+<span class="font-medium">/v1/legacy/profile</span>
+</div>
+</td>
+<td class="py-3 px-4 font-medium text-on-surface">profile-service</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 font-mono text-[12px] font-semibold text-on-surface">
+<span class="material-symbols-outlined text-[15px] text-secondary">account_tree</span>
+                      1
+                    </span>
+</td>
+<td class="py-3 px-4 text-on-surface font-mono text-[12px]">60 days ago</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-[#f3e8ff] text-[#7e22ce] border border-[#e9d5ff]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#7e22ce]"></span>
+                      Strong candidate
+                    </span>
+</td>
+<td class="py-3 px-4 text-right">
+<button aria-label="Collapse row details" class="p-1 text-on-surface hover:bg-surface-container-high rounded transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">keyboard_arrow_up</span>
+</button>
+</td>
+</tr>
+<!-- EXPANDED EVIDENCE DOSSIER (BELOW ROW 1) -->
+<tr class="bg-[#fafbfc]">
+<td class="p-0 border-b border-outline-variant/60" colspan="7">
+<div class="p-5 bg-[#fafbfc] border-y border-outline-variant/50 space-y-4">
+<!-- Dossier Header -->
+<div class="flex items-center justify-between pb-3 border-b border-outline-variant/40">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary-container text-[20px]">policy</span>
+<span class="text-[14px] font-semibold text-[#0d1e38]">Evidence Dossier: <code class="font-mono text-[13px] bg-white px-2 py-0.5 rounded border border-outline-variant/50 text-[#191c1e]">/v1/legacy/profile</code></span>
+<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-900 border border-amber-200">Needs review</span>
+</div>
+</div>
+<!-- 4-Grid Info Summary Strip -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+<div class="p-3 bg-surface-container-lowest rounded-lg border border-outline-variant/50">
+<span class="text-[11px] text-secondary uppercase font-semibold tracking-wider block">Known static callers</span>
+<div class="mt-1 font-mono text-[12px] font-medium text-on-surface flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+                            1 caller (billing-service)
+                          </div>
+<span class="text-[10px] text-outline font-mono mt-0.5 block">monorepo/.../client.go:104</span>
+</div>
+<div class="p-3 bg-surface-container-lowest rounded-lg border border-outline-variant/50">
+<span class="text-[11px] text-secondary uppercase font-semibold tracking-wider block">Sample Observation Window</span>
+<div class="mt-1 text-[12px] font-medium text-on-surface">
+                            90-day observation window
+                          </div>
+<span class="text-[10px] text-outline font-mono mt-0.5 block">Illustrative data sample</span>
+</div>
+<div class="p-3 bg-surface-container-lowest rounded-lg border border-outline-variant/50">
+<span class="text-[11px] text-secondary uppercase font-semibold tracking-wider block">Last Sample Call</span>
+<div class="mt-1 font-mono text-[12px] font-medium text-on-surface">
+                            60 days ago
+                          </div>
+<span class="text-[10px] text-outline font-mono mt-0.5 block">Recorded 2025-12-01 14:22:09</span>
+</div>
+<div class="p-3 bg-surface-container-lowest rounded-lg border border-outline-variant/50">
+<span class="text-[11px] text-secondary uppercase font-semibold tracking-wider block">Telemetry &amp; Scope</span>
+<div class="mt-1 text-[12px] font-medium text-on-surface flex items-center gap-1.5">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span>
+                            Runtime telemetry offline
+                          </div>
+<span class="text-[10px] text-outline mt-0.5 block">Selected repositories only</span>
+</div>
+</div>
+<!-- AST Code Excerpt Box -->
+<div class="bg-surface-container-lowest rounded-lg border border-outline-variant/50 p-3.5 space-y-1.5">
+<div class="flex items-center justify-between text-[11px] text-secondary font-mono pb-1 border-b border-surface-variant">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[14px]">code</span>
+                            Static AST reference detection
+                          </span>
+<span class="text-[10px] text-outline">monorepo/services/billing/client.go:104</span>
+</div>
+<pre class="font-mono text-[12px] leading-relaxed text-on-surface overflow-x-auto py-1"><code><span class="text-outline italic">// static callsite detected in monorepo/services/billing/client.go:104</span>
+<span class="text-[#0419af]">profileClient</span>.<span class="text-[#2b3ac4] font-semibold">GetLegacyProfile</span>(ctx, accountID)</code></pre>
+</div>
+<!-- Verification Invariants Checklist & Footer Actions -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-2">
+<div class="space-y-1.5">
+<span class="text-[11px] font-semibold text-secondary uppercase tracking-wider">Required verification checklist:</span>
+<label class="flex items-center gap-2 text-[12px] text-on-surface select-none cursor-pointer">
+<input class="rounded border-outline-variant text-primary focus:ring-0" type="checkbox"/>
+<span>Confirm no dynamic reflection or gateway rewrite invokes this path</span>
+</label>
+<label class="flex items-center gap-2 text-[12px] text-on-surface select-none cursor-pointer">
+<input class="rounded border-outline-variant text-primary focus:ring-0" type="checkbox"/>
+<span>Verify scheduled or batch jobs do not trigger seasonally</span>
+</label>
+</div>
+<!-- Action Buttons -->
+<div class="flex items-center gap-2.5 shrink-0">
+<button class="px-3.5 py-1.5 text-[12px] font-semibold text-primary-container bg-surface-container-lowest border border-outline-variant/60 rounded-lg hover:bg-surface-container-low transition-colors inline-flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+<span>View callers</span>
+</button>
+<button class="px-4 py-1.5 text-[12px] font-semibold text-white bg-[#0d1e38] hover:bg-[#1a2d4f] rounded-lg shadow-sm transition-colors inline-flex items-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">check</span>
+<span>Mark reviewed</span>
+</button>
+</div>
+</div>
+</div>
+</td>
+</tr>
+<!-- ROW 2 -->
+<tr class="hover:bg-surface-container-low/40 transition-colors">
+<td class="py-3 px-4 text-center">
+<input class="rounded border-outline-variant text-primary focus:ring-0 cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-3 px-4 font-mono text-[12px] text-on-surface">
+<div class="flex items-center gap-2">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-100 text-blue-800">GET</span>
+<span class="font-medium">/v1/recommendation</span>
+</div>
+</td>
+<td class="py-3 px-4 font-medium text-on-surface">reco-service</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 font-mono text-[12px] font-semibold text-outline">
+<span class="material-symbols-outlined text-[15px] text-outline">account_tree</span>
+                      0
+                    </span>
+</td>
+<td class="py-3 px-4">
+<span class="text-[12px] text-on-surface-variant italic">Never observed in sample window</span>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-[#f3e8ff] text-[#7e22ce] border border-[#e9d5ff]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#7e22ce]"></span>
+                      Strong candidate
+                    </span>
+</td>
+<td class="py-3 px-4 text-right">
+<button aria-label="Expand row details" class="p-1 text-outline hover:text-on-surface hover:bg-surface-container-high rounded transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">keyboard_arrow_down</span>
+</button>
+</td>
+</tr>
+<!-- ROW 3 -->
+<tr class="hover:bg-surface-container-low/40 transition-colors">
+<td class="py-3 px-4 text-center">
+<input class="rounded border-outline-variant text-primary focus:ring-0 cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-3 px-4 font-mono text-[12px] text-on-surface">
+<div class="flex items-center gap-2">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-red-100 text-red-800">DELETE</span>
+<span class="font-medium">/v1/old/metric</span>
+</div>
+</td>
+<td class="py-3 px-4 font-medium text-on-surface">metrics-service</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 font-mono text-[12px] font-semibold text-outline">
+<span class="material-symbols-outlined text-[15px] text-outline">account_tree</span>
+                      0
+                    </span>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 text-[12px] text-secondary font-mono">
+<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                      No runtime source connected
+                    </span>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-[#e0f2fe] text-[#0369a1] border border-[#bae6fd]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#0369a1]"></span>
+                      Building confidence
+                    </span>
+</td>
+<td class="py-3 px-4 text-right">
+<button aria-label="Expand row details" class="p-1 text-outline hover:text-on-surface hover:bg-surface-container-high rounded transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">keyboard_arrow_down</span>
+</button>
+</td>
+</tr>
+<!-- ROW 4 -->
+<tr class="hover:bg-surface-container-low/40 transition-colors">
+<td class="py-3 px-4 text-center">
+<input class="rounded border-outline-variant text-primary focus:ring-0 cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-3 px-4 font-mono text-[12px] text-on-surface">
+<div class="flex items-center gap-2">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-100 text-blue-800">GET</span>
+<span class="font-medium">/internal/debug</span>
+</div>
+</td>
+<td class="py-3 px-4 font-medium text-on-surface">debug-service</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 font-mono text-[12px] font-semibold text-on-surface">
+<span class="material-symbols-outlined text-[15px] text-secondary">account_tree</span>
+                      1
+                    </span>
+</td>
+<td class="py-3 px-4 text-on-surface font-mono text-[12px]">45 days ago</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-[#fef3c7] text-[#b45309] border border-[#fde68a]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#b45309]"></span>
+                      Rare caller — verify
+                    </span>
+</td>
+<td class="py-3 px-4 text-right">
+<button aria-label="Expand row details" class="p-1 text-outline hover:text-on-surface hover:bg-surface-container-high rounded transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">keyboard_arrow_down</span>
+</button>
+</td>
+</tr>
+<!-- ROW 5 -->
+<tr class="hover:bg-surface-container-low/40 transition-colors">
+<td class="py-3 px-4 text-center">
+<input class="rounded border-outline-variant text-primary focus:ring-0 cursor-pointer" type="checkbox"/>
+</td>
+<td class="py-3 px-4 font-mono text-[12px] text-on-surface">
+<div class="flex items-center gap-2">
+<span class="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-100 text-blue-800">GET</span>
+<span class="font-medium">/internal/test</span>
+</div>
+</td>
+<td class="py-3 px-4 font-medium text-on-surface">internal-service</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1 font-mono text-[12px] font-semibold text-outline">
+<span class="material-symbols-outlined text-[15px] text-outline">account_tree</span>
+                      0
+                    </span>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 text-[12px] text-secondary font-mono">
+<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                      No runtime source connected
+                    </span>
+</td>
+<td class="py-3 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-semibold bg-[#e0f2fe] text-[#0369a1] border border-[#bae6fd]">
+<span class="w-1.5 h-1.5 rounded-full bg-[#0369a1]"></span>
+                      Building confidence
+                    </span>
+</td>
+<td class="py-3 px-4 text-right">
+<button aria-label="Expand row details" class="p-1 text-outline hover:text-on-surface hover:bg-surface-container-high rounded transition-colors" type="button">
+<span class="material-symbols-outlined text-[20px]">keyboard_arrow_down</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Bottom Pagination / Scope Note -->
+<div class="px-4 py-3 bg-surface-container-low/40 border-t border-outline-variant/40 flex flex-col sm:flex-row items-center justify-between text-[12px] text-secondary gap-2">
+<div>
+              Showing <span class="font-semibold text-on-surface">5</span> of <span class="font-semibold text-on-surface">14</span> filtered candidate endpoints
+            </div>
+<div class="flex items-center gap-1">
+<button class="px-2 py-1 rounded border border-outline-variant/60 bg-surface-container-lowest text-outline hover:text-on-surface disabled:opacity-40" disabled="" type="button">Previous</button>
+<span class="px-2 py-1 font-mono font-medium text-on-surface">1</span>
+<button class="px-2 py-1 rounded border border-outline-variant/60 bg-surface-container-lowest hover:bg-surface-container text-on-surface" type="button">2</button>
+<button class="px-2 py-1 rounded border border-outline-variant/60 bg-surface-container-lowest hover:bg-surface-container text-on-surface" type="button">Next</button>
+</div>
+</div>
+</div>
+</main>
+<!-- QUIET DESKTOP FOOTER -->
+<footer class="h-14 px-6 border-t border-outline-variant/50 bg-surface-container-lowest flex items-center justify-between text-[12px] text-secondary shrink-0"><div class="flex items-center gap-2 text-[12px] text-secondary"><span class="w-2 h-2 rounded-full bg-[#26ba66]"></span><span class="font-medium text-on-surface">Illustrative data · not connected</span></div></footer>
+</div>
+</div>
+</body></html>

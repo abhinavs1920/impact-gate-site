@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "workspaceId": "w1",
+  "snapshotId": "snapshot-1",
+  "generatedAt": "2026-09-30T00:00:00.000Z",
+  "repositories": [{"id":"r1","githubRepositoryId":1,"fullName":"impact-gate/customer-api","defaultBranch":"main","status":"indexed","indexedSha":"abc123","indexedAt":"2026-09-30T00:00:00.000Z","serviceCount":1,"error":null,"coverage":{"supportedFiles":1,"skippedFiles":0,"openApiDocuments":1,"notes":[]}}],
+  "services": [{"id":"s1","repositoryId":"r1","name":"customer-service","rootPath":"/","criticality":"medium","nameSource":"package"}],
+  "endpoints": [{"id":"e1","serviceId":"s1","method":"GET","path":"/customer/v1/orders","summary":null,"criticality":"medium","evidence":"static","confidence":"high","staticCallerCount":0,"runtimeCallerCount":null,"lastObservedAt":null,"runtimeCoverage":"not_connected","source":{"repositoryId":"r1","filePath":"openapi.yaml","line":4,"sha":"abc123","url":"https://github.com/impact-gate/customer-api/blob/abc123/openapi.yaml#L4"},"requestSchema":null,"responseSchema":null}],
+  "edges": [],
+  "findings": [],
+  "candidates": [{"endpointId":"e1","status":"building_confidence","reason":"No static callers found; runtime observations unavailable.","staticCallerCount":0,"runtimeCoverage":"not_connected","lastObservedAt":null,"reviewedAt":null,"reviewedBy":null,"reviewedSnapshotId":null}],
+  "jobs": [],
+  "settings": {"version":1,"analysisMode":"deterministic","externalModelsEnabled":false,"syncDefaultBranch":true,"prCommentsEnabled":true,"retentionDays":90,"runtimeCoverage":"not_connected","criticalityRules":{}}
+}

@@ -2,23 +2,35 @@
   "name": "impact-gate-site",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@10.4.1",
+  "packageManager": "pnpm@12.4.2",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/prerender.mjs",
+    "build": "vite build && node scripts/prerender.mjs && node scripts/build-dashboard.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "verify:site": "pnpm build && pnpm typecheck && node tests/content-scan.mjs && node tests/waitlist-api.mjs && node scripts/verify-site.mjs",
+    "test:workspace": "node tests/workspace-integration.mjs",
+    "test:code-flow": "node tests/code-flow.mjs",
+    "verify:site": "pnpm build && pnpm typecheck && node tests/content-scan.mjs && node tests/waitlist-api.mjs && node tests/workspace-integration.mjs && node tests/code-flow.mjs && node scripts/verify-site.mjs",
     "deploy:cloudflare": "pnpm verify:site && wrangler deploy"
   },
   "dependencies": {
+    "cytoscape": "^3.34.3",
+    "firebase": "^12.4.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@tailwindcss/container-queries": "0.1.1",
+    "@tailwindcss/forms": "0.5.10",
+    "@types/node": "^22.20.4",
+    "@types/cytoscape": "^3.31.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
+    "esbuild": "^0.28.1",
     "@vitejs/plugin-react": "^5.0.0",
+    "linkedom": "0.18.12",
+    "postcss": "8.5.6",
+    "tailwindcss": "3.4.19",
     "typescript": "^5.9.3",
     "vite": "^7.1.0",
     "wrangler": "^4.143.0"

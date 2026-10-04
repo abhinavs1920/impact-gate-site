@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>DASHBOARD SUITE · 03 Dependency Graph · Desktop</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&amp;family=Public+Sans:wght@500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "secondary-fixed-dim": "#b7c7e9",
+            "primary-fixed": "#dfe0ff",
+            "on-secondary": "#ffffff",
+            "surface-container-lowest": "#ffffff",
+            "secondary-container": "#cadafd",
+            "surface": "#f8f9fc",
+            "on-secondary-fixed": "#0a1b35",
+            "on-surface-variant": "#454654",
+            "on-background": "#191c1e",
+            "surface-container-high": "#e7e8eb",
+            "inverse-on-surface": "#eff1f3",
+            "on-error": "#ffffff",
+            "inverse-surface": "#2e3133",
+            "secondary-fixed": "#d6e3ff",
+            "surface-variant": "#e1e2e5",
+            "surface-container-highest": "#e1e2e5",
+            "outline": "#757686",
+            "surface-bright": "#f8f9fc",
+            "on-surface": "#191c1e",
+            "surface-container": "#eceef0",
+            "secondary": "#4f5f7c",
+            "tertiary-fixed": "#b8f46c",
+            "on-tertiary-container": "#97d04d",
+            "on-tertiary": "#ffffff",
+            "on-primary-container": "#b4baff",
+            "tertiary-container": "#355700",
+            "primary": "#0419af",
+            "on-tertiary-fixed": "#102000",
+            "background": "#f8f9fc",
+            "error": "#ba1a1a",
+            "on-tertiary-fixed-variant": "#304f00",
+            "tertiary-fixed-dim": "#9dd753",
+            "surface-dim": "#d8dadd",
+            "on-secondary-fixed-variant": "#384763",
+            "on-primary-fixed": "#000866",
+            "on-primary-fixed-variant": "#2231bd",
+            "primary-container": "#2b3ac4",
+            "on-error-container": "#93000a",
+            "on-secondary-container": "#505f7d",
+            "surface-container-low": "#f2f4f6",
+            "outline-variant": "#c6c5d7",
+            "on-primary": "#ffffff",
+            "inverse-primary": "#bdc2ff",
+            "error-container": "#ffdad6",
+            "primary-fixed-dim": "#bdc2ff",
+            "surface-tint": "#3f4ed5",
+            "tertiary": "#243e00"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "fontFamily": {
+            "headline": ["Libre Caslon Text", "serif"],
+            "display": ["Libre Caslon Text", "serif"],
+            "body": ["Hanken Grotesk", "sans-serif"],
+            "code": ["JetBrains Mono", "monospace"],
+            "label": ["Public Sans", "sans-serif"]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Hanken Grotesk', sans-serif;
+      color: #191c1e;
+      background-color: #f8f9fb;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      font-size: 18px;
+      line-height: 1;
+      display: inline-block;
+    }
+    .material-symbols-outlined.fill {
+      font-variation-settings: 'FILL' 1;
+    }
+    .blueprint-grid {
+      background-size: 24px 24px;
+      background-image: 
+        linear-gradient(to right, rgba(209, 213, 219, 0.4) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(209, 213, 219, 0.4) 1px, transparent 1px);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface min-h-screen flex antialiased">
+<!-- Persistent Sidebar (220px) -->
+<aside class="w-[220px] flex-shrink-0 bg-surface-container-lowest border-r border-surface-variant flex flex-col justify-between h-screen sticky top-0 select-none z-20">
+<div class="flex flex-col">
+<!-- Brand Logo / Emblem -->
+<div class="h-16 px-4 flex items-center gap-3 border-b border-surface-variant">
+<div class="w-8 h-8 rounded bg-[#0d1e38] flex items-center justify-center p-1 relative shadow-sm">
+<span class="text-white text-[11px] font-mono font-bold tracking-tighter">&lt;</span>
+<div class="flex gap-[2px] mx-[2px] h-3.5 items-center">
+<span class="w-[2px] h-3 bg-[#b7f36b] rounded-full"></span>
+<span class="w-[2px] h-3 bg-[#26ba66] rounded-full"></span>
+</div>
+<span class="text-white text-[11px] font-mono font-bold tracking-tighter">&gt;</span>
+</div>
+<div>
+<div class="font-bold text-sm tracking-tight text-[#0d1e38] leading-tight">Impact Gate</div>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="p-3 space-y-1"><a class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:bg-surface-container-low transition-colors duration-150" href="/dashboard"><span class="material-symbols-outlined">dashboard</span><span>Home</span></a><a class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:bg-surface-container-low transition-colors duration-150" href="/dashboard/api-usage"><span class="material-symbols-outlined">data_object</span><span>API Usage</span></a><a class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold bg-primary-fixed text-primary-container transition-colors duration-150 shadow-xs" href="/dashboard/dependency-graph"><span class="material-symbols-outlined fill text-primary">hub</span><span>Dependency Graph</span></a><a class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:bg-surface-container-low transition-colors duration-150" href="/dashboard/deprecation-candidates"><span class="material-symbols-outlined">warning</span><span>Deprecation Candidates</span></a><a class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:bg-surface-container-low transition-colors duration-150" href="/dashboard/repositories"><span class="material-symbols-outlined">folder_open</span><span>Repositories</span></a><a class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium text-secondary hover:bg-surface-container-low transition-colors duration-150" href="/dashboard/settings"><span class="material-symbols-outlined">settings</span><span>Settings</span></a></nav>
+</div>
+<!-- Sidebar Bottom Status Card -->
+</aside>
+<!-- Main Viewport Area -->
+<div class="flex-1 flex flex-col min-w-0 h-screen overflow-y-auto">
+<!-- Topbar (64px) -->
+<header class="h-16 bg-surface-container-lowest border-b border-surface-variant px-6 flex items-center justify-between sticky top-0 z-10">
+<div class="flex items-center gap-3">
+<span class="text-sm font-medium text-secondary">Impact Gate</span>
+<span class="text-secondary text-xs">/</span>
+<span class="text-sm font-semibold text-on-surface">Dependency Graph</span>
+<div class="ml-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface-container-high text-[11px] font-medium text-secondary">
+<span class="w-1.5 h-1.5 rounded-full bg-[#26ba66]"></span>
+          Demo workspace
+        </div>
+</div>
+<!-- Right controls -->
+<div class="flex items-center gap-4">
+<button aria-label="Toggle theme" class="p-2 text-secondary hover:text-on-surface rounded-lg hover:bg-surface-container-low transition-colors" type="button">
+<span class="material-symbols-outlined">light_mode</span>
+</button>
+<button aria-label="Notifications" class="p-2 text-secondary hover:text-on-surface rounded-lg hover:bg-surface-container-low transition-colors relative" type="button">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-[#ba1a1a] rounded-full"></span>
+</button>
+<div class="h-5 w-px bg-surface-variant"></div>
+<div class="flex items-center gap-2.5 pl-1">
+<div class="w-7 h-7 rounded-full bg-[#0d1e38] text-white flex items-center justify-center font-semibold text-xs tracking-tight">
+            AS
+          </div>
+<span class="text-xs font-semibold text-on-surface">Abhinav Sharma</span>
+</div>
+</div>
+</header>
+<!-- Main Workspace Content -->
+<main class="p-6 max-w-[1440px] w-full mx-auto space-y-4">
+<!-- Page Title & Header Actions -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+<div>
+<h1 class="font-headline text-[26px] leading-tight font-bold text-[#0d1e38] tracking-tight">Dependency Graph</h1>
+<p class="text-xs text-secondary mt-0.5">Explore service connections, callpaths, and downstream API consumers</p>
+</div>
+<div class="flex items-center gap-2">
+<button class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-surface-variant bg-surface-container-lowest hover:bg-surface-container-low text-xs font-medium text-on-surface transition-colors shadow-xs" type="button">
+<span class="material-symbols-outlined text-[16px]">file_download</span>
+            Export Graph
+          </button>
+</div>
+</div>
+<!-- Filter & Search Toolbar -->
+<div class="bg-surface-container-lowest border border-surface-variant rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+<div class="flex flex-wrap items-center gap-2.5 flex-1 min-w-[280px]">
+<!-- Search box -->
+<div class="relative w-72">
+<span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-secondary text-[16px]">search</span>
+<input class="w-full pl-8 pr-3 py-1.5 bg-surface-container-low border border-surface-variant rounded-lg text-xs placeholder:text-secondary focus:outline-none focus:border-primary-container text-on-surface font-body" placeholder="Search by service or API endpoint..." type="text"/>
+</div>
+<!-- Filter Dropdowns -->
+<div class="flex items-center gap-2">
+<select aria-label="Filter by service" class="text-xs bg-surface-container-lowest border border-surface-variant rounded-lg px-2.5 py-1.5 text-on-surface font-medium focus:outline-none hover:bg-surface-container-low transition-colors">
+<option>Service: All services</option>
+<option>user-service</option>
+<option>billing-service</option>
+<option>mobile-bff</option>
+</select>
+<select aria-label="Filter by evidence source" class="text-xs bg-surface-container-lowest border border-surface-variant rounded-lg px-2.5 py-1.5 text-on-surface font-medium focus:outline-none hover:bg-surface-container-low transition-colors">
+<option>Evidence: All evidence</option>
+<option>Static AST only</option>
+<option>Runtime traffic only</option>
+<option>Static + Runtime</option>
+</select>
+<select aria-label="Filter by relationship" class="text-xs bg-surface-container-lowest border border-surface-variant rounded-lg px-2.5 py-1.5 text-on-surface font-medium focus:outline-none hover:bg-surface-container-low transition-colors">
+<option>Relationship: All types</option>
+<option>Uses</option>
+<option>Impacted by change</option>
+<option>Depends on</option>
+</select>
+</div>
+</div>
+<!-- Right Quick Controls & Counter -->
+<div class="flex items-center gap-3">
+<span class="text-[11px] text-secondary">Showing <strong class="text-on-surface font-semibold">8 services</strong> · <strong class="text-on-surface font-semibold">14 callpaths</strong></span>
+<button class="inline-flex items-center gap-1 text-xs text-primary-container font-semibold hover:underline" type="button">
+<span class="material-symbols-outlined text-[15px]">center_focus_strong</span>
+            Fit view
+          </button>
+<button class="text-[11px] text-secondary hover:text-on-surface underline" type="button">Reset</button>
+</div>
+</div>
+<!-- Graph & Inspector Split Layout (680px Height) -->
+<div class="border border-surface-variant rounded-xl overflow-hidden bg-surface-container-lowest shadow-sm flex h-[680px]">
+<!-- Graph Canvas Area (~72% width) -->
+<div class="flex-1 relative blueprint-grid bg-[#f8fafd] overflow-hidden select-none">
+<!-- Floating Controls Top-Left -->
+<div class="absolute top-4 left-4 z-10 flex flex-col bg-white border border-surface-variant rounded-lg shadow-sm overflow-hidden">
+<button class="p-1.5 hover:bg-surface-container-low text-secondary hover:text-on-surface border-b border-surface-variant" title="Zoom in" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+</button>
+<button class="p-1.5 hover:bg-surface-container-low text-secondary hover:text-on-surface border-b border-surface-variant" title="Zoom out" type="button">
+<span class="material-symbols-outlined text-[16px]">remove</span>
+</button>
+<button class="p-1.5 hover:bg-surface-container-low text-secondary hover:text-on-surface border-b border-surface-variant" title="Reset View" type="button">
+<span class="material-symbols-outlined text-[16px]">restart_alt</span>
+</button>
+<button class="p-1.5 hover:bg-surface-container-low text-secondary hover:text-on-surface" title="Fullscreen" type="button">
+<span class="material-symbols-outlined text-[16px]">fullscreen</span>
+</button>
+</div>
+<!-- Floating Legend Bottom-Left -->
+<div class="absolute bottom-4 left-4 z-10 bg-white/95 backdrop-blur-sm border border-surface-variant px-3 py-2 rounded-lg shadow-xs flex items-center gap-4 text-[11px]">
+<span class="font-medium text-secondary">Edges:</span>
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="w-2.5 h-0.5 bg-[#16a34a] rounded-full"></span>
+<span>Uses</span>
+</div>
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="w-2.5 h-0.5 bg-[#dc2626] rounded-full"></span>
+<span>Impacted by change</span>
+</div>
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="w-2.5 h-0.5 bg-[#64748b] rounded-full"></span>
+<span>Depends on</span>
+</div>
+<div class="flex items-center gap-1.5 text-on-surface">
+<span class="w-2.5 h-0.5 bg-[#d97706] rounded-full"></span>
+<span>External / Third party</span>
+</div>
+</div>
+<!-- SVG Edge Routing Overlay -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none z-0" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<!-- Arrow Markers -->
+<marker id="arrow-green" markerheight="6" markerwidth="6" orient="auto-start-reverse" refx="8" refy="5" viewbox="0 0 10 10">
+<path d="M 0 1 L 10 5 L 0 9 z" fill="#16a34a"></path>
+</marker>
+<marker id="arrow-red" markerheight="6" markerwidth="6" orient="auto-start-reverse" refx="8" refy="5" viewbox="0 0 10 10">
+<path d="M 0 1 L 10 5 L 0 9 z" fill="#dc2626"></path>
+</marker>
+<marker id="arrow-slate" markerheight="6" markerwidth="6" orient="auto-start-reverse" refx="8" refy="5" viewbox="0 0 10 10">
+<path d="M 0 1 L 10 5 L 0 9 z" fill="#64748b"></path>
+</marker>
+<marker id="arrow-amber" markerheight="6" markerwidth="6" orient="auto-start-reverse" refx="8" refy="5" viewbox="0 0 10 10">
+<path d="M 0 1 L 10 5 L 0 9 z" fill="#d97706"></path>
+</marker>
+</defs>
+<!-- 1. mobile-bff -> user-service (green Uses) -->
+<path d="M 430 115 C 430 180, 430 200, 430 250" fill="none" marker-end="url(#arrow-green)" stroke="#16a34a" stroke-dasharray="none" stroke-width="2"></path>
+<!-- 2. billing-service -> user-service (red Impacted by change) -->
+<path d="M 235 155 C 290 190, 310 230, 360 270" fill="none" marker-end="url(#arrow-red)" stroke="#dc2626" stroke-width="2.5"></path>
+<!-- 3. booking-service -> user-service (green Uses) -->
+<path d="M 235 320 C 280 320, 300 305, 350 295" fill="none" marker-end="url(#arrow-green)" stroke="#16a34a" stroke-width="1.8"></path>
+<!-- 4. user-service -> trainer-service (slate Depends on) -->
+<path d="M 505 270 C 560 240, 580 190, 615 160" fill="none" marker-end="url(#arrow-slate)" stroke="#64748b" stroke-width="1.8"></path>
+<!-- 5. user-service -> oauth-service (slate Depends on) -->
+<path d="M 520 295 C 560 305, 580 315, 615 320" fill="none" marker-end="url(#arrow-slate)" stroke="#64748b" stroke-width="1.8"></path>
+<!-- 6. user-service -> search-service (slate Depends on) -->
+<path d="M 495 330 C 540 370, 570 410, 615 440" fill="none" marker-end="url(#arrow-slate)" stroke="#64748b" stroke-width="1.8"></path>
+<!-- 7. recommendation-service -> user-service (amber External/Consumer) -->
+<path d="M 430 460 C 430 420, 430 380, 430 345" fill="none" marker-end="url(#arrow-amber)" stroke="#d97706" stroke-dasharray="4 3" stroke-width="1.8"></path>
+</svg>
+<!-- Graph Node Positioning Container -->
+<div class="relative w-full h-full z-10 pointer-events-auto">
+<!-- 1. mobile-bff (Top Caller) -->
+<div class="absolute left-[355px] top-[50px] w-[150px] bg-white border border-surface-variant rounded-lg p-2.5 shadow-xs hover:shadow-md transition-shadow cursor-pointer">
+<div class="flex items-center justify-between">
+<span class="text-[9px] font-mono font-semibold uppercase text-secondary">API GATEWAY</span>
+<span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold font-mono">runtime</span>
+</div>
+<div class="font-code font-bold text-xs text-[#0d1e38] mt-1 truncate">mobile-bff</div>
+<div class="text-[10px] text-secondary mt-0.5 flex justify-between">
+<span>4 endpoints</span>
+<span class="font-mono text-emerald-600">99.9%</span>
+</div>
+</div>
+<!-- 2. billing-service (Upper Left - Impacted Node) -->
+<div class="absolute left-[90px] top-[120px] w-[150px] bg-white border-2 border-red-300 rounded-lg p-2.5 shadow-xs hover:shadow-md transition-shadow cursor-pointer">
+<div class="flex items-center justify-between">
+<span class="text-[9px] font-mono font-semibold uppercase text-secondary">CALLER</span>
+<span class="text-[9px] px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold font-mono">impacted</span>
+</div>
+<div class="font-code font-bold text-xs text-[#ba1a1a] mt-1 truncate">billing-service</div>
+<div class="text-[10px] text-red-600 mt-0.5 flex justify-between">
+<span>Breaking AST</span>
+<span class="font-mono">P0</span>
+</div>
+</div>
+<!-- 3. booking-service (Mid Left) -->
+<div class="absolute left-[90px] top-[290px] w-[150px] bg-white border border-surface-variant rounded-lg p-2.5 shadow-xs hover:shadow-md transition-shadow cursor-pointer">
+<div class="flex items-center justify-between">
+<span class="text-[9px] font-mono font-semibold uppercase text-secondary">CALLER</span>
+<span class="text-[9px] px-1.5 py-0.5 rounded bg-surface-container-high text-secondary font-mono">static</span>
+</div>
+<div class="font-code font-bold text-xs text-[#0d1e38] mt-1 truncate">booking-service</div>
+<div class="text-[10px] text-secondary mt-0.5 flex justify-between">
+<span>2 callsites</span>
+<span class="font-mono">AST ok</span>
+</div>
+</div>
+<!-- Central Target Node: user-service (SELECTED) -->
+<div class="absolute left-[340px] top-[250px] w-[185px] bg-white border-2 border-primary-container ring-4 ring-primary-fixed rounded-lg shadow-lg cursor-pointer transform hover:scale-[1.01] transition-transform">
+<!-- Node Header Strip -->
+<div class="bg-[#0d1e38] text-white px-2.5 py-1 rounded-t flex items-center justify-between">
+<span class="text-[9px] font-code font-bold tracking-wider text-[#b7f36b]">TARGET NODE</span>
+<span class="w-2 h-2 rounded-full bg-[#b7f36b] animate-ping"></span>
+</div>
+<div class="p-2.5">
+<div class="flex items-center justify-between">
+<span class="font-code font-bold text-sm text-[#0d1e38]">user-service</span>
+</div>
+<div class="text-[10px] text-secondary mt-1 flex items-center gap-1 font-mono">
+<span>repo: core-auth</span>
+</div>
+<div class="mt-2 pt-2 border-t border-surface-variant grid grid-cols-2 gap-1 text-[10px]">
+<div class="bg-surface-container-low p-1 rounded">
+<span class="text-secondary block text-[9px]">Callers</span>
+<span class="font-semibold text-on-surface">8 active</span>
+</div>
+<div class="bg-surface-container-low p-1 rounded">
+<span class="text-secondary block text-[9px]">Endpoints</span>
+<span class="font-semibold text-on-surface">12 traced</span>
+</div>
+</div>
+</div>
+</div>
+<!-- 4. trainer-service (Upper Right) -->
+<div class="absolute left-[615px] top-[120px] w-[150px] bg-white border border-surface-variant rounded-lg p-2.5 shadow-xs hover:shadow-md transition-shadow cursor-pointer">
+<div class="flex items-center justify-between">
+<span class="text-[9px] font-mono font-semibold uppercase text-secondary">DEPENDENCY</span>
+<span class="text-[9px] px-1.5 py-0.5 rounded bg-surface-container-high text-secondary font-mono">both</span>
+</div>
+<div class="font-code font-bold text-xs text-[#0d1e38] mt-1 truncate">trainer-service</div>
+<div class="text-[10px] text-secondary mt-0.5 flex justify-between">
+<span>Internal RPC</span>
+<span class="font-mono">v2.1</span>
+</div>
+</div>
+<!-- 5. oauth-service (Mid Right) -->
+<div class="absolute left-[615px] top-[290px] w-[150px] bg-white border border-surface-variant rounded-lg p-2.5 shadow-xs hover:shadow-md transition-shadow cursor-pointer">
+<div class="flex items-center justify-between">
+<span class="text-[9px] font-mono font-semibold uppercase text-secondary">AUTH PROVIDER</span>
+<span class="text-[9px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-mono">runtime</span>
+</div>
+<div class="font-code font-bold text-xs text-[#0d1e38] mt-1 truncate">oauth-service</div>
+<div class="text-[10px] text-secondary mt-0.5 flex justify-between">
+<span>3 endpoints</span>
+<span class="font-mono text-blue-600">8ms p95</span>
+</div>
+</div>
+<!-- 6. search-service (Lower Right) -->
+<div class="absolute left-[615px] top-[430px] w-[150px] bg-white border border-surface-variant rounded-lg p-2.5 shadow-xs hover:shadow-md transition-shadow cursor-pointer">
+<div class="flex items-center justify-between">
+<span class="text-[9px] font-mono font-semibold uppercase text-secondary">DOWNSTREAM</span>
+<span class="text-[9px] px-1.5 py-0.5 rounded bg-surface-container-high text-secondary font-mono">static</span>
+</div>
+<div class="font-code font-bold text-xs text-[#0d1e38] mt-1 truncate">search-service</div>
+<div class="text-[10px] text-secondary mt-0.5 flex justify-between">
+<span>Index consumer</span>
+<span class="font-mono text-secondary">sync</span>
+</div>
+</div>
+<!-- 7. recommendation-service (Bottom) -->
+<div class="absolute left-[355px] top-[460px] w-[150px] bg-white border border-surface-variant rounded-lg p-2.5 shadow-xs hover:shadow-md transition-shadow cursor-pointer">
+<div class="flex items-center justify-between">
+<span class="text-[9px] font-mono font-semibold uppercase text-secondary">ASYNC CONSUMER</span>
+<span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 font-mono">queue</span>
+</div>
+<div class="font-code font-bold text-xs text-[#0d1e38] mt-1 truncate">recommendation-service</div>
+<div class="text-[10px] text-secondary mt-0.5 flex justify-between">
+<span>Kafka ingest</span>
+<span class="font-mono text-amber-600">lag: 0</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Inspector Panel (~28% width / 310px) -->
+<div class="w-[310px] flex-shrink-0 border-l border-surface-variant bg-surface-container-lowest flex flex-col p-4 overflow-y-auto">
+<!-- Inspector Header -->
+<div class="border-b border-surface-variant pb-3">
+<span class="text-[9px] font-code font-bold tracking-wider text-secondary uppercase">SELECTED SERVICE NODE</span>
+<div class="flex items-center justify-between mt-1">
+<h2 class="font-code font-bold text-lg text-[#0d1e38]">user-service</h2>
+<span class="px-2 py-0.5 rounded bg-red-100 text-red-700 text-[10px] font-bold font-mono">CRITICAL</span>
+</div>
+<div class="mt-1 flex items-center gap-1.5 text-xs text-secondary font-code">
+<span class="material-symbols-outlined text-[14px]">source</span>
+<span>repo: user-service</span>
+</div>
+</div>
+<!-- Metadata Grid -->
+<div class="grid grid-cols-2 gap-2 my-3 p-2.5 bg-surface-container-low rounded-lg border border-surface-variant text-xs">
+<div>
+<span class="text-secondary text-[10px] block">Endpoints</span>
+<span class="font-semibold text-on-surface text-sm">12 cataloged</span>
+</div>
+<div>
+<span class="text-secondary text-[10px] block">Downstream Callers</span>
+<span class="font-semibold text-on-surface text-sm">8 known</span>
+</div>
+<div class="pt-1.5 border-t border-surface-variant/50">
+<span class="text-secondary text-[10px] block">Evidence Type</span>
+<span class="font-medium text-on-surface text-[11px] inline-flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                Static + Runtime
+              </span>
+</div>
+<div class="pt-1.5 border-t border-surface-variant/50">
+<span class="text-secondary text-[10px] block">Criticality</span>
+<span class="font-bold text-red-600 text-[11px]">High (Tier 1)</span>
+</div>
+</div>
+<!-- Section: Cataloged Endpoints -->
+<div class="space-y-2 mt-1">
+<div class="flex items-center justify-between">
+<span class="text-[11px] font-semibold text-[#0d1e38] uppercase tracking-wider">Cataloged Endpoints</span>
+<span class="text-[10px] text-secondary">3 of 12</span>
+</div>
+<!-- Item 1 -->
+<div class="p-2 rounded bg-surface border border-surface-variant flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="px-1 py-0.2 rounded bg-emerald-100 text-emerald-800 text-[9px] font-bold font-mono">GET</span>
+<span class="font-code text-[11px] font-semibold text-on-surface">/v1/user/{id}</span>
+</div>
+<span class="text-[10px] font-mono text-secondary">8 callers</span>
+</div>
+<span class="text-[10px] text-secondary truncate">Profiles, identity claims and status</span>
+</div>
+<!-- Item 2 -->
+<div class="p-2 rounded bg-surface border border-surface-variant flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="px-1 py-0.2 rounded bg-emerald-100 text-emerald-800 text-[9px] font-bold font-mono">GET</span>
+<span class="font-code text-[11px] font-semibold text-on-surface truncate">/v1/user/preferences</span>
+</div>
+<span class="text-[10px] font-mono text-secondary">4 callers</span>
+</div>
+<span class="text-[10px] text-secondary truncate">Notification preferences &amp; timezone</span>
+</div>
+<!-- Item 3 -->
+<div class="p-2 rounded bg-surface border border-surface-variant flex flex-col gap-1">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="px-1 py-0.2 rounded bg-amber-100 text-amber-800 text-[9px] font-bold font-mono">PATCH</span>
+<span class="font-code text-[11px] font-semibold text-on-surface">/v1/user/{id}</span>
+</div>
+<span class="text-[10px] font-mono text-secondary">2 callers</span>
+</div>
+<span class="text-[10px] text-amber-700 font-medium truncate">AST signature change pending PR #412</span>
+</div>
+</div>
+<!-- Section: Immediate Callers -->
+<div class="space-y-2 mt-4 flex-1">
+<span class="text-[11px] font-semibold text-[#0d1e38] uppercase tracking-wider block">Immediate Callers</span>
+<div class="p-2 bg-surface-container-low rounded border border-surface-variant">
+<div class="flex items-center justify-between">
+<span class="font-code text-xs font-bold text-on-surface">mobile-bff</span>
+<span class="text-[10px] text-secondary">High frequency</span>
+</div>
+<div class="text-[10px] text-secondary mt-0.5">p95 latency: 12ms · 1,420 req/min</div>
+</div>
+<div class="p-2 bg-red-50/60 rounded border border-red-200">
+<div class="flex items-center justify-between">
+<span class="font-code text-xs font-bold text-red-700">billing-service</span>
+<span class="text-[9px] px-1 rounded bg-red-100 text-red-700 font-bold">BREAKING</span>
+</div>
+<div class="font-code text-[10px] text-secondary mt-1">
+                receipt_generator.go:142
+              </div>
+</div>
+</div>
+<!-- Action Buttons Bottom -->
+<div class="mt-4 pt-3 border-t border-surface-variant space-y-2">
+<button class="w-full py-2 px-3 rounded-lg bg-primary-container text-white font-semibold text-xs hover:opacity-95 transition-opacity flex items-center justify-center gap-1.5 shadow-xs" type="button">
+<span class="material-symbols-outlined text-[16px]">visibility</span>
+              View API Usage
+            </button>
+<button class="w-full py-2 px-3 rounded-lg border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 font-semibold text-xs transition-colors flex items-center justify-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[16px]">error</span>
+              Review findings (1 High)
+            </button>
+</div>
+</div>
+</div>
+</main>
+<!-- Quiet Restrained Footer -->
+<footer class="mt-auto border-t border-surface-variant py-4 px-6 bg-surface-container-lowest flex flex-col sm:flex-row items-center justify-between text-xs text-secondary gap-2"><div class="flex items-center gap-2 mx-auto"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span><span>Illustrative data · not connected</span></div></footer>
+</div>
+</body></html>

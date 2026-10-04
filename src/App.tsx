@@ -1,5 +1,25 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from "react";
 import siteFacts from "./data/site-facts.json";
+import DocsApp from "./docs/DocsApp";
+import ContactPage from "./contact/ContactPage";
+import { emailHref, emails } from "./ui/contact";
+import { leadAttribution, trackEvent } from "./analytics";
+
+const DependencyGraphScreen = lazy(() =>
+  import("./screens/ProductScreens").then((module) => ({
+    default: module.DependencyGraphScreen,
+  })),
+);
+const DeprecationCandidatesScreen = lazy(() =>
+  import("./screens/ProductScreens").then((module) => ({
+    default: module.DeprecationCandidatesScreen,
+  })),
+);
+const ReviewDeskScreen = lazy(() =>
+  import("./screens/ReviewDesk").then((module) => ({
+    default: module.ReviewDeskScreen,
+  })),
+);
 
 type FactStatus =
   "available" | "in_testing" | "planned" | "not_planned_for_pilot";
@@ -90,18 +110,28 @@ function LogoMark({ inverse = false }: { inverse?: boolean }) {
   );
 }
 
-function Header() {
+function Header({ innerPage = false, active }: { innerPage?: boolean; active?: "/contact" }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [dark, setDark] = useState(false);
+  const header = useRef<HTMLElement>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     setDark(document.documentElement.dataset.theme === "dark");
+  }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return;
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMenuOpen(false);
+      if (event.key === "Escape") { setMenuOpen(false); menuButton.current?.focus(); }
+    };
+    const closeOutside = (event: PointerEvent) => {
+      if (event.target instanceof Node && !header.current?.contains(event.target)) setMenuOpen(false);
     };
     document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, []);
+    document.addEventListener("pointerdown", closeOutside);
+    return () => { document.removeEventListener("keydown", closeOnEscape); document.removeEventListener("pointerdown", closeOutside); };
+  }, [menuOpen]);
 
   function toggleTheme() {
     const nextTheme = dark ? "light" : "dark";
@@ -120,10 +150,12 @@ function Header() {
     ["#changes", "Contract support"],
     ["#limits", "Limitations"],
     ["#pilot", "Pilot"],
+    ["/docs", "Docs"],
+    ["/contact", "Contact"],
   ];
 
   return (
-    <header className="site-header">
+    <header className="site-header" ref={header}>
       <div className="container header-inner">
         <LogoMark />
         <div className="header-status" aria-label="Product status">
@@ -135,6 +167,7 @@ function Header() {
           <Fact status={siteFacts.warnOnly.status} label="Warn-only" compact />
         </div>
         <button
+          ref={menuButton}
           className="menu-toggle"
           type="button"
           aria-expanded={menuOpen}
@@ -155,13 +188,14 @@ function Header() {
           aria-label="Primary navigation"
         >
           {links.map(([href, label]) => (
-            <a key={href} href={href} onClick={() => setMenuOpen(false)}>
+            <a key={href} href={innerPage && href.startsWith("#") ? "/" + href : href} onClick={() => setMenuOpen(false)} aria-current={href === active ? "page" : undefined}>
               {label}
             </a>
           ))}
+          <a className="mobile-sign-in" href="/sign-in" onClick={() => setMenuOpen(false)}>Sign in <span aria-hidden="true">→</span></a>
         </nav>
-        <a className="header-cta" href="#pilot">
-          Request pilot access <span aria-hidden="true">↗</span>
+        <a className="header-cta" href="/sign-in">
+          Sign in <span aria-hidden="true">↗</span>
         </a>
         <button
           className="theme-toggle"
@@ -210,11 +244,11 @@ function Hero() {
             stays in control of merge decisions.
           </p>
           <div className="hero-actions">
-            <a className="button primary" href="#pilot">
+            <a className="button primary" href="#pilot" data-analytics-action="request_pilot">
               Request pilot access <span aria-hidden="true">→</span>
             </a>
-            <a className="button secondary" href="#how-it-works">
-              See how it works
+            <a className="button secondary" href="/dashboard" data-analytics-action="experience_product">
+              Experience it
             </a>
           </div>
           <div className="hero-note">
@@ -602,22 +636,29 @@ function PilotForm() {
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting) return;
     setSubmitting(true);
     setStatus({ message: "Sending your request…", state: "" });
     const form = event.currentTarget;
-    const payload = Object.fromEntries(new FormData(form).entries());
+    const payload = { ...Object.fromEntries(new FormData(form).entries()), attribution: leadAttribution() };
+    trackEvent("form_submit", { form_name: "pilot_request" });
+    let failureType = "network";
     try {
       const response = await fetch(form.action, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const result = (await response.json()) as { message?: string };
-      if (!response.ok)
+      const result = (await response.json()) as { message?: string; leadId?: string; accepted?: boolean };
+      if (!response.ok) {
+        failureType = response.status >= 500 ? "server" : "validation";
         throw new Error(
           result.message ||
             "We could not submit that request. Please try again.",
         );
+      }
+      if (result.accepted !== false)
+        trackEvent("generate_lead", { form_name: "pilot_request", lead_id: result.leadId });
       setStatus({
         message:
           result.message || "Thanks. Your waitlist request was received.",
@@ -625,6 +666,7 @@ function PilotForm() {
       });
       form.reset();
     } catch (error) {
+      trackEvent("form_error", { form_name: "pilot_request", error_type: failureType });
       setStatus({
         message:
           error instanceof Error
@@ -672,6 +714,7 @@ function PilotForm() {
           method="post"
           data-reveal
           onSubmit={submit}
+          aria-busy={submitting}
         >
           <div className="form-heading">
             <strong>Request pilot updates</strong>
@@ -686,6 +729,7 @@ function PilotForm() {
             type="email"
             autoComplete="email"
             required
+            maxLength={254}
             placeholder="you@company.com"
           />
           <label htmlFor="repository">
@@ -704,6 +748,7 @@ function PilotForm() {
             id="notes"
             name="notes"
             rows={3}
+            maxLength={2000}
             placeholder="A little context helps us understand your use case."
           />
           <input
@@ -726,9 +771,11 @@ function PilotForm() {
             {status.message}
           </p>
           <p className="form-privacy">
-            Your request is emailed to the Impact Gate team so they can follow
-            up about the pilot.
+            Your request is saved and emailed to the Impact Gate team so they can follow
+            up about the pilot. <a href="/docs/permissions-and-data#website-analytics">Data and analytics details</a>.
+            {" "}Privacy questions? <a href={emailHref("privacy")}>{emails.privacy}</a>.
           </p>
+          <p className="form-email-alternative">Prefer to email us? <a href={emailHref("pilot", "Impact Gate pilot request")}>{emails.pilot}</a></p>
         </form>
       </div>
     </section>
@@ -794,13 +841,14 @@ function FAQ() {
               <p>{answer}</p>
             </details>
           ))}
+          <p className="faq-contact">Have another question? <a href={emailHref("info")}>Ask us at {emails.info} <span aria-hidden="true">↗</span></a></p>
         </div>
       </div>
     </section>
   );
 }
 
-function Footer() {
+function Footer({ innerPage = false }: { innerPage?: boolean }) {
   const links = [
     ["#how-it-works", "How it works"],
     ["#evidence", "Analysis states"],
@@ -808,6 +856,7 @@ function Footer() {
     ["#limits", "Limitations"],
     ["#faq", "FAQ"],
     ["#pilot", "Private pilot"],
+    ["/docs", "Documentation"],
   ];
   return (
     <footer className="site-footer">
@@ -816,13 +865,13 @@ function Footer() {
           <LogoMark inverse />
           <p>Evidence for the changes that travel beyond your repository.</p>
         </div>
-        <nav className="footer-links" aria-label="Footer navigation">
-          {links.map(([href, label]) => (
-            <a href={href} key={href}>
-              {label}
-            </a>
-          ))}
-        </nav>
+        <div className="footer-group"><h2>Explore</h2><nav className="footer-links" aria-label="Footer navigation">
+          {links.map(([href, label]) => <a href={innerPage && href.startsWith("#") ? "/" + href : href} key={href}>{label}</a>)}
+          <a href="/dashboard">Dashboard</a>
+        </nav></div>
+        <div className="footer-group"><h2>Get in touch</h2><nav className="footer-links footer-contact-links" aria-label="Contact the team">
+          <a href={emailHref("contact")}>{emails.contact}</a><a href={emailHref("support")}>Product support</a><a href={emailHref("pilot")}>Pilot & onboarding</a><a href={emailHref("security")}>Report a vulnerability</a><a href={emailHref("privacy")}>Privacy & legal</a><button type="button" data-analytics-toggle>Usage analytics</button><a href="/contact">All contact options <span aria-hidden="true">↗</span></a>
+        </nav></div>
       </div>
       <div className="container footer-bottom">
         <p>© 2026 Impact Gate. All rights reserved.</p>
@@ -835,7 +884,20 @@ function Footer() {
   );
 }
 
-export default function App() {
+function NotFound() {
+  useEffect(() => {
+    document.title = "Page not found | Impact Gate";
+    document.querySelector('meta[name="robots"]')?.setAttribute("content", "noindex, follow");
+  }, []);
+  return <main className="contact-page" id="main-content" tabIndex={-1}><div className="container"><section className="contact-heading"><span className="eyebrow">Page not found</span><h1>Let’s get you back on track.</h1><p>This link doesn’t match a page on Impact Gate. Return to the home page, open your workspace, or find what you need in the docs.</p><div className="contact-heading-actions"><a className="button primary" href="/">Back to home <span aria-hidden="true">→</span></a><a className="button secondary" href="/dashboard">Open dashboard</a></div></section><aside className="contact-support-note"><div><strong>Looking for something specific?</strong><p>Browse the <a href="/docs">documentation</a> or email <a href={emailHref("support")}>{emails.support}</a>.</p></div></aside></div></main>;
+}
+
+export default function App({ pathname: requestedPath }: { pathname?: string } = {}) {
+  const pathname = requestedPath ?? (
+    typeof window === "undefined"
+      ? "/"
+      : window.location.pathname.replace(/\/+$/, "") || "/");
+
   useEffect(() => {
     const targets = document.querySelectorAll<HTMLElement>("[data-reveal]");
     const reducedMotion = window.matchMedia(
@@ -859,13 +921,38 @@ export default function App() {
     return () => observer.disconnect();
   }, []);
 
+  if (pathname === "/docs" || pathname.startsWith("/docs/"))
+    return <DocsApp pathname={pathname} />;
+  if (pathname === "/contact")
+    return <><a className="skip-link" href="#main-content">Skip to content</a><Header innerPage active="/contact" /><ContactPage /><Footer innerPage /></>;
+  if (pathname === "/dependency-graph")
+    return (
+      <Suspense fallback={<main className="product-screen-loading" />}>
+        <DependencyGraphScreen />
+      </Suspense>
+    );
+  if (pathname === "/deprecation-candidates")
+    return (
+      <Suspense fallback={<main className="product-screen-loading" />}>
+        <DeprecationCandidatesScreen />
+      </Suspense>
+    );
+  if (pathname === "/review-desk")
+    return (
+      <Suspense fallback={<main className="product-screen-loading" />}>
+        <ReviewDeskScreen />
+      </Suspense>
+    );
+  if (pathname !== "/")
+    return <><a className="skip-link" href="#main-content">Skip to content</a><Header innerPage /><NotFound /><Footer innerPage /></>;
+
   return (
     <>
       <a className="skip-link" href="#main-content">
         Skip to content
       </a>
       <Header />
-      <main id="main-content">
+      <main id="main-content" tabIndex={-1}>
         <Hero />
         <HowItWorks />
         <EvidenceStates />

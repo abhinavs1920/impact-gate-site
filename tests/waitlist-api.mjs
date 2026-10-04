@@ -1,16 +1,14 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import { transformWithEsbuild } from "vite";
+import { build } from "esbuild";
 
-const source = await readFile(
-  new URL("../src/functions/api/waitlist.ts", import.meta.url),
-  "utf8",
-);
-const { code } = await transformWithEsbuild(source, "waitlist.ts", {
-  loader: "ts",
+const res = await build({
+  entryPoints: [new URL("../src/functions/api/waitlist.ts", import.meta.url).pathname],
+  bundle: true,
+  write: false,
   format: "esm",
   target: "es2022",
 });
+const code = res.outputFiles[0].text;
 const { onRequestPost } = await import(
   `data:text/javascript;base64,${Buffer.from(code).toString("base64")}`
 );
@@ -23,7 +21,7 @@ const post = (body) =>
   });
 
 let sentMessage;
-let storedValue;
+const storedValues = new Map();
 const env = {
   EMAIL: {
     async send(message) {
@@ -33,7 +31,7 @@ const env = {
   },
   WAITLIST: {
     async put(key, value) {
-      storedValue = { key, value };
+      storedValues.set(key, value);
     },
   },
 };
@@ -54,8 +52,9 @@ assert.equal(sentMessage.replyTo, "applicant@example.com");
 assert.match(sentMessage.text, /github\.com\/acme\/service/);
 assert.match(sentMessage.html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
 assert.doesNotMatch(sentMessage.html, /<script>/);
-assert.match(storedValue.key, /^waitlist:/);
-assert.equal(JSON.parse(storedValue.value).email, "applicant@example.com");
+const waitlistEntry = [...storedValues.entries()].find(([k]) => /^waitlist:/.test(k));
+assert.ok(waitlistEntry, "Expected a key starting with waitlist:");
+assert.equal(JSON.parse(waitlistEntry[1]).email, "applicant@example.com");
 
 sentMessage = undefined;
 const honeypot = await onRequestPost({
