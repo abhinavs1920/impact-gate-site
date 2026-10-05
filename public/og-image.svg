@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
   <title id="title">Impact Gate</title>
-  <desc id="description">API change impact analysis for engineering teams.</desc>
+  <desc id="description">See which downstream services an OpenAPI change may affect, with evidence from connected consumer code.</desc>
   <defs>
     <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#101722"/>
@@ -28,8 +28,8 @@
     <text x="112" y="42" fill="#f4f6fb" font-family="Arial, Helvetica, sans-serif" font-size="32" font-weight="700">Impact Gate</text>
   </g>
   <text x="88" y="284" fill="#adb5ff" font-family="Arial, Helvetica, sans-serif" font-size="21" font-weight="700" letter-spacing="3">API CHANGE IMPACT ANALYSIS</text>
-  <text x="84" y="382" fill="#f4f6fb" font-family="Georgia, serif" font-size="66">Know who breaks</text>
-  <text x="84" y="462" fill="#f4f6fb" font-family="Georgia, serif" font-size="66">before you merge.</text>
-  <text x="88" y="534" fill="#b8c3d2" font-family="Arial, Helvetica, sans-serif" font-size="24">Evidence for the API changes that travel beyond your repository.</text>
+  <text x="84" y="382" fill="#f4f6fb" font-family="Georgia, serif" font-size="66">See what an API</text>
+  <text x="84" y="462" fill="#f4f6fb" font-family="Georgia, serif" font-size="66">change may affect.</text>
+  <text x="88" y="534" fill="#b8c3d2" font-family="Arial, Helvetica, sans-serif" font-size="24">Follow the change into connected consumer code.</text>
   <rect x="88" y="574" width="148" height="3" rx="1.5" fill="#26ba66"/>
 </svg>

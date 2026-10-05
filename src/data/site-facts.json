@@ -12,17 +12,17 @@
   "mechanism": {
     "status": "available",
     "label": "Contract diff to evidence",
-    "copy": "It reads an API contract diff, finds downstream callers in an indexed graph, traces consumer code, and surfaces the evidence for review."
+    "copy": "It compares an OpenAPI change with connected consumer code and shows engineers the evidence behind potential impact."
   },
   "policy": {
     "status": "available",
     "label": "Uncertainty is visible",
-    "copy": "When tracing cannot establish an answer, the result remains visible as uncertain rather than being presented as a clean finding."
+    "copy": "When the connected code does not give a clear answer, the result stays uncertain instead of being treated as no impact."
   },
   "contract": {
     "status": "available",
     "label": "OpenAPI contract changes",
-    "copy": "The current site describes OpenAPI contract review. Other contract formats are not presented as available here.",
+    "copy": "Review supported changes to an OpenAPI contract against connected consumer code.",
     "changes": [
       ["Endpoint or path changes", "Added, removed, or renamed routes that can change how consumers reach an API."],
       ["Request and response types", "Schema changes that alter the shape consumers send or receive."],
@@ -38,8 +38,8 @@
       ["Response body changes", "Changed payload requirements or content types for returned data."]
     ],
     "manyMore": {
-      "title": "And many more",
-      "copy": "Additional OpenAPI changes can be reviewed when they affect the contract assumptions of connected consumers."
+      "title": "More OpenAPI changes are supported.",
+      "copy": "Use the coverage guide for the complete list."
     }
   },
   "analysis": {

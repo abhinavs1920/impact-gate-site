@@ -25,6 +25,12 @@ for (const section of [
 }
 assert.match(source, /ILLUSTRATIVE · NOT LIVE/);
 assert.match(source, /UserResponse\.email/);
+assert.match(source, /View sample report/);
+assert.match(source, /href="\/review-desk"/);
+assert.match(source, /Join pilot waitlist/);
+assert.match(source, /See which/);
+assert.match(source, /downstream services/);
+assert.doesNotMatch(source, /Replace your production monitoring or observability tools/);
 assert.match(source, /data-theme-toggle|className="theme-toggle"/);
 assert.match(
   readFileSync(new URL("../src/styles/site.css", import.meta.url), "utf8"),
@@ -35,4 +41,11 @@ assert.match(
   /prefers-color-scheme/,
 );
 assert.match(source, /localStorage\.setItem\("impact-gate-theme"/);
+const workspace = readFileSync(
+  new URL("../src/dashboard/connected.ts", import.meta.url),
+  "utf8",
+);
+assert.match(workspace, /ig-setup-steps/);
+assert.match(workspace, /Choose the API contract repository and applications that call its APIs/);
+assert.match(workspace, /Connect repositories to discover APIs/);
 console.log("Content source checks passed.");

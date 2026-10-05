@@ -31,7 +31,7 @@ for (const metadata of [
   '<meta name="twitter:card" content="summary_large_image" />',
   '"@type": "SoftwareApplication"',
   '"@type": "FAQPage"',
-  "API Change Impact Analysis for Engineering Teams",
+  "See API Change Impact Across Services",
 ]) {
   if (!html.includes(metadata))
     throw new Error(`Expected SEO metadata is missing: ${metadata}`);

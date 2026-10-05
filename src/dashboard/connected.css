@@ -93,6 +93,14 @@ html[data-theme="dark"] .ig-badge[data-status="indexed"], html[data-theme="dark"
 .ig-runtime-notes { margin-top: 12px; }
 @media (max-width: 600px) { .ig-form .ig-runtime-match { grid-template-columns: 1fr; } }
 
+.ig-setup-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 0; margin: 0 0 22px; list-style: none; }
+.ig-setup-steps li { display: grid; align-content: start; gap: 7px; min-height: 92px; padding: 15px; border: 1px solid var(--ig-border); border-radius: 8px; background: var(--ig-surface); }
+.ig-setup-steps li[data-complete="true"] { border-color: #26825d70; }
+.ig-setup-steps li[aria-current="step"] { border-color: var(--ig-primary); box-shadow: 0 0 0 1px var(--ig-primary); }
+.ig-setup-steps li > strong { font-size: 13px; }
+.ig-setup-steps li > span { color: var(--ig-secondary); font-size: 12px; line-height: 1.5; }
+@media (max-width: 640px) { .ig-setup-steps { grid-template-columns: 1fr; gap: 8px; } .ig-setup-steps li { min-height: 0; } }
+
 /* Execution Tree View */
 .ig-tree-card { margin-top: 18px; margin-bottom: 24px; }
 .ig-tree-header { margin-bottom: 12px; }
@@ -121,4 +129,3 @@ html[data-theme="dark"] .ig-tree-wrapper { background: #111827; border-color: #3
 .ig-tree-summary::before { content: "▼"; display: inline-block; font-size: 9px; margin-right: 6px; transition: transform 0.15s ease; color: var(--ig-secondary, #6b7280); }
 details:not([open]).ig-tree-branch > .ig-tree-summary::before { transform: rotate(-90deg); }
 .ig-tree-children { margin-left: 18px; padding-left: 8px; border-left: 1.5px dashed var(--ig-border, #d1d5db); }
-

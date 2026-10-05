@@ -227,28 +227,26 @@ function Hero() {
             <span className="kicker-mark" aria-hidden="true">
               ↳
             </span>{" "}
-            Downstream API contract tracing for engineering teams
+            API change impact across repositories
           </div>
           <h1 id="hero-title">
-            Know who
+            See which
             <br />
-            breaks before
+            downstream services
             <br />
-            you merge<span className="period">.</span>
+            may be affected<span className="period">.</span>
           </h1>
           <p className="hero-lede">
-            Impact Gate is an API change impact analysis tool being prepared for
-            a private pilot. It reviews OpenAPI contract changes, traces
-            connected downstream consumers, and surfaces evidence and
-            uncertainty for engineering teams. It is warn-only: your team
-            stays in control of merge decisions.
+            Impact Gate links an OpenAPI change to evidence in connected
+            consumer code, so engineering teams can review potential impact
+            before a pull request merges.
           </p>
           <div className="hero-actions">
-            <a className="button primary" href="#pilot" data-analytics-action="request_pilot">
-              Request pilot access <span aria-hidden="true">→</span>
+            <a className="button primary" href="/review-desk" data-analytics-action="experience_product">
+              View sample report <span aria-hidden="true">→</span>
             </a>
-            <a className="button secondary" href="/dashboard" data-analytics-action="experience_product">
-              Experience it
+            <a className="button secondary" href="#pilot" data-analytics-action="request_pilot">
+              Join pilot waitlist
             </a>
           </div>
           <div className="hero-note">
@@ -522,28 +520,37 @@ function SupportedChanges() {
               compact
             />
             <span>
-              Other contract formats are not presented as available here.
+              Current pilot scope: OpenAPI contract changes.
             </span>
           </div>
         </div>
         <div className="change-list" data-reveal>
-          {siteFacts.contract.changes.map(([title, copy], index) => (
-            <article className="change-row" key={title}>
-              <span className="change-index">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <div className="change-copy">
-                <h3>{title}</h3>
-                <p>{copy}</p>
-              </div>
-              <span className="change-token">{categoryFor(title)}</span>
-            </article>
-          ))}
+          {siteFacts.contract.changes
+            .filter(([title]) =>
+              [
+                "Endpoint or path changes",
+                "Request and response types",
+                "Field removal or rename",
+                "Nullability changes",
+              ].includes(title),
+            )
+            .map(([title, copy], index) => (
+              <article className="change-row" key={title}>
+                <span className="change-index">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <div className="change-copy">
+                  <h3>{title}</h3>
+                  <p>{copy}</p>
+                </div>
+                <span className="change-token">{categoryFor(title)}</span>
+              </article>
+            ))}
           <div className="change-more">
             <span aria-hidden="true">+</span>
             <p>
-              <strong>{siteFacts.contract.manyMore.title}</strong>{" "}
-              {siteFacts.contract.manyMore.copy}
+              <strong>See the full OpenAPI coverage list.</strong>{" "}
+              <a href="/docs/coverage-and-limitations">Explore all supported change types and analysis coverage.</a>
             </p>
           </div>
         </div>
@@ -553,14 +560,14 @@ function SupportedChanges() {
 }
 
 const does = [
-  "Reads API contract changes for review.",
-  "Traces consumers in connected, indexed code.",
-  "Surfaces evidence and uncertainty for engineers.",
+  "Reviews supported OpenAPI changes in selected repositories.",
+  "Finds potential downstream consumers in connected code.",
+  "Links potential impact to evidence engineers can review.",
 ];
 const doesNot = [
   "Guarantee every consumer is known.",
-  "Monitor production traffic or runtime behavior.",
-  "Block or merge pull requests for your team.",
+  "Analyze contracts outside the current OpenAPI scope.",
+  "Make merge decisions for your team.",
 ];
 
 function Boundaries() {
@@ -573,11 +580,11 @@ function Boundaries() {
       <div className="container">
         <div className="section-heading" data-reveal>
           <span className="eyebrow">Product boundaries</span>
-          <h2 id="limits-title">Honest limits are part of the design.</h2>
+          <h2 id="limits-title">Know what the evidence covers.</h2>
           <p>
-            Impact Gate is being prepared for a private pilot. These boundaries
-            describe the current product posture—not a guarantee of complete
-            analysis.
+            Impact Gate reviews supported OpenAPI changes against connected,
+            indexed consumer code. Every result is advisory and reflects only
+            the evidence available for review.
           </p>
         </div>
         <div className="boundary-grid">
@@ -717,7 +724,7 @@ function PilotForm() {
           aria-busy={submitting}
         >
           <div className="form-heading">
-            <strong>Request pilot updates</strong>
+            <strong>Join the pilot waitlist</strong>
             <span>Fields marked * are required.</span>
           </div>
           <label htmlFor="email">
@@ -759,7 +766,7 @@ function PilotForm() {
             aria-hidden="true"
           />
           <button type="submit" disabled={submitting}>
-            {submitting ? "Sending request…" : "Request pilot access"}{" "}
+            {submitting ? "Sending request…" : "Join waitlist"}{" "}
             <span aria-hidden="true">→</span>
           </button>
           <p
@@ -785,7 +792,7 @@ function PilotForm() {
 const questions = [
   [
     "What is Impact Gate?",
-    "Impact Gate is an API change impact analysis tool being prepared for a private pilot. It reviews OpenAPI contract changes, traces consumers in connected code, and surfaces evidence and uncertainty for engineering teams. It is warn-only.",
+    "Impact Gate reviews OpenAPI changes against connected consumer code, showing engineering teams which downstream services may be affected and linking potential impact to evidence for review.",
   ],
   [
     "Is Impact Gate generally available?",
