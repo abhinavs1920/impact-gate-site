@@ -2,6 +2,8 @@
 
 > Impact Gate is API change impact analysis for engineering teams. It reviews OpenAPI contract changes, traces downstream consumers in connected code, and shows evidence and uncertainty before merge. It is warn-only: it never blocks a pull request. Currently preparing a small private pilot; not generally available.
 
+Impact Gate (impactgate.in) is an independent API change impact analysis product. It is not related to other software projects that share the name "Impact Gate".
+
 ## Key pages
 - [Home](https://impactgate.in/): what it does, how the analysis works, FAQ
 - [Docs](https://impactgate.in/docs): overview and quickstart
@@ -21,3 +23,8 @@
 - Output: a pull request report with evidence, inferred paths, coverage gaps and "no observed use"
 - Posture: warn-only, merge decisions stay with the team
 - Status: private pilot, join the waitlist for updates
+
+## Official profiles
+- LinkedIn: https://www.linkedin.com/company/impactgate-in
+- Instagram: https://www.instagram.com/impactgate/
+- GitHub: https://github.com/impact-gate
