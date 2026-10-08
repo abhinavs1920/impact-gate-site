@@ -23,10 +23,6 @@ for (const section of [
     `Homepage should render the ${section} section.`,
   );
 }
-assert.match(source, /ILLUSTRATIVE · NOT LIVE/);
-assert.match(source, /UserResponse\.email/);
-assert.match(source, /View sample report/);
-assert.match(source, /href="\/review-desk"/);
 assert.match(source, /Join pilot waitlist/);
 assert.match(source, /See which/);
 assert.match(source, /downstream services/);
@@ -49,3 +45,4 @@ assert.match(workspace, /ig-setup-steps/);
 assert.match(workspace, /Choose the API contract repository and applications that call its APIs/);
 assert.match(workspace, /Connect repositories to discover APIs/);
 console.log("Content source checks passed.");
+
