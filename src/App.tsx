@@ -15,11 +15,6 @@ const DeprecationCandidatesScreen = lazy(() =>
     default: module.DeprecationCandidatesScreen,
   })),
 );
-const ReviewDeskScreen = lazy(() =>
-  import("./screens/ReviewDesk").then((module) => ({
-    default: module.ReviewDeskScreen,
-  })),
-);
 
 type FactStatus =
   "available" | "in_testing" | "planned" | "not_planned_for_pilot";
@@ -221,7 +216,7 @@ function Header({ innerPage = false, active }: { innerPage?: boolean; active?: "
 function Hero() {
   return (
     <section className="hero" aria-labelledby="hero-title">
-      <div className="container hero-grid">
+      <div className="container hero-grid" style={{ gridTemplateColumns: "minmax(0, 760px)" }}>
         <div className="hero-copy" data-reveal>
           <div className="hero-kicker">
             <span className="kicker-mark" aria-hidden="true">
@@ -250,8 +245,7 @@ function Hero() {
             </a>
           </div>
           <p className="hero-demo-note">
-            No account needed for the demo. <a href="/review-desk" data-analytics-action="experience_product">View sample report</a>
-            {" · "}
+            No account needed for the demo.{" "}
             <a href="#pilot" data-analytics-action="request_pilot">Join pilot waitlist</a>
           </p>
           <div className="hero-note">
@@ -261,98 +255,6 @@ function Hero() {
               compact
             />
             <span>Warn-only review; your team stays in control.</span>
-          </div>
-        </div>
-        <div
-          className="review-card"
-          aria-label="Illustrative example of a downstream evidence path"
-          data-reveal
-        >
-          <div className="review-top">
-            <span className="bot-mark" aria-hidden="true">
-              <span>ig</span>
-            </span>
-            <div className="review-byline">
-              <strong>Impact Gate</strong>
-              <small>Illustrative review preview</small>
-            </div>
-            <span className="illustrative-tag">ILLUSTRATIVE · NOT LIVE</span>
-          </div>
-          <div className="contract-block">
-            <div className="block-label">
-              <span>API CONTRACT CHANGE</span>
-              <span>OpenAPI</span>
-            </div>
-            <div className="schema-code">
-              <div>
-                <span className="code-muted">User:</span> {"{"}
-              </div>
-              <div className="removed-line">
-                <span className="minus">−</span>
-                <span>
-                  <span className="code-muted">email:</span> string
-                </span>
-                <span className="removed-label">removed</span>
-              </div>
-              <div>
-                <span className="code-muted">status:</span> "active" |
-                "suspended"
-              </div>
-              <div>{"}"}</div>
-            </div>
-          </div>
-          <div className="trace-heading">
-            <span>EXAMPLE VALUE PATH</span>
-            <span className="trace-caption">Illustrative only</span>
-          </div>
-          <ol className="trace-list">
-            <li>
-              <span className="trace-index">01</span>
-              <span className="trace-node">
-                <code>User.email</code>
-                <small>changed API field</small>
-              </span>
-              <span className="trace-arrow" aria-hidden="true">
-                →
-              </span>
-            </li>
-            <li>
-              <span className="trace-index">02</span>
-              <span className="trace-node">
-                <code>UserResponse.email</code>
-                <small>consumer value</small>
-              </span>
-              <span className="trace-arrow" aria-hidden="true">
-                →
-              </span>
-            </li>
-            <li>
-              <span className="trace-index">03</span>
-              <span className="trace-node">
-                <code>ReceiptService.process()</code>
-                <small>example service path</small>
-              </span>
-              <span className="trace-arrow" aria-hidden="true">
-                →
-              </span>
-            </li>
-            <li className="trace-terminal">
-              <span className="trace-index">04</span>
-              <span className="trace-node">
-                <code>sendReceipt()</code>
-                <small>example downstream use</small>
-              </span>
-              <span className="trace-end" aria-hidden="true" />
-            </li>
-          </ol>
-          <div className="review-footnote">
-            <span className="footnote-icon" aria-hidden="true">
-              i
-            </span>
-            <p>
-              {siteFacts.analysis.copy} This diagram is an example path, not a
-              result from a live repository analysis.
-            </p>
           </div>
         </div>
       </div>
@@ -815,10 +717,6 @@ const questions = [
     "What happens if the analysis cannot resolve a path?",
     "The result should remain uncertain when source coverage, dynamic behavior, or resolution limits prevent a clear conclusion.",
   ],
-  [
-    "Does the evidence example on this page come from a real repository?",
-    "No. The evidence path on this page is explicitly illustrative and is not a live customer finding.",
-  ],
 ];
 
 function FAQ() {
@@ -949,12 +847,6 @@ export default function App({ pathname: requestedPath }: { pathname?: string } =
         <DeprecationCandidatesScreen />
       </Suspense>
     );
-  if (pathname === "/review-desk")
-    return (
-      <Suspense fallback={<main className="product-screen-loading" />}>
-        <ReviewDeskScreen />
-      </Suspense>
-    );
   if (pathname !== "/")
     return <><a className="skip-link" href="#main-content">Skip to content</a><Header innerPage /><NotFound /><Footer innerPage /></>;
 
@@ -977,4 +869,5 @@ export default function App({ pathname: requestedPath }: { pathname?: string } =
     </>
   );
 }
+
 
