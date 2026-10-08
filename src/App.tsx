@@ -248,6 +248,13 @@ function Hero() {
             No account needed for the demo.{" "}
             <a href="#pilot" data-analytics-action="request_pilot">Join pilot waitlist</a>
           </p>
+          <p className="hero-demo-note">
+            Then open a pull request on the{" "}
+            <a href="https://github.com/impact-gate/ig-lab-petclinic" target="_blank" rel="noopener noreferrer" data-analytics-action="demo_repo">
+              demo repository
+            </a>{" "}
+            and watch the Impact Gate bot comment.
+          </p>
           <div className="hero-note">
             <Fact
               status={siteFacts.stage.status}
