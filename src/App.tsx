@@ -250,8 +250,9 @@ function Hero() {
             </a>
           </div>
           <p className="hero-demo-note">
-            No account needed for the demo. <a href="/review-desk" data-analytics-action="experience_product">See a sample report</a> or{" "}
-            <a href="#pilot" data-analytics-action="request_pilot">join the pilot waitlist</a>.
+            No account needed for the demo. <a href="/review-desk" data-analytics-action="experience_product">View sample report</a>
+            {" · "}
+            <a href="#pilot" data-analytics-action="request_pilot">Join pilot waitlist</a>
           </p>
           <div className="hero-note">
             <Fact
