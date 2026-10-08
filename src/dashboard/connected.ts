@@ -517,6 +517,16 @@ async function start(): Promise<void> {
   if (!response.ok) throw new Error("Authentication is unavailable. Please try again shortly.");
   const publicConfig: unknown = await response.json(); config = publicConfig as PublicConfig;
   auth = new ImpactGateAuthClient(parseAuthConfig(publicConfig, location.origin)); api = new WorkspaceApi(auth);
+  if (page === "sign-in" && new URLSearchParams(location.search).get("demo") === "1") {
+    state("Opening the live demo", "Signing you in to a read-only demo workspace.");
+    const demo = await fetch("/api/v1/demo/session", { method: "POST", cache: "no-store", credentials: "same-origin" });
+    if (!demo.ok) throw new Error("The live demo is unavailable right now. Please try again shortly.");
+    const { token } = await demo.json() as { token: string };
+    await auth.ready;
+    await auth.signInWithDemoToken(token);
+    location.assign("/dashboard");
+    return;
+  }
   if (["sign-in", "sign-up", "email-link"].includes(page)) {
     cleanupAuthPage = mountAuthPage(main, auth, { mode: page === "sign-up" ? "sign-up" : "sign-in", onAuthenticated: async (_user, next) => { const current = await api.request<SessionResponse>("/api/v1/session"); const requested = safeReturnPath(next, location.origin); location.assign(current.workspaces.length ? requested : `/onboarding?${new URLSearchParams({ next: requested })}`); } });
     return;
@@ -531,3 +541,4 @@ async function start(): Promise<void> {
 window.addEventListener("pagehide", () => { disposed = true; cleanupAuthPage?.(); clearTimeout(poll); api?.cancel(); graph?.destroy(); auth?.dispose(); });
 startWebsiteAnalytics();
 void start().catch(error => { const info = describeAuthError(error); state("Sign-in unavailable", info.code === "auth/unknown" && error instanceof Error ? error.message : info.message, true); });
+
