@@ -242,13 +242,18 @@ function Hero() {
             before a pull request merges.
           </p>
           <div className="hero-actions">
-            <a className="button primary" href="/review-desk" data-analytics-action="experience_product">
-              View sample report <span aria-hidden="true">→</span>
+            <a className="button primary" href="/sign-in?demo=1" data-analytics-action="live_demo">
+              Try the live demo <span aria-hidden="true">→</span>
             </a>
-            <a className="button secondary" href="#pilot" data-analytics-action="request_pilot">
-              Join pilot waitlist
+            <a className="button secondary" href="/sign-in" data-analytics-action="use_tool">
+              Use the tool
             </a>
           </div>
+          <p className="hero-demo-note">
+            No account needed for the demo. <a href="/review-desk" data-analytics-action="experience_product">View sample report</a>
+            {" · "}
+            <a href="#pilot" data-analytics-action="request_pilot">Join pilot waitlist</a>
+          </p>
           <div className="hero-note">
             <Fact
               status={siteFacts.stage.status}
@@ -972,3 +977,4 @@ export default function App({ pathname: requestedPath }: { pathname?: string } =
     </>
   );
 }
+

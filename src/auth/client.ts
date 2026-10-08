@@ -13,6 +13,7 @@ import {
   onIdTokenChanged,
   sendSignInLinkToEmail,
   setPersistence,
+  signInWithCustomToken,
   signInWithEmailLink,
   signInWithPopup,
   signOut,
@@ -186,6 +187,13 @@ export class ImpactGateAuthClient {
     });
   }
 
+  /** Signs in the shared read-only demo visitor with a server-issued custom token. */
+  async signInWithDemoToken(token: string): Promise<UserCredential> {
+    await this.ready;
+    this.assertUsable();
+    return signInWithCustomToken(this.auth, token);
+  }
+
   async getIdToken(forceRefresh = false): Promise<string> {
     await this.ready;
     return this.requireUser().getIdToken(forceRefresh);
@@ -271,3 +279,4 @@ export class ImpactGateAuthClient {
     this.listeners.clear();
   }
 }
+
