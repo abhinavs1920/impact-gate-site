@@ -5,7 +5,7 @@
   "packageManager": "pnpm@12.4.2",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/prerender.mjs && node scripts/build-dashboard.mjs",
+    "build": "vite build && node scripts/prerender.mjs && node scripts/build-dashboard.mjs && node scripts/write-logo.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "test:workspace": "node tests/workspace-integration.mjs",
@@ -36,3 +36,4 @@
     "wrangler": "^4.143.0"
   }
 }
+
