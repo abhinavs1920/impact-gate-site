@@ -42,7 +42,7 @@ const structuredData = html.match(
 if (!structuredData) throw new Error("Structured SEO data is missing.");
 const graph = JSON.parse(structuredData[1])["@graph"];
 const faq = graph.find((entry) => entry["@type"] === "FAQPage");
-if (!faq || faq.mainEntity.length !== 6)
+if (!faq || faq.mainEntity.length !== 5)
   throw new Error("Structured FAQ data does not match the visible FAQ.");
 for (const question of faq.mainEntity) {
   if (!html.includes(question.name) || !html.includes(question.acceptedAnswer.text))
