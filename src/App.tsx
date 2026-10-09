@@ -264,6 +264,37 @@ function Hero() {
             <span>Warn-only review; your team stays in control.</span>
           </div>
         </div>
+        <div data-reveal style={{ marginTop: "2rem" }}>
+          <video
+            controls
+            playsInline
+            preload="metadata"
+            src="https://impact-gate-api.eastus.cloudapp.azure.com/media/commercial.mp4#t=0.1"
+            aria-label="Impact Gate in one minute"
+            style={{ width: "100%", height: "auto", display: "block", borderRadius: "12px", background: "#0b0f14" }}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function UseCase() {
+  return (
+    <section className="section" id="use-case" aria-labelledby="use-case-title">
+      <div className="container" style={{ maxWidth: "960px" }}>
+        <h2 id="use-case-title">See it on a real pull request</h2>
+        <p>
+          A short walkthrough of the live demo: explore the dashboard, then open a pull request on the demo repository and watch the Impact Gate bot comment.
+        </p>
+        <video
+          controls
+          playsInline
+          preload="metadata"
+          src="https://impact-gate-api.eastus.cloudapp.azure.com/media/demo.mp4#t=0.1"
+          aria-label="Impact Gate demo walkthrough"
+          style={{ width: "100%", height: "auto", display: "block", borderRadius: "12px", background: "#0b0f14", marginTop: "1.5rem" }}
+        />
       </div>
     </section>
   );
@@ -865,6 +896,7 @@ export default function App({ pathname: requestedPath }: { pathname?: string } =
       <Header />
       <main id="main-content" tabIndex={-1}>
         <Hero />
+        <UseCase />
         <HowItWorks />
         <EvidenceStates />
         <SupportedChanges />
