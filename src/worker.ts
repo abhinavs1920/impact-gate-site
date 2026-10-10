@@ -63,7 +63,7 @@ export async function proxyWorkspaceApi(request: Request, env: Record<string, un
     response = await fetch(target.href, { method: request.method, headers, ...(request.method === "GET" || request.method === "HEAD" ? {} : { body: request.body }), redirect: "manual", signal: request.signal });
   } catch { return apiFailure(502, "The workspace API could not be reached."); }
   const output = new Headers({ "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
-  for (const name of ["Content-Type", "Retry-After", "ETag"]) { const value = response.headers.get(name); if (value) output.set(name, value); }
+  for (const name of ["Content-Type", "Retry-After", "ETag", "Content-Security-Policy", "X-Demo-Request"]) { const value = response.headers.get(name); if (value) output.set(name, value); }
   if (response.status >= 300 && response.status < 400) {
     const location = response.headers.get("Location");
     if (incoming.pathname !== "/api/v1/github/callback" || !location) { await response.body?.cancel(); return apiFailure(502, "Unexpected API redirect."); }
@@ -84,7 +84,12 @@ export async function proxyWorkspaceApi(request: Request, env: Record<string, un
 
 export default {
   async fetch(request: Request, env: Record<string, unknown>): Promise<Response> {
-    if (new URL(request.url).pathname.startsWith("/api/v1/")) return proxyWorkspaceApi(request, env);
+    const pathname = new URL(request.url).pathname;
+    if (pathname === "/sandbox" || pathname.startsWith("/sandbox/")) {
+      if (request.method !== "GET") return apiFailure(405, "The sandbox supports read-only GET requests.");
+      return proxyWorkspaceApi(request, env);
+    }
+    if (pathname.startsWith("/api/v1/")) return proxyWorkspaceApi(request, env);
     if (new URL(request.url).pathname === "/api/waitlist") {
       if (request.method !== "POST") {
         return new Response("Method not allowed", {

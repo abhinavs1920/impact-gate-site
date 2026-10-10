@@ -229,7 +229,16 @@ function render(): void {
   if (disposed || !snapshot) return;
   graph?.destroy(); graph = null;
   codeGraph?.destroy(); codeGraph = null;
+  const sandboxPanel = main.querySelector<HTMLIFrameElement>("[data-demo-sandbox]");
   main.innerHTML = ({ home: renderHome, "api-usage": renderEndpoints, "dependency-graph": renderGraph, "deprecation-candidates": renderCandidates, repositories: renderRepositories, settings: renderSettings, onboarding: renderOnboarding, "github-setup": renderOnboarding }[page] ?? renderHome)();
+  if (["home", "api-usage"].includes(page) && workspace?.accountLogin === "impact-gate" && snapshot?.services.some(service => service.name === "ig-lab-petclinic")) {
+    const panel = sandboxPanel ?? document.createElement("iframe");
+    panel.dataset.demoSandbox = "true";
+    panel.title = "Near-live observed demo endpoint traffic and developer test instructions";
+    if (!sandboxPanel) panel.src = "/sandbox?panel=1";
+    panel.style.cssText = "width:100%;height:670px;border:1px solid #d6e1ea;border-radius:12px;margin:20px 0;background:#f4f7fa";
+    main.append(panel);
+  }
   main.setAttribute("aria-busy", "false"); renderShell(); if (page === "dependency-graph") mountGraph();
   if (page === "dependency-graph") {
     main.insertAdjacentHTML("beforeend", renderFunctionInventory(snapshot, codeQuery, codePage));
@@ -541,4 +550,3 @@ async function start(): Promise<void> {
 window.addEventListener("pagehide", () => { disposed = true; cleanupAuthPage?.(); clearTimeout(poll); api?.cancel(); graph?.destroy(); auth?.dispose(); });
 startWebsiteAnalytics();
 void start().catch(error => { const info = describeAuthError(error); state("Sign-in unavailable", info.code === "auth/unknown" && error instanceof Error ? error.message : info.message, true); });
-
