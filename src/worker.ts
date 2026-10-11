@@ -79,6 +79,14 @@ export async function proxyWorkspaceApi(request: Request, env: Record<string, un
       output.append("Set-Cookie", cookie);
     }
   }
+  if ((incoming.pathname === "/sandbox" || incoming.pathname === "/sandbox/") && response.headers.get("Content-Type")?.includes("text/html")) {
+    const html = await response.text();
+    const mobileSafety = 'html,body{max-width:100%;overflow-x:hidden}main{box-sizing:border-box;width:min(900px,calc(100% - 2rem));max-width:100%}pre,code{max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word}';
+    const rewritten = html.includes("</head>")
+      ? html.replace("</head>", `<style>${mobileSafety}</style></head>`)
+      : html.replace("</style>", `${mobileSafety}</style>`);
+    return new Response(rewritten, { status: response.status, headers: output });
+  }
   return new Response(response.body, { status: response.status, headers: output });
 }
 
