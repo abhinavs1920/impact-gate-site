@@ -1602,3 +1602,288 @@
     animation: none;
   }
 }
+
+.bot-demo-screen {
+  min-height: 100vh;
+  background: var(--color-background);
+  color: var(--color-ink);
+}
+.bot-demo-header {
+  padding-inline: max(1.25rem, calc((100vw - 76rem) / 2));
+}
+.bot-demo-main {
+  width: min(calc(100% - 2rem), 62rem);
+  margin: 0 auto;
+  padding: clamp(3rem, 7vw, 6rem) 0 5rem;
+}
+.bot-demo-intro {
+  max-width: 38rem;
+}
+.bot-demo-eyebrow,
+.bot-demo-repository,
+.bot-demo-pr-state,
+.bot-comment-label,
+.bot-finding-state {
+  font: 600 0.65rem/1.4 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.bot-demo-eyebrow {
+  color: var(--color-primary);
+}
+.bot-demo-intro h1 {
+  margin: 0.7rem 0 0.9rem;
+  color: var(--color-navy);
+  font: 400 clamp(2.25rem, 5vw, 4rem)/1.08 var(--font-display);
+  letter-spacing: -0.03em;
+}
+.bot-demo-intro p {
+  margin: 0;
+  color: var(--color-secondary);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+.bot-demo-pr {
+  margin-top: clamp(2.25rem, 5vw, 4rem);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+.bot-demo-pr-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.2rem 1.35rem;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-muted);
+}
+.bot-demo-repository {
+  color: var(--color-secondary);
+  font-size: 0.62rem;
+}
+.bot-demo-pr-header h2 {
+  margin: 0.45rem 0 0;
+  color: var(--color-ink);
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.bot-demo-pr-state {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid #26825d70;
+  border-radius: var(--radius-sm);
+  color: #26825d;
+  font-size: 0.6rem;
+  white-space: nowrap;
+}
+.bot-comment {
+  width: min(calc(100% - 2.5rem), 49rem);
+  margin: 1.5rem auto;
+  padding: 1.35rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-background);
+}
+.bot-comment-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  color: var(--color-secondary);
+  font-size: 0.75rem;
+}
+.bot-comment-header strong {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+.bot-comment-avatar {
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-navy);
+  color: #fff;
+  font: 700 0.54rem/1 var(--font-mono);
+}
+.bot-comment-label {
+  margin-left: auto;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid #d1b368;
+  border-radius: var(--radius-sm);
+  color: #805514;
+  font-size: 0.55rem;
+}
+.bot-comment h3 {
+  margin: 1.4rem 0 0.55rem;
+  color: var(--color-navy);
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+.bot-comment > p {
+  margin: 0;
+  color: var(--color-secondary);
+  font-size: 0.87rem;
+  line-height: 1.65;
+}
+.bot-comment code {
+  overflow-wrap: anywhere;
+  color: var(--color-ink);
+  font: 500 0.78rem/1.5 var(--font-mono);
+}
+.bot-comment-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.25rem;
+  margin-top: 1.25rem;
+  padding: 0.8rem 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.78rem;
+}
+.bot-summary-count {
+  color: #a72b25;
+  font-weight: 600;
+}
+.bot-summary-muted {
+  color: var(--color-secondary);
+}
+.bot-comment-findings {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.bot-comment-findings li {
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.bot-finding-state {
+  align-self: start;
+  padding-top: 0.2rem;
+  font-size: 0.57rem;
+}
+.bot-finding-state.possible {
+  color: #a72b25;
+}
+.bot-finding-state.unknown {
+  color: #805514;
+}
+.bot-comment-findings strong {
+  display: block;
+  color: var(--color-ink);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.bot-comment-findings code {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--color-secondary);
+  font-size: 0.68rem;
+}
+.bot-comment-findings p {
+  margin: 0.35rem 0 0;
+  color: var(--color-secondary);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+.bot-comment-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 1rem;
+  color: var(--color-secondary);
+  font-size: 0.7rem;
+}
+.bot-comment-footer a {
+  color: var(--color-primary);
+  text-underline-offset: 3px;
+}
+.bot-demo-next {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border-top: 1px solid var(--color-border);
+}
+.bot-demo-next h2 {
+  max-width: 34rem;
+  margin: 0.55rem 0 0.4rem;
+  color: var(--color-navy);
+  font: 400 clamp(1.35rem, 2.5vw, 1.8rem)/1.2 var(--font-display);
+}
+.bot-demo-next p {
+  max-width: 38rem;
+  margin: 0;
+  color: var(--color-secondary);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+.bot-demo-actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.bot-demo-actions .button {
+  display: inline-flex;
+  min-height: 2.65rem;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0 0.9rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.bot-demo-actions .button.primary {
+  background: var(--color-primary);
+  color: #fff;
+}
+.bot-demo-actions .button.secondary {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-ink);
+}
+@media (max-width: 52rem) {
+  .bot-demo-next {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+@media (max-width: 36rem) {
+  .bot-demo-main {
+    width: min(calc(100% - 1.25rem), 62rem);
+    padding-top: 2.5rem;
+  }
+  .bot-demo-pr-header {
+    flex-direction: column;
+  }
+  .bot-comment {
+    width: calc(100% - 1.25rem);
+    padding: 1rem;
+  }
+  .bot-comment-label {
+    margin-left: 0.25rem;
+  }
+  .bot-comment-findings li {
+    grid-template-columns: 1fr;
+    gap: 0.3rem;
+  }
+  .bot-comment-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .bot-demo-next {
+    padding-inline: 0;
+  }
+}

@@ -76,9 +76,9 @@ function annotate(document, slug) {
   }
   for (const link of main.querySelectorAll('a[href]')) {
     if (/github\.com\/example/.test(link.getAttribute('href')) || link.getAttribute('href') === '#') {
-      link.href = '/review-desk';
+      link.href = '/demo';
       link.removeAttribute('target');
-      link.setAttribute('aria-label', `${text(link)} — illustrative finding`);
+      link.setAttribute('aria-label', `${text(link)} — GitHub bot demo`);
     }
   }
   const table = main.querySelector('table');

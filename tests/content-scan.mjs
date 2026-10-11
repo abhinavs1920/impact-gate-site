@@ -25,11 +25,13 @@ for (const section of [
     `Homepage should render the ${section} section.`,
   );
 }
-assert.match(source, /ILLUSTRATIVE · NOT LIVE/);
 assert.match(source, /Know what your API changes will affect/);
 assert.match(source, /Connect GitHub/);
-assert.match(source, /View a sample impact report/);
-assert.match(source, /href="\/review-desk"/);
+assert.match(source, /Try demo/);
+assert.match(source, /href="\/demo"/);
+assert.match(source, /commercial\.mp4/);
+assert.match(source, /demo\.mp4/);
+assert.match(source, /href: "\/demo"/);
 assert.match(source, /Join pilot waitlist/);
 assert.match(source, /See which/);
 assert.match(source, /downstream services/);
@@ -53,4 +55,3 @@ assert.match(workspace, /Which API should we map first/);
 assert.match(workspace, /Runtime data is optional/);
 assert.match(workspace, /Retirement Radar/);
 console.log("Content source checks passed.");
-

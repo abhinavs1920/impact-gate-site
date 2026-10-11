@@ -50,7 +50,7 @@ function ScreenHeader({
   theme,
   onToggleTheme,
 }: {
-  active: "review" | "graph" | "deprecation";
+  active: "graph" | "deprecation";
   theme: Theme;
   onToggleTheme: () => void;
 }) {
@@ -61,12 +61,7 @@ function ScreenHeader({
         <span>Impact Gate</span>
       </a>
       <nav className="product-screen-nav" aria-label="Product screens">
-        <a
-          href="/review-desk"
-          aria-current={active === "review" ? "page" : undefined}
-        >
-          Review Desk
-        </a>
+        <a href="/demo">GitHub bot demo</a>
         <a
           href="/dependency-graph"
           aria-current={active === "graph" ? "page" : undefined}

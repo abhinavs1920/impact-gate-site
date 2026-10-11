@@ -15,6 +15,11 @@ const DeprecationCandidatesScreen = lazy(() =>
     default: module.DeprecationCandidatesScreen,
   })),
 );
+const GitHubBotDemoScreen = lazy(() =>
+  import("./screens/GitHubBotDemo").then((module) => ({
+    default: module.GitHubBotDemoScreen,
+  })),
+);
 
 type FactStatus =
   "available" | "in_testing" | "planned" | "not_planned_for_pilot";
@@ -216,18 +221,15 @@ function Header({ innerPage = false, active }: { innerPage?: boolean; active?: "
 function Hero() {
   return (
     <section className="hero" aria-labelledby="hero-title">
-      <div className="container hero-grid" style={{ gridTemplateColumns: "minmax(0, 760px)" }}>
+      <div className="container hero-grid">
         <div className="hero-copy" data-reveal>
           <div className="hero-kicker"><span className="kicker-mark" aria-hidden="true">◇</span> API Change Intelligence</div>
           <h1 id="hero-title">Know what your API changes will affect<span className="period">.</span></h1>
           <p className="hero-lede">Impact Gate maps OpenAPI endpoints to services, functions, and consumers across your repositories—then uses that evidence to review pull requests and plan API retirement.</p>
           <p className="hero-supporting-copy">See which downstream services may be affected, with source and uncertainty visible at every step.</p>
           <div className="hero-actions">
-            <a className="button primary" href="/sign-in" data-analytics-action="connect_github">Connect GitHub <span aria-hidden="true">↗</span></a>
-            <a className="button secondary" href="/review-desk" data-analytics-action="experience_product">View a sample impact report <span aria-hidden="true">→</span></a>
-            <a className="button secondary" href="/sign-in?demo=1" data-analytics-action="live_demo" style={{ marginLeft: "0.5rem" }}>
-              Try demo <span aria-hidden="true">→</span>
-            </a>
+            <a className="button primary" href="/onboarding/github" data-analytics-action="connect_github">Connect GitHub <span aria-hidden="true">↗</span></a>
+            <a className="button secondary" href="/demo" data-analytics-action="live_demo">Try demo <span aria-hidden="true">→</span></a>
           </div>
           <p className="hero-demo-note">
             No account needed for the demo.{" "}
@@ -243,19 +245,16 @@ function Hero() {
           </div>
           <div className="hero-note"><Fact status={siteFacts.warnOnly.status} label="Warn-only review" compact /><span>Runtime data enhances the map; it is not required for first value.</span></div>
         </div>
-        <div className="review-card" aria-label="Illustrative example of one API evidence graph" data-reveal>
-          <div className="review-top"><span className="bot-mark" aria-hidden="true"><span>ig</span></span><div className="review-byline"><strong>One evidence graph</strong><small>Illustrative preview · not a live workspace</small></div><span className="illustrative-tag">ILLUSTRATIVE · NOT LIVE</span></div>
-          <div className="contract-block"><div className="block-label"><span>API FLOW</span><span>OpenAPI → source → consumers</span></div><div className="schema-code">
-            <div><span className="code-method">GET</span> <span className="code-muted">/orders/&#123;id&#125;</span></div><div className="flow-connector">↓</div><div><span className="code-muted">OrderController</span>.getOrder()</div><div className="flow-connector">↓</div><div><span className="code-muted">OrderService</span>.loadOrder()</div><div className="flow-connector">↓</div><div><span className="code-muted">BillingClient</span>.fetchInvoice()</div>
-          </div></div>
-          <div className="trace-heading"><span>CONNECTED OUTCOMES</span><span className="trace-caption">Same graph, three workflows</span></div>
-          <ol className="trace-list">
-            <li><span className="trace-index">01</span><span className="trace-node"><code>PR Impact</code><small>2 consumers may be affected</small></span><span className="trace-arrow" aria-hidden="true">→</span></li>
-            <li><span className="trace-index">02</span><span className="trace-node"><code>Retirement Radar</code><small>Runtime traffic observed</small></span><span className="trace-arrow" aria-hidden="true">→</span></li>
-            <li><span className="trace-index">03</span><span className="trace-node"><code>API Flows</code><small>4 static callers found</small></span><span className="trace-arrow" aria-hidden="true">→</span></li>
-            <li className="trace-terminal"><span className="trace-index">04</span><span className="trace-node"><code>Evidence stays linked</code><small>Source · release · coverage</small></span><span className="trace-end" aria-hidden="true" /></li>
-          </ol>
-          <div className="review-footnote"><span className="footnote-icon" aria-hidden="true">i</span><p>Static analysis maps possible paths. Runtime instrumentation measures actual function entries when connected. This diagram is an example path, not a result from a live repository analysis.</p></div>
+        <div className="hero-video-wrap" data-reveal>
+          <video
+            className="hero-video"
+            controls
+            playsInline
+            preload="metadata"
+            src="https://impact-gate-api.eastus.cloudapp.azure.com/media/commercial.mp4#t=0.1"
+            aria-label="Impact Gate in one minute"
+          />
+          <p className="video-caption">A short overview of how Impact Gate follows an API change into downstream code.</p>
         </div>
       </div>
     </section>
@@ -268,7 +267,7 @@ function EvidenceGraph() {
 }
 
 function WorkflowCards() {
-  const workflows = [{ key: "MAP", title: "API Flows", copy: "See the code behind every endpoint.", detail: "API-to-code observability", href: "/sign-in", cta: "Explore API flows" }, { key: "GUARD", title: "PR Impact", copy: "See downstream impact before merge.", detail: "Downstream break detection", href: "/review-desk", cta: "See a sample report" }, { key: "RETIRE", title: "Retirement Radar", copy: "Plan removals with evidence, not assumptions.", detail: "Evidence-based API retirement", href: "/sign-in", cta: "Explore retirement evidence" }];
+  const workflows = [{ key: "MAP", title: "API Flows", copy: "See the code behind every endpoint.", detail: "API-to-code observability", href: "/sign-in", cta: "Explore API flows" }, { key: "GUARD", title: "PR Impact", copy: "See downstream impact before merge.", detail: "Downstream break detection", href: "/demo", cta: "Try the bot demo" }, { key: "RETIRE", title: "Retirement Radar", copy: "Plan removals with evidence, not assumptions.", detail: "Evidence-based API retirement", href: "/sign-in", cta: "Explore retirement evidence" }];
   return <section className="section workflows" id="workflows" aria-labelledby="workflows-title"><div className="container"><div className="section-heading" data-reveal><span className="eyebrow">Three moments, one graph</span><h2 id="workflows-title">Map. Guard. Retire.</h2><p>Use the same evidence as you understand an API, review a change, and decide what needs a closer look.</p></div><div className="workflow-grid">{workflows.map((workflow) => <article className="workflow-card" data-reveal key={workflow.key}><span className="workflow-key">{workflow.key}</span><h3>{workflow.title}</h3><p>{workflow.copy}</p><span className="workflow-detail">{workflow.detail}</span><a href={workflow.href}>{workflow.cta} <span aria-hidden="true">→</span></a></article>)}</div></div></section>;
 }
 
@@ -868,6 +867,12 @@ export default function App({ pathname: requestedPath }: { pathname?: string } =
     return <DocsApp pathname={pathname} />;
   if (pathname === "/contact")
     return <><a className="skip-link" href="#main-content">Skip to content</a><Header innerPage active="/contact" /><ContactPage /><Footer innerPage /></>;
+  if (pathname === "/demo")
+    return (
+      <Suspense fallback={<main className="product-screen-loading" />}>
+        <GitHubBotDemoScreen />
+      </Suspense>
+    );
   if (pathname === "/dependency-graph")
     return (
       <Suspense fallback={<main className="product-screen-loading" />}>
@@ -905,5 +910,3 @@ export default function App({ pathname: requestedPath }: { pathname?: string } =
     </>
   );
 }
-
-

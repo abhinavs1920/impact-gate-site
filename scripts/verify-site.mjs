@@ -131,11 +131,10 @@ if (
   throw new Error("Accessible theme toggle labels are missing.");
 if (!css.includes("[data-theme=dark]"))
   throw new Error("Dark theme styles are missing.");
-if (!css.includes("html[data-theme=dark] .review-card"))
-  throw new Error("Dark theme card styles must override component styles.");
+if (!css.includes(".hero-video"))
+  throw new Error("Hero video styles are missing.");
 if (!css.includes("grid-template-columns:1.35rem minmax(0,1fr)"))
   throw new Error("Narrow-screen trace overflow fix is missing.");
 if (!assets.some((asset) => asset.endsWith(".js")))
   throw new Error("No React application bundle was generated.");
 console.log("Static build and content checks passed.");
-
