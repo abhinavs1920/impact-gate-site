@@ -628,6 +628,21 @@ html[data-theme="dark"] .ig-runtime-logo-datadog { background: #30264a; }
 .ig-workflow-card > strong { display: block; margin-top: 16px; font-size: 21px; font-weight: 600; letter-spacing: -.02em; line-height: 1.3; }
 .ig-workflow-card > p { margin: 8px 0 0; color: var(--ig-secondary); font-size: 13px; line-height: 1.6; }
 .ig-workflow-link { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: auto; padding-top: 22px; color: var(--ig-primary); font-size: 13px; font-weight: 600; }
+.ig-overview { --ig-chart-unknown: #64748b; }
+.ig-workflow-card { min-height: 260px; }
+.ig-workflow-metric { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 9px; margin-top: 16px; }
+.ig-workflow-metric strong { font-size: 27px; font-weight: 650; letter-spacing: -.035em; line-height: 1; }
+.ig-workflow-metric > span { color: var(--ig-secondary); font-size: 12px; line-height: 1.4; }
+.ig-workflow-visual { display: grid; gap: 9px; margin-top: 14px; }
+.ig-workflow-bar { display: flex; width: 100%; height: 10px; overflow: hidden; gap: 2px; border-radius: 999px; background: var(--ig-muted); }
+.ig-workflow-bar > span { min-width: 0; background: var(--ig-workflow-segment); }
+.ig-workflow-bar > span:first-child { border-radius: 999px 0 0 999px; }
+.ig-workflow-bar > span:last-child { border-radius: 0 999px 999px 0; }
+.ig-workflow-legend { display: flex; flex-wrap: wrap; gap: 5px 12px; color: var(--ig-secondary); font: 10px/1.4 'JetBrains Mono', monospace; }
+.ig-workflow-legend > span { display: inline-flex; align-items: center; gap: 5px; }
+.ig-workflow-legend i { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 2px; background: var(--ig-workflow-segment, var(--ig-secondary)); }
+.ig-workflow-legend strong { color: var(--ig-ink); font-weight: 600; }
+.ig-workflow-card > p { margin-top: 10px; }
 
 .ig-product-badge { display: inline-flex; width: fit-content; align-items: center; border: 1px solid var(--ig-border); border-radius: 4px; padding: 3px 8px; color: var(--ig-secondary); background: var(--ig-muted); font: 600 11px/1.35 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: .03em; }
 .ig-product-badge[data-tone="measured"] { border-color: #26825d70; background: #26825d12; color: #26825d; }

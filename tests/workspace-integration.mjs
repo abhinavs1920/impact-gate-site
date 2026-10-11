@@ -95,6 +95,11 @@ try {
     if (screen === 'home') {
       serverSnapshot.jobs = [{id:'queued-analysis',repositoryId:'r1',type:'analyze_pull_request',status:'queued',phase:'static_analysis_queue',progress:0,error:null,createdAt:source.generatedAt,updatedAt:source.generatedAt}];
       serverSnapshot.endpoints = [0, 1, 2, 4, 5].map((count, index) => ({...source.endpoints[0],id:`e${index + 1}`,path:`/customer/v1/orders/${index + 1}`,staticCallerCount:count}));
+      serverSnapshot.code = {version:1,functions:[],calls:[],flows:[
+        {endpointId:'e1',status:'indexed'},
+        {endpointId:'e2',status:'partial'},
+        {endpointId:'e3',status:'entrypoint_not_found'},
+      ],missingRepositoryIds:[],partial:false,notes:[]};
       serverSnapshot.findings = Array.from({length:8}, (_, index) => ({
         id:`f${index + 1}`,analysisId:'analysis-1',repositoryId:'r1',pullRequestNumber:100+index,pullRequestUrl:`https://github.com/impact-gate/customer-api/pull/${100+index}`,headSha:'abc123',endpointId:'e1',endpoint:source.endpoints[0].path,consumerServiceId:null,consumerName:'customer-app',changeKind:'response_field_removed',verdict:'breaking',risk:['high','medium','low','none'][index%4],evidence:[source.endpoints[0].source],explanation:`Finding ${index + 1}`,createdAt:`2026-09-30T00:00:0${index}.000Z`,status:index === 7 ? 'closed' : 'open',
       }));
@@ -144,6 +149,10 @@ try {
       assert.match(content, /API Flows/);
       assert.match(content, /PR Impact/);
       assert.match(content, /Retirement Radar/);
+      assert.equal(document.querySelectorAll('.ig-workflow-visual[role=img]').length, 3, 'workflow metrics each expose a visual summary');
+      assert.match(document.querySelector('[data-workflow=map] .ig-workflow-visual').getAttribute('aria-label'), /1 fully mapped, 1 partially mapped, 1 without an entry point, 2 not indexed, out of 5 APIs/);
+      assert.match(document.querySelector('[data-workflow=guard] .ig-workflow-visual').getAttribute('aria-label'), /findings by severity: 2 high, 2 medium, 2 low, 1 no risk/);
+      assert.match(document.querySelector('[data-workflow=retire] .ig-workflow-visual').getAttribute('aria-label'), /out of 4 candidates/);
       assert.equal(document.querySelectorAll('#recent-findings tbody tr').length, 5);
       assert.equal(document.querySelector('[data-action=finding]').dataset.id, 'f7', 'recent findings sort newest first');
       const severity = document.querySelector('[data-filter]');

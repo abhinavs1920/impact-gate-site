@@ -139,8 +139,14 @@ async function refreshDemoTraffic(container: HTMLElement): Promise<void> {
   }
 }
 
-function workflowCard(key: string, title: string, value: string, copy: string, href: string, action: string, tone: string): string {
-  return `<a class="ig-workflow-card" data-workflow="${key.toLowerCase()}" href="${href}"><span class="ig-workflow-key">${key}</span><div class="ig-workflow-title"><h2>${title}</h2>${productBadge(tone === "guard" ? "Needs attention" : tone === "retire" ? "Evidence review" : "Mapped", tone)}</div><strong>${escape(value)}</strong><p>${escape(copy)}</p><span class="ig-workflow-link">${escape(action)} <span aria-hidden="true">→</span></span></a>`;
+function workflowCard(key: string, title: string, badgeLabel: string, badgeTone: string, value: string, unit: string, visual: string, copy: string, href: string, action: string): string {
+  return `<a class="ig-workflow-card" data-workflow="${key.toLowerCase()}" href="${href}"><span class="ig-workflow-key">${key}</span><div class="ig-workflow-title"><h2>${title}</h2>${productBadge(badgeLabel, badgeTone)}</div><div class="ig-workflow-metric"><strong>${escape(value)}</strong><span>${escape(unit)}</span></div>${visual}<p>${escape(copy)}</p><span class="ig-workflow-link">${escape(action)} <span aria-hidden="true">→</span></span></a>`;
+}
+function workflowBar(ariaLabel: string, segments: Array<{ label: string; count: number; color: string }>, total: number, emptyLabel: string): string {
+  const visible = segments.filter(segment => segment.count > 0);
+  const bar = visible.map(segment => `<span data-segment="${escape(segment.label)}" style="width:${total ? segment.count / total * 100 : 0}%;--ig-workflow-segment:${segment.color}"></span>`).join("");
+  const legend = segments.filter(segment => segment.count > 0).map(segment => `<span><i style="--ig-workflow-segment:${segment.color}" aria-hidden="true"></i>${escape(segment.label)} <strong>${segment.count}</strong></span>`).join("");
+  return `<div class="ig-workflow-visual"${ariaLabel ? ` role="img" aria-label="${escape(ariaLabel)}"` : ""}><div class="ig-workflow-bar" aria-hidden="true">${total ? bar : ""}</div><div class="ig-workflow-legend">${legend || `<span>${escape(emptyLabel)}</span>`}</div></div>`;
 }
 
 function evidenceState(candidate: WorkspaceSnapshot["candidates"][number], endpoint?: WorkspaceEndpoint): { label: string; tone: string; action: string } {
@@ -175,16 +181,56 @@ function renderHome(): string {
   const noFindings = query || filter
     ? empty("No matching findings", "Try another search or clear the filters.", button("clear-filters", "Clear filters", "", true))
     : empty("No open findings", s.repositories.length ? "Findings appear when a pull request changes an API contract." : "Connect your repositories to discover services, endpoints, and API changes.", s.repositories.length ? "" : '<a class="ig-button" href="/dashboard/repositories?import=1">Import repositories</a>');
-  const mappedFlows = s.code?.flows.filter(flow => flow.status !== "entrypoint_not_found").length ?? s.endpoints.length;
-  const retirementNeedsEvidence = s.candidates.filter(candidate => candidate.reviewState !== "reviewed_current_snapshot").length;
+  const flowByEndpoint = new Map((s.code?.flows ?? []).map(flow => [flow.endpointId, flow]));
+  const flowCounts = {
+    mapped: s.endpoints.filter(endpoint => ["indexed", "partial"].includes(flowByEndpoint.get(endpoint.id)?.status ?? "")).length,
+    partial: s.endpoints.filter(endpoint => flowByEndpoint.get(endpoint.id)?.status === "partial").length,
+    noEntrypoint: s.endpoints.filter(endpoint => flowByEndpoint.get(endpoint.id)?.status === "entrypoint_not_found").length,
+  };
+  const fullyMapped = flowCounts.mapped - flowCounts.partial;
+  const notIndexed = s.code ? Math.max(0, s.endpoints.length - flowCounts.mapped - flowCounts.noEntrypoint) : 0;
+  const mappedFlows = s.code ? flowCounts.mapped : null;
+  const mappingBadgeLabel = mappedFlows === null ? "Needs indexing" : !s.endpoints.length ? "No APIs yet" : mappedFlows === s.endpoints.length ? "Fully mapped" : "Mapping coverage";
+  const mappingBadgeTone = mappedFlows === null || !s.endpoints.length ? "unknown" : mappedFlows === s.endpoints.length ? "measured" : "mapped";
+  const reviewedCandidates = s.candidates.filter(candidate => candidate.reviewState === "reviewed_current_snapshot").length;
+  const candidatesNeedingReview = s.candidates.length - reviewedCandidates;
+  const retirementBadgeLabel = !s.candidates.length ? "No candidates" : candidatesNeedingReview ? "Needs review" : "Up to date";
   const pullRequests = new Set(open.map(finding => `${finding.repositoryId}:${finding.pullRequestNumber}`)).size;
+  const mappingVisual = s.code
+    ? workflowBar(
+      `API flow mapping: ${fullyMapped} fully mapped, ${flowCounts.partial} partially mapped, ${flowCounts.noEntrypoint} without an entry point, ${notIndexed} not indexed, out of ${s.endpoints.length} APIs`,
+      [
+        { label: "Mapped", count: fullyMapped, color: "var(--ig-chart-used)" },
+        { label: "Partial", count: flowCounts.partial, color: "var(--ig-chart-medium)" },
+        { label: "No entry point", count: flowCounts.noEntrypoint, color: "var(--ig-chart-high)" },
+        { label: "Not indexed", count: notIndexed, color: "var(--ig-chart-unknown)" },
+      ],
+      s.endpoints.length,
+      "No APIs discovered",
+    )
+    : workflowBar("API code-flow mapping is not indexed yet", [], 0, s.endpoints.length ? "Code-flow index unavailable" : "No APIs discovered");
+  const severityCounts = [
+    { label: "High", count: open.filter(finding => finding.risk === "high").length, color: "var(--ig-chart-high)" },
+    { label: "Medium", count: open.filter(finding => finding.risk === "medium").length, color: "var(--ig-chart-medium)" },
+    { label: "Low", count: open.filter(finding => finding.risk === "low").length, color: "var(--ig-chart-low)" },
+    { label: "No risk", count: open.filter(finding => finding.risk === "none").length, color: "var(--ig-chart-unknown)" },
+  ];
+  const reviewVisual = workflowBar(
+    `Retirement review status: ${reviewedCandidates} reviewed for the current snapshot, ${candidatesNeedingReview} needing review, out of ${s.candidates.length} candidates`,
+    [
+      { label: "Reviewed now", count: reviewedCandidates, color: "var(--ig-chart-used)" },
+      { label: "Needs review", count: candidatesNeedingReview, color: "var(--ig-chart-candidate)" },
+    ],
+    s.candidates.length,
+    "No retirement candidates",
+  );
   return `<div class="ig-overview">${heading("Overview", "API Change Intelligence across your connected repositories")}
-    <div class="ig-summary-line"><strong>${s.repositories.length} repositories</strong><span>·</span><strong>${s.endpoints.length} APIs</strong><span>·</span><strong>${mappedFlows} mapped flows</strong><span>·</span><strong>${open.length} open PR findings</strong></div>
+    <div class="ig-summary-line"><strong>${s.repositories.length} repositories</strong><span>·</span><strong>${s.endpoints.length} APIs</strong><span>·</span><strong>${mappedFlows === null ? "Code flows not indexed" : `${mappedFlows} mapped flows`}</strong><span>·</span><strong>${open.length} open PR findings</strong></div>
     ${coverageBanner(s)}
     <section class="ig-workflow-grid" aria-label="Product workflows">
-      ${workflowCard("MAP", "API Flows", `${mappedFlows} API operations mapped`, "Follow an API from its contract to the functions that handle it.", "/dashboard/api-usage", "View API flows", "map")}
-      ${workflowCard("GUARD", "PR Impact", `${open.length} open finding${open.length === 1 ? "" : "s"} across ${pullRequests} pull request${pullRequests === 1 ? "" : "s"}`, "Review the downstream blast radius of an API change before the pull request merges.", "/dashboard/pr-impact", "Review PR impact", "guard")}
-      ${workflowCard("RETIRE", "Retirement Radar", `${retirementNeedsEvidence} API${retirementNeedsEvidence === 1 ? " needs" : "s need"} more evidence`, "Find APIs that need a closer look, with evidence and next actions kept separate.", "/dashboard/deprecation-candidates", "Review retirement radar", "retire")}
+      ${workflowCard("MAP", "API Flows", mappingBadgeLabel, mappingBadgeTone, mappedFlows === null ? "—" : String(mappedFlows), mappedFlows === null ? "API code flows indexed" : `of ${s.endpoints.length} APIs mapped`, mappingVisual, "See how each API reaches its implementation.", "/dashboard/api-usage", "View API flows")}
+      ${workflowCard("GUARD", "PR Impact", severityCounts[0].count ? "High risk" : open.length ? "Open findings" : "Clear", severityCounts[0].count ? "possible" : open.length ? "mapped" : "measured", String(open.length), `open findings · ${pullRequests} PR${pullRequests === 1 ? "" : "s"}`, workflowBar(`Open PR findings by severity: ${severityCounts.map(segment => `${segment.count} ${segment.label.toLowerCase()}`).join(", ")}`, severityCounts, open.length, "No open findings"), "Prioritize the changes most likely to break consumers.", "/dashboard/pr-impact", "Review PR impact")}
+      ${workflowCard("RETIRE", "Retirement Radar", retirementBadgeLabel, !s.candidates.length ? "unknown" : candidatesNeedingReview ? "possible" : "measured", String(candidatesNeedingReview), "candidates need review", reviewVisual, "See which candidates have a current evidence review.", "/dashboard/deprecation-candidates", "Review retirement radar")}
     </section>
     <section class="ig-card ig-overview-findings" id="recent-findings" tabindex="-1" aria-labelledby="recent-findings-title">
       <header class="ig-overview-findings-header"><div class="ig-overview-findings-title"><h2 id="recent-findings-title">Recent PR Impact</h2><span class="ig-overview-findings-count">${count}</span></div><a class="ig-overview-all" href="/dashboard/pr-impact">View PR Impact →</a></header>
