@@ -156,6 +156,24 @@ function evidenceState(candidate: WorkspaceSnapshot["candidates"][number], endpo
   if (candidate.evidenceState === "no_known_caller_selected_repositories") return { label: "No known caller in selected repositories", tone: "unknown", action: "Check external consumers" };
   return { label: "Unknown external usage", tone: "unknown", action: "Check external consumers" };
 }
+function hasConfirmedMonthOfZeroCalls(s: WorkspaceSnapshot, candidate: WorkspaceSnapshot["candidates"][number], endpoint: WorkspaceEndpoint): boolean {
+  const source = endpoint.runtimeRequestSource;
+  const connection = source
+    ? s.runtimeConnections?.find(item => item.provider === source && item.status === "connected")
+    : undefined;
+  const windowStart = Date.parse(endpoint.runtimeWindowStart ?? "");
+  const windowEnd = Date.parse(endpoint.runtimeWindowEnd ?? "");
+  return candidate.zeroCallsOver30Days === true &&
+    endpoint.runtimeCoverage === "available" &&
+    endpoint.runtimeRequestSource === "prometheus" &&
+    connection?.provider === "prometheus" &&
+    connection.config.windowHours >= 720 &&
+    endpoint.runtimeCallsInWindow === 0 &&
+    endpoint.runtimePartial === false &&
+    Number.isFinite(windowStart) &&
+    Number.isFinite(windowEnd) &&
+    windowEnd - windowStart >= 30 * 24 * 60 * 60 * 1000;
+}
 function renderHome(): string {
   const s = snapshot!;
   const open = s.findings.filter(f => f.status === "open");
@@ -192,9 +210,17 @@ function renderHome(): string {
   const mappedFlows = s.code ? flowCounts.mapped : null;
   const mappingBadgeLabel = mappedFlows === null ? "Needs indexing" : !s.endpoints.length ? "No APIs yet" : mappedFlows === s.endpoints.length ? "Fully mapped" : "Mapping coverage";
   const mappingBadgeTone = mappedFlows === null || !s.endpoints.length ? "unknown" : mappedFlows === s.endpoints.length ? "measured" : "mapped";
-  const reviewedCandidates = s.candidates.filter(candidate => candidate.reviewState === "reviewed_current_snapshot").length;
-  const candidatesNeedingReview = s.candidates.length - reviewedCandidates;
-  const retirementBadgeLabel = !s.candidates.length ? "No candidates" : candidatesNeedingReview ? "Needs review" : "Up to date";
+  const retirementCandidates = s.candidates.flatMap(candidate => {
+    const endpoint = s.endpoints.find(item => item.id === candidate.endpointId);
+    return endpoint && hasConfirmedMonthOfZeroCalls(s, candidate, endpoint)
+      ? [{ candidate, endpoint }]
+      : [];
+  });
+  const zeroCallReviewed = retirementCandidates.filter(
+    ({ candidate }) => candidate.reviewState === "reviewed_current_snapshot",
+  ).length;
+  const zeroCallNeedingReview = retirementCandidates.length - zeroCallReviewed;
+  const reviewVerb = zeroCallNeedingReview === 1 ? "needs" : "need";
   const pullRequests = new Set(open.map(finding => `${finding.repositoryId}:${finding.pullRequestNumber}`)).size;
   const mappingVisual = s.code
     ? workflowBar(
@@ -216,21 +242,22 @@ function renderHome(): string {
     { label: "No risk", count: open.filter(finding => finding.risk === "none").length, color: "var(--ig-chart-unknown)" },
   ];
   const reviewVisual = workflowBar(
-    `Retirement review status: ${reviewedCandidates} reviewed for the current snapshot, ${candidatesNeedingReview} needing review, out of ${s.candidates.length} candidates`,
+    `Among ${retirementCandidates.length} ${retirementCandidates.length === 1 ? "API" : "APIs"} with a complete 30-day zero-call counter, ${zeroCallNeedingReview} ${reviewVerb} review and ${zeroCallReviewed} have a current-snapshot review`,
     [
-      { label: "Reviewed now", count: reviewedCandidates, color: "var(--ig-chart-used)" },
-      { label: "Needs review", count: candidatesNeedingReview, color: "var(--ig-chart-candidate)" },
+      { label: "Needs review", count: zeroCallNeedingReview, color: "var(--ig-chart-candidate)" },
+      { label: "Reviewed now", count: zeroCallReviewed, color: "var(--ig-chart-used)" },
     ],
-    s.candidates.length,
-    "No retirement candidates",
+    retirementCandidates.length,
+    "No confirmed 30-day zero-call APIs",
   );
+  const retirementBadgeLabel = zeroCallNeedingReview ? "Review zero-call APIs" : "No review queue";
   return `<div class="ig-overview">${heading("Overview", "API Change Intelligence across your connected repositories")}
     <div class="ig-summary-line"><strong>${s.repositories.length} repositories</strong><span>·</span><strong>${s.endpoints.length} APIs</strong><span>·</span><strong>${mappedFlows === null ? "Code flows not indexed" : `${mappedFlows} mapped flows`}</strong><span>·</span><strong>${open.length} open PR findings</strong></div>
     ${coverageBanner(s)}
     <section class="ig-workflow-grid" aria-label="Product workflows">
       ${workflowCard("MAP", "API Flows", mappingBadgeLabel, mappingBadgeTone, mappedFlows === null ? "—" : String(mappedFlows), mappedFlows === null ? "API code flows indexed" : `of ${s.endpoints.length} APIs mapped`, mappingVisual, "See how each API reaches its implementation.", "/dashboard/api-usage", "View API flows")}
       ${workflowCard("GUARD", "PR Impact", severityCounts[0].count ? "High risk" : open.length ? "Open findings" : "Clear", severityCounts[0].count ? "possible" : open.length ? "mapped" : "measured", String(open.length), `open findings · ${pullRequests} PR${pullRequests === 1 ? "" : "s"}`, workflowBar(`Open PR findings by severity: ${severityCounts.map(segment => `${segment.count} ${segment.label.toLowerCase()}`).join(", ")}`, severityCounts, open.length, "No open findings"), "Prioritize the changes most likely to break consumers.", "/dashboard/pr-impact", "Review PR impact")}
-      ${workflowCard("RETIRE", "Retirement Radar", retirementBadgeLabel, !s.candidates.length ? "unknown" : candidatesNeedingReview ? "possible" : "measured", String(candidatesNeedingReview), "candidates need review", reviewVisual, "See which candidates have a current evidence review.", "/dashboard/deprecation-candidates", "Review retirement radar")}
+      ${workflowCard("RETIRE", "Retirement Radar", retirementBadgeLabel, zeroCallNeedingReview ? "possible" : "unknown", String(retirementCandidates.length), "APIs · 0 calls over 30 days", reviewVisual, "Only complete, connected Prometheus counters qualify. Other candidates stay in the full evidence inventory.", "/dashboard/deprecation-candidates", "View all candidates")}
     </section>
     <section class="ig-card ig-overview-findings" id="recent-findings" tabindex="-1" aria-labelledby="recent-findings-title">
       <header class="ig-overview-findings-header"><div class="ig-overview-findings-title"><h2 id="recent-findings-title">Recent PR Impact</h2><span class="ig-overview-findings-count">${count}</span></div><a class="ig-overview-all" href="/dashboard/pr-impact">View PR Impact →</a></header>
@@ -277,7 +304,7 @@ function renderCandidates(): string {
   const noResults = query || filter
     ? empty("No matching candidates", "Try another search or clear the filters.", button("clear-filters", "Clear filters", "", true))
     : empty("No retirement records to review yet", "This is not evidence that an API is unused. Index provider and consumer repositories, and connect runtime data if available, to build review evidence.", '<a class="ig-button ig-button-secondary" href="/dashboard/api-usage">Explore APIs</a> <a class="ig-button ig-button-secondary" href="/dashboard/repositories">Check repository coverage</a>');
-  return heading("Retirement Radar", "Plan API removals with evidence, not assumptions. Missing runtime observations do not establish that an API is unused.") + `<section class="ig-card"><div class="ig-retirement-intro"><div><h2>Evidence inventory</h2><p class="ig-note">Static callers, runtime observations, measured function entries, and review state are independent signals.</p></div><a class="ig-button ig-button-secondary" href="/dashboard/settings#runtime-connections">Connect runtime data</a></div>${filters("Search APIs and evidence", [["needs_runtime_coverage", "Needs runtime coverage"], ["static_callers_found", "Static callers found"], ["measured_usage_observed", "Measured usage observed"], ["no_known_caller_selected_repositories", "No known caller in selected repositories"], ["unknown_external_usage", "Unknown external usage"]])}${candidates.length ? table(["API / target", "Evidence state", "Static callers", "Runtime status", "Measured function usage", "Review state", "Next action"], candidates.map(c => { const e = s.endpoints.find(endpoint => endpoint.id === c.endpointId); const state = evidenceState(c, e); return [`<button data-action="endpoint" data-id="${escape(c.endpointId)}"><code>${escape(e?.method)} ${escape(e?.path ?? c.endpointId)}</code></button><p class="ig-note">${escape(c.reason)}</p>`, productBadge(state.label, state.tone), String(c.staticCallerCount), escape(e ? coverage(e) : c.runtimeCoverage), e?.measuredFunctionEntriesInWindow == null ? productBadge("Unknown", "unknown") : productBadge(e.measuredFunctionEntriesInWindow.toLocaleString(), "measured"), c.reviewState === "reviewed_current_snapshot" ? "Reviewed for this snapshot" : c.reviewState === "reviewed_previous_snapshot" ? "Reviewed previous snapshot" : "Not reviewed", button("candidate", state.action, `data-id="${escape(c.endpointId)}"`, true)]; })) : noResults}</section>`;
+  return heading("Retirement Radar", "Review APIs using evidence before planning removal. Unknown or missing telemetry is never treated as zero usage.") + `<section class="ig-card"><div class="ig-retirement-intro"><div><h2>Full evidence inventory <span class="ig-overview-findings-count">${candidates.length} of ${s.candidates.length} candidates</span></h2><p class="ig-note">All candidates remain listed, including active usage, missing telemetry, and incomplete windows. Only complete Prometheus counters with 0 calls across 30 days are highlighted on Overview. Datadog spans may be sampled, so missing spans remain unknown.</p></div><a class="ig-button ig-button-secondary" href="/dashboard/settings#runtime-connections">Review telemetry connection</a></div>${filters("Search APIs and evidence", [["needs_runtime_coverage", "Needs runtime coverage"], ["static_callers_found", "Static callers found"], ["measured_usage_observed", "Measured usage observed"], ["no_known_caller_selected_repositories", "No known caller in selected repositories"], ["unknown_external_usage", "Unknown external usage"]])}${candidates.length ? table(["API / target", "Evidence state", "Static callers", "Runtime status", "Measured function usage", "Review state", "Next action"], candidates.map(c => { const e = s.endpoints.find(endpoint => endpoint.id === c.endpointId); const state = e && hasConfirmedMonthOfZeroCalls(s, c, e) ? { label: "0 calls in 30 days", tone: "possible", action: "Review zero-call evidence" } : evidenceState(c, e); return [`<button data-action="endpoint" data-id="${escape(c.endpointId)}"><code>${escape(e?.method)} ${escape(e?.path ?? c.endpointId)}</code></button><p class="ig-note">${escape(c.reason)}</p>`, productBadge(state.label, state.tone), String(c.staticCallerCount), escape(e ? coverage(e) : c.runtimeCoverage), e?.measuredFunctionEntriesInWindow == null ? productBadge("Unknown", "unknown") : productBadge(e.measuredFunctionEntriesInWindow.toLocaleString(), "measured"), c.reviewState === "reviewed_current_snapshot" ? "Reviewed for this snapshot" : c.reviewState === "reviewed_previous_snapshot" ? "Reviewed previous snapshot" : "Not reviewed", button("candidate", state.action, `data-id="${escape(c.endpointId)}"`, true)]; })) : noResults}</section>`;
 }
 
 function renderPRImpact(): string {

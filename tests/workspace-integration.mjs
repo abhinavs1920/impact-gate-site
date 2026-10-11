@@ -95,6 +95,13 @@ try {
     if (screen === 'home') {
       serverSnapshot.jobs = [{id:'queued-analysis',repositoryId:'r1',type:'analyze_pull_request',status:'queued',phase:'static_analysis_queue',progress:0,error:null,createdAt:source.generatedAt,updatedAt:source.generatedAt}];
       serverSnapshot.endpoints = [0, 1, 2, 4, 5].map((count, index) => ({...source.endpoints[0],id:`e${index + 1}`,path:`/customer/v1/orders/${index + 1}`,staticCallerCount:count}));
+      const monthEnd = new Date().toISOString();
+      const monthStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      serverSnapshot.runtimeConnections = [{provider:'prometheus',config:{provider:'prometheus',windowHours:720,serviceMappings:{'customer-service':'s1'},baseUrl:'https://metrics.example.com',query:'increase(requests[{{window}}])',serviceLabel:'service',methodLabel:'method',routeLabel:'route',callerLabel:null},status:'connected',lastSyncedAt:monthEnd,lastAttemptAt:monthEnd,error:null,observationCount:1,matchedEndpointCount:1,unmatchedObservationCount:0,windowStart:monthStart,windowEnd:monthEnd,partial:false,warnings:[]}];
+      serverSnapshot.endpoints[0] = {...serverSnapshot.endpoints[0],runtimeCoverage:'available',runtimeCallsInWindow:0,runtimeRequestSource:'prometheus',runtimeWindowStart:monthStart,runtimeWindowEnd:monthEnd,runtimePartial:false};
+      serverSnapshot.endpoints[1] = {...serverSnapshot.endpoints[1],runtimeCoverage:'available',runtimeCallsInWindow:0,runtimeRequestSource:'prometheus',runtimeWindowStart:monthStart,runtimeWindowEnd:monthEnd,runtimePartial:true};
+      serverSnapshot.endpoints[2] = {...serverSnapshot.endpoints[2],runtimeCoverage:'available',runtimeCallsInWindow:0,runtimeRequestSource:'prometheus',runtimeWindowStart:new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),runtimeWindowEnd:monthEnd,runtimePartial:false};
+      serverSnapshot.endpoints[3] = {...serverSnapshot.endpoints[3],runtimeCoverage:'available',runtimeCallsInWindow:12,runtimeRequestSource:'prometheus',runtimeWindowStart:monthStart,runtimeWindowEnd:monthEnd,runtimePartial:false};
       serverSnapshot.code = {version:1,functions:[],calls:[],flows:[
         {endpointId:'e1',status:'indexed'},
         {endpointId:'e2',status:'partial'},
@@ -103,7 +110,7 @@ try {
       serverSnapshot.findings = Array.from({length:8}, (_, index) => ({
         id:`f${index + 1}`,analysisId:'analysis-1',repositoryId:'r1',pullRequestNumber:100+index,pullRequestUrl:`https://github.com/impact-gate/customer-api/pull/${100+index}`,headSha:'abc123',endpointId:'e1',endpoint:source.endpoints[0].path,consumerServiceId:null,consumerName:'customer-app',changeKind:'response_field_removed',verdict:'breaking',risk:['high','medium','low','none'][index%4],evidence:[source.endpoints[0].source],explanation:`Finding ${index + 1}`,createdAt:`2026-09-30T00:00:0${index}.000Z`,status:index === 7 ? 'closed' : 'open',
       }));
-      serverSnapshot.candidates = ['strong_candidate','rare_caller','building_confidence','flagged'].map((status, index) => ({...source.candidates[0],endpointId:`e${index + 1}`,status}));
+      serverSnapshot.candidates = ['strong_candidate','rare_caller','building_confidence','flagged'].map((status, index) => ({...source.candidates[0],endpointId:`e${index + 1}`,status,zeroCallsOver30Days:index === 0}));
     }
     if (screen === 'home-empty') {
       for (const key of ['repositories','services','endpoints','edges','findings','candidates']) serverSnapshot[key] = [];
@@ -152,7 +159,10 @@ try {
       assert.equal(document.querySelectorAll('.ig-workflow-visual[role=img]').length, 3, 'workflow metrics each expose a visual summary');
       assert.match(document.querySelector('[data-workflow=map] .ig-workflow-visual').getAttribute('aria-label'), /1 fully mapped, 1 partially mapped, 1 without an entry point, 2 not indexed, out of 5 APIs/);
       assert.match(document.querySelector('[data-workflow=guard] .ig-workflow-visual').getAttribute('aria-label'), /findings by severity: 2 high, 2 medium, 2 low, 1 no risk/);
-      assert.match(document.querySelector('[data-workflow=retire] .ig-workflow-visual').getAttribute('aria-label'), /out of 4 candidates/);
+      assert.match(document.querySelector('[data-workflow=retire] .ig-workflow-visual').getAttribute('aria-label'), /Among 1 API with a complete 30-day zero-call counter, 1 needs review and 0 have a current-snapshot review/);
+      assert.equal(document.querySelector('[data-workflow=retire] .ig-workflow-metric strong').textContent, '1', 'only full-month complete Prometheus zero counters qualify');
+      assert.match(document.querySelector('[data-workflow=retire] .ig-workflow-metric').textContent, /APIs · 0 calls over 30 days/);
+      assert.match(document.querySelector('[data-workflow=retire] .ig-workflow-link').textContent, /View all candidates/);
       assert.equal(document.querySelectorAll('#recent-findings tbody tr').length, 5);
       assert.equal(document.querySelector('[data-action=finding]').dataset.id, 'f7', 'recent findings sort newest first');
       const severity = document.querySelector('[data-filter]');
@@ -172,6 +182,11 @@ try {
       assert.match(content, /No open findings/);
       assert.equal(document.querySelector('#recent-findings .ig-button').getAttribute('href'), '/dashboard/repositories?import=1');
       assert.doesNotMatch(document.querySelector('.ig-overview').innerHTML, /NaN|Infinity/);
+    }
+    if (screen === 'deprecation-candidates') {
+      assert.match(content, /Full evidence inventory/);
+      assert.match(content, /Needs runtime coverage/);
+      assert.match(content, /All candidates remain listed/);
     }
     if (screen === 'api-usage') {
       assert.match(content, /\/customer\/v1\/orders/);
@@ -199,7 +214,8 @@ try {
       const click = element => element.dispatchEvent(new window.Event('click', {bubbles:true}));
       click(document.querySelector('[data-action=runtime-connect][data-provider=prometheus]'));
       const connectionForm = document.querySelector('[data-runtime-form]');
-      connectionForm.reportValidity = () => true;
+      assert.equal(connectionForm.querySelector('[name=windowHours]').max, '720', 'runtime connections allow a full 30-day window');
+      connectionForm.reportValidity=()=>true;
       connectionForm.querySelector('[name=baseUrl]').value = 'https://metrics.example.com';
       const authentication = connectionForm.querySelector('[name=authentication]');
       try { authentication.value = 'bearer'; } catch { Object.defineProperty(authentication, 'value', { value: 'bearer', writable: true, configurable: true }); }

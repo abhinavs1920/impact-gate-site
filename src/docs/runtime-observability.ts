@@ -58,7 +58,7 @@ export const runtimeObservabilityDoc: DocPage = {
             },
             {
               title: "Adjust the defaults when needed",
-              text: "The defaults use `http_requests_total` with `service`, `method`, and `route` labels over 24 hours. Open **Advanced settings** if your exporter uses another counter or labels. Keep `{{window}}` inside `increase()`. The query must return an instant vector of request counts rather than a rate per second.",
+              text: "The defaults use `http_requests_total` with `service`, `method`, and `route` labels over 24 hours. Windows can be configured up to 720 hours. Use at least 720 hours (30 days) for Retirement Radar to confirm an explicit zero-call counter. Open **Advanced settings** if your exporter uses another counter or labels. Keep `{{window}}` inside `increase()`. The query must return an instant vector of request counts rather than a rate per second.",
             },
             {
               title: "Find and match services",
@@ -176,8 +176,13 @@ export const runtimeObservabilityDoc: DocPage = {
             ],
             [
               "No current observations",
-              "No positive count matched this endpoint, or its import failed or is stale.",
+              "No matched telemetry row is available, or its import failed or is stale. Missing rows are not interpreted as zero calls.",
               "Check source status, query scope, service mapping, route labels, instrumentation, and retention.",
+            ],
+            [
+              "0 calls in 30 days",
+              "A complete Prometheus counter series explicitly reported zero across a full 30-day window. Sampled Datadog spans and missing series do not qualify.",
+              "Review static and external callers before planning removal; this is not approval to deprecate the API.",
             ],
             [
               "Estimated requests",
@@ -198,13 +203,13 @@ export const runtimeObservabilityDoc: DocPage = {
         },
         {
           type: "paragraph",
-          text: "Every indexed endpoint remains in the inventory, including endpoints with missing observations. In an endpoint's Overview, the Runtime observation section shows the source, request/span count, observation window, and whether caller identity is available. A query evaluation timestamp is not the last request timestamp, so Last observed can remain unavailable even when traffic counts are present.",
+          text: "Every indexed endpoint remains in the inventory, including endpoints with missing observations. In an endpoint's Overview, the Runtime observation section shows the source, request/span count, observation window, and whether caller identity is available. A query evaluation timestamp is not the last request timestamp, so Last observed can remain unavailable even when traffic counts are present. Retirement Radar highlights only connected, complete Prometheus counter results that explicitly report zero across at least 30 days; other candidates remain visible with their coverage and review state.",
         },
         {
           type: "callout",
           tone: "warning",
           title: "Keep retirement decisions explicit",
-          text: "Connecting a source does not automatically approve an endpoint removal. Zero counters, absent spans, incomplete indexing, and unobserved scheduled callers can leave usage unknown. Review application owners, callers, measured function coverage, and observation windows before changing a contract.",
+          text: "Connecting a source does not automatically approve an endpoint removal. Missing series, absent spans, incomplete indexing, and unobserved scheduled callers can leave usage unknown. Review application owners, callers, measured function coverage, and observation windows before changing a contract.",
         },
       ],
     },

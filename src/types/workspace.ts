@@ -145,6 +145,8 @@ export interface WorkspaceCandidate {
   reviewedSnapshotId: string | null;
   evidenceState?: RetirementEvidenceState;
   reviewState?: RetirementReviewState;
+  /** True only for complete Prometheus counter evidence explicitly showing zero over 30 days. */
+  zeroCallsOver30Days?: boolean;
   nextAction?: string;
   measuredFunctionUsage?: number | null;
 }
