@@ -96,8 +96,8 @@ try {
       serverSnapshot.jobs = [{id:'queued-analysis',repositoryId:'r1',type:'analyze_pull_request',status:'queued',phase:'static_analysis_queue',progress:0,error:null,createdAt:source.generatedAt,updatedAt:source.generatedAt}];
       const monthEnd = new Date().toISOString();
       const monthStart = new Date(Date.parse(monthEnd) - 30 * 24 * 60 * 60 * 1000).toISOString();
-      serverSnapshot.endpoints = [0, 1, 2, 4, 5].map((count, index) => ({...source.endpoints[0],id:`e${index + 1}`,path:`/customer/v1/orders/${index + 1}`,staticCallerCount:count}));
       serverSnapshot.runtimeConnections = [{provider:'prometheus',config:{provider:'prometheus',windowHours:720,serviceMappings:{'customer-service':'s1'},baseUrl:'https://metrics.example.com',query:'increase(requests[{{window}}])',serviceLabel:'service',methodLabel:'method',routeLabel:'route',callerLabel:null},status:'connected',lastSyncedAt:monthEnd,lastAttemptAt:monthEnd,error:null,observationCount:1,matchedEndpointCount:1,unmatchedObservationCount:0,windowStart:monthStart,windowEnd:monthEnd,partial:false,warnings:[]}];
+      serverSnapshot.endpoints = [0, 1, 2, 4, 5].map((count, index) => ({...source.endpoints[0],id:`e${index + 1}`,path:`/customer/v1/orders/${index + 1}`,staticCallerCount:count}));
       serverSnapshot.endpoints[0] = {...serverSnapshot.endpoints[0],runtimeCoverage:'available',runtimeCallsInWindow:0,runtimeRequestSource:'prometheus',runtimeWindowStart:monthStart,runtimeWindowEnd:monthEnd,runtimePartial:false};
       serverSnapshot.endpoints[1] = {...serverSnapshot.endpoints[1],runtimeCoverage:'available',runtimeCallsInWindow:0,runtimeRequestSource:'prometheus',runtimeWindowStart:monthStart,runtimeWindowEnd:monthEnd,runtimePartial:true};
       serverSnapshot.endpoints[2] = {...serverSnapshot.endpoints[2],runtimeCoverage:'available',runtimeCallsInWindow:0,runtimeRequestSource:'prometheus',runtimeWindowStart:new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),runtimeWindowEnd:monthEnd,runtimePartial:false};
@@ -123,9 +123,10 @@ try {
     dialog.close = () => {dialog.removeAttribute('open');dialog.dispatchEvent(new window.Event('close'));};
     let rejectSave = true;
     const saves = [];
+    const repoSaves = [];
     const context = { window, document, navigator: { userAgent: 'Node', doNotTrack: null }, MutationObserver: class { observe() {} disconnect() {} takeRecords() { return []; } }, location: { href: `https://impactgate.in/${screen === 'onboarding' ? screen : 'dashboard'}`, origin: 'https://impactgate.in', pathname: '/dashboard', search: '', assign: () => {}, replace: () => {} }, history: { replaceState: () => {} }, sessionStorage: { getItem: () => null, setItem: () => {} }, localStorage: { setItem: () => {} }, URL, URLSearchParams, Blob, Response, Request, Headers, AbortController, DOMException, HTMLInputElement: window.HTMLInputElement, HTMLSelectElement: window.HTMLSelectElement, HTMLFormElement: DOMForm, HTMLButtonElement: window.HTMLButtonElement, HTMLElement: window.HTMLElement, Element: window.Element, FormData: DOMFormData, console,
       setTimeout: (fn, ms) => { const id = setTimeout(fn, ms); timerIds.add(id); return id; }, clearTimeout,
-      fetch: async (endpoint, request = {}) => { requested.push(endpoint); if (endpoint === '/api/v1/config') return Response.json({ firebase: {}, github: { configured: true } }); assert.equal(request.headers.Authorization, 'Bearer mock-token'); if (endpoint === '/api/v1/session') return Response.json({ version: 1, user: { uid: 'u1', email: 'user@example.com', emailVerified: true }, workspaces: [{ id: 'w1', name: 'Customer workspace', role: 'owner', accountLogin: 'impact-gate', installationStatus: 'active' }], capabilities: { externalModels: false, runtimeTelemetry: true } }); if (endpoint.endsWith('/repositories/available')) return Response.json({ repositories: [] }); if (endpoint.endsWith('/settings') && request.method === 'PATCH') { const change = JSON.parse(request.body); saves.push(change); return rejectSave ? Response.json({ error: { code: 'conflict', message: 'Settings changed. Refresh before saving.' } }, { status: 409 }) : Response.json({ ...source.settings, ...change, version: 2 }); } if (endpoint.includes('/runtime/')) {
+      fetch: async (endpoint, request = {}) => { requested.push(endpoint); if (endpoint === '/api/v1/config') return Response.json({ firebase: {}, github: { configured: true } }); assert.equal(request.headers.Authorization, 'Bearer mock-token'); if (endpoint === '/api/v1/session') return Response.json({ version: 1, user: { uid: 'u1', email: 'user@example.com', emailVerified: true }, workspaces: [{ id: 'w1', name: 'Customer workspace', role: 'owner', accountLogin: 'impact-gate', installationStatus: 'active' }], capabilities: { externalModels: false, runtimeTelemetry: true } }); if (endpoint.endsWith('/repositories/available')) return Response.json({ repositories: screen === 'onboarding' ? [ { githubRepositoryId: 101, fullName: 'impact-gate/customer-api', defaultBranch: 'main', private: false, language: 'TypeScript', htmlUrl: 'https://github.com/impact-gate/customer-api', selected: true }, { githubRepositoryId: 102, fullName: 'impact-gate/order-service', defaultBranch: 'main', private: false, language: 'Java', htmlUrl: 'https://github.com/impact-gate/order-service', selected: false }, { githubRepositoryId: 103, fullName: 'impact-gate/payment-gateway', defaultBranch: 'main', private: true, language: 'Go', htmlUrl: 'https://github.com/impact-gate/payment-gateway', selected: false } ] : [] }); if (endpoint.endsWith('/repositories') && request.method === 'PUT') { repoSaves.push(JSON.parse(request.body)); return Response.json(serverSnapshot); } if (endpoint.endsWith('/settings') && request.method === 'PATCH') { const change = JSON.parse(request.body); saves.push(change); return rejectSave ? Response.json({ error: { code: 'conflict', message: 'Settings changed. Refresh before saving.' } }, { status: 409 }) : Response.json({ ...source.settings, ...change, version: 2 }); } if (endpoint.includes('/runtime/')) {
           if (request.method === 'POST' && endpoint.endsWith('/test')) return Response.json({observationCount:1,matchedEndpointCount:1,unmatchedObservationCount:0,warnings:[]});
           if (request.method === 'POST' && endpoint.endsWith('/discover')) return Response.json({provider:'prometheus',services:[{sourceService:'customer-prod',roles:['provider'],routeCount:1,suggestedServiceId:'s1',confidence:'high',reason:'Matched API routes.',candidates:[{serviceId:'s1',matchedRouteCount:1}]}],observationCount:1,autoMatchedCount:1,suggestedCount:0,unmatchedCount:0,windowStart:source.generatedAt,windowEnd:source.generatedAt,partial:false,warnings:[]});
           if (request.method === 'PUT') {
@@ -190,12 +191,51 @@ try {
     }
     if (screen === 'api-usage') {
       assert.match(content, /\/customer\/v1\/orders/);
+      assert.equal(document.querySelector('[data-endpoint-detail-screen]'), null, 'detail screen is not shown before clicking an endpoint');
+      document.querySelector('[data-action="endpoint"]').click(); await delay();
+      assert.ok(document.querySelector('[data-endpoint-detail-screen]'), 'detail screen opened after clicking endpoint');
       document.querySelector('[data-action="endpoint-tab"][data-tab="flow"]').click(); await delay();
       assert.match(document.querySelector('main').textContent, /2 reachable functions/);
       assert.match(document.querySelector('main').textContent, /normalize/);
       assert.equal(context.graphFixture.elements[0].data.label, 'GET /customer/v1/orders');
+      document.querySelector('[data-action="back-to-apis"]').click(); await delay();
+      assert.equal(document.querySelector('[data-endpoint-detail-screen]'), null, 'back-to-apis returns to catalog screen');
     }
-    if (screen === 'repositories') assert.match(content, /impact-gate\/customer-api/);
+    if (screen === 'repositories') {
+      assert.match(content, /impact-gate\/customer-api/);
+      const originalFetch = context.fetch;
+      const reindexPath = '/api/v1/workspaces/w1/repositories/r1/index';
+      let reindexRequest = null;
+      let rejectReindex = true;
+      context.fetch = async (endpoint, request = {}) => {
+        if (endpoint === reindexPath && request.method === 'POST') {
+          reindexRequest = request;
+          assert.equal(request.headers.Authorization, 'Bearer mock-token');
+          if (rejectReindex) {
+            rejectReindex = false;
+            return Response.json({ error: { code: 'repository_access_missing', message: 'The GitHub installation no longer has access to this repository.' } }, { status: 403 });
+          }
+          const job = { id: 'index-job-1', type: 'index_repository', repositoryId: 'r1', status: 'queued', phase: 'queued', progress: 0, error: null, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+          serverSnapshot.repositories[0].status = 'queued';
+          serverSnapshot.jobs.unshift(job);
+          return Response.json({ job });
+        }
+        return originalFetch(endpoint, request);
+      };
+      document.querySelector('[data-action=reindex]').click();
+      await delay(); await delay();
+      assert.match(document.querySelector('[data-action=reindex]').textContent, /Re-index/);
+      assert.equal(document.querySelector('[data-action=reindex]').disabled, false, 'failed request re-enables retry');
+      assert.match(document.querySelector('main').textContent, /installation no longer has access/);
+      assert.match(document.querySelector('[data-action=reindex]').closest('tr').textContent, /installation no longer has access/);
+      document.querySelector('[data-action=reindex]').click();
+      await delay(); await delay(); await delay();
+      assert.equal(reindexRequest?.method, 'POST', 'Re-index sends an authenticated POST to the repository index endpoint');
+      assert.equal(document.querySelector('.ig-toast').textContent, 'Indexing job queued.');
+      assert.match(document.querySelector('main').textContent, /Re-index job · queued · 0%/);
+      assert.equal(document.querySelector('[data-action=reindex]').textContent, 'Indexing…');
+      assert.equal(document.querySelector('[data-action=reindex]').disabled, true, 'queued repository cannot be reindexed again until processing finishes');
+    }
     if (screen === 'settings') assert.match(content, /Save preferences/);
     if (screen === 'dependency-graph') assert.equal(context.graphFixture.elements[0].data.label, '◆ customer-service');
     if (screen === 'function-usage') assert.match(content, /Function usage/);
@@ -243,6 +283,42 @@ try {
       click(document.querySelector('[data-action=confirm-runtime-disconnect]'));await delay();await delay();
       assert.match(document.querySelector('main').textContent,/Not connected/);
       assert.equal(serverSnapshot.runtimeConnections.length,0);
+    }
+    if (screen === 'onboarding') {
+      assert.match(content, /Which API should we map first/);
+      assert.match(content, /impact-gate\/customer-api/);
+      assert.equal(document.querySelectorAll('.ig-repo-option').length, 3);
+      assert.match(document.querySelector('[data-repo-count]').textContent, /1 of 3 selected/);
+
+      document.querySelector('[data-action="repo-select-all"]').click();
+      assert.match(document.querySelector('[data-repo-count]').textContent, /3 of 3 selected/);
+      assert.match(document.querySelector('[data-repo-submit]').textContent, /Save selection \(3 repositories\)/);
+
+      document.querySelector('[data-action="repo-deselect-all"]').click();
+      assert.match(document.querySelector('[data-repo-count]').textContent, /0 of 3 selected/);
+
+      const searchInput = document.querySelector('[data-repo-search]');
+      searchInput.value = 'payment';
+      searchInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+      const visible = [...document.querySelectorAll('.ig-repo-option')].filter(opt => opt.style.display !== 'none');
+      assert.equal(visible.length, 1);
+      assert.match(visible[0].textContent, /payment-gateway/);
+
+      document.querySelector('[data-action="repo-select-all"]').click();
+      assert.match(document.querySelector('[data-repo-count]').textContent, /1 of 3 selected/);
+
+      searchInput.value = '';
+      searchInput.dispatchEvent(new window.Event('input', { bubbles: true }));
+      assert.equal([...document.querySelectorAll('.ig-repo-option')].filter(opt => opt.style.display !== 'none').length, 3);
+
+      const chip = document.querySelector('[data-action="toggle-discovery-repo"][data-id="101"]');
+      if (chip) chip.click();
+
+      const repoForm = document.querySelector('[data-repositories-form]');
+      repoForm.dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+      await delay(); await delay();
+      assert.equal(repoSaves.length, 1);
+      assert.deepEqual(repoSaves[0].repositoryIds.sort(), [101, 103]);
     }
     window.dispatchEvent(new window.Event('pagehide')); timerIds.forEach(clearTimeout);
   }

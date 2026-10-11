@@ -6,7 +6,7 @@ import { emailHref } from "../ui/contact";
 import { providerIcon, uiIcon } from "../ui/icons";
 import { runtimeConnectionsPanel, runtimeConnectionForm, runtimeConnectionBody, runtimeEndpointDetails, runtimeServiceReview, runtimeConnectionChanged, updateRuntimeConnectButton } from "./runtime";
 import type { RuntimeServiceDiscovery } from "../types/runtime";
-import type { InstallationRepository, SessionResponse, SourceReference, WorkspaceEndpoint, WorkspaceMembership, WorkspaceSettings, WorkspaceSnapshot, WorkspaceOnboardingStatus } from "../types/workspace";
+import type { InstallationRepository, SessionResponse, SourceReference, WorkspaceEndpoint, WorkspaceJob, WorkspaceMembership, WorkspaceSettings, WorkspaceSnapshot, WorkspaceOnboardingStatus } from "../types/workspace";
 import cytoscape from "cytoscape";
 import "./connected.css";
 import "./overview.css";
@@ -44,13 +44,18 @@ let snapshot: WorkspaceSnapshot | null = null;
 let onboardingStatus: WorkspaceOnboardingStatus | null = null;
 let available: InstallationRepository[] | null = null;
 let selectedRepos = new Set<number>();
+let repoSearchQuery = "";
+let repoFilter: "all" | "selected" | "recommended" = "all";
+let repoSelectionInitialized = false;
 let query = "";
 let filter = "";
 let showAllFindings = false;
 let selectedEndpoint: string | null = new URL(location.href).searchParams.get("endpointId");
 let codeQuery = "";
 let codePage = 0;
-let endpointTab = new URL(location.href).searchParams.get("tab") === "flow" ? "flow" : "overview";
+const reindexErrors = new Map<string, string>();
+const initialTab = new URL(location.href).searchParams.get("tab");
+let endpointTab = ["overview", "flow", "consumers", "changes", "retirement"].includes(initialTab ?? "") ? initialTab! : "overview";
 let graph: cytoscape.Core | null = null;
 let codeGraph: cytoscape.Core | null = null;
 let poll: ReturnType<typeof setTimeout> | undefined;
@@ -86,6 +91,19 @@ function closeNavigation(): void {
 }
 function renderShell(): void {
   syncThemeControls();
+  if (page === "api-usage") {
+    const titleEl = $(".ig-page-title");
+    if (selectedEndpoint && snapshot) {
+      const ep = snapshot.endpoints.find(e => e.id === selectedEndpoint);
+      if (ep) {
+        if (titleEl) titleEl.textContent = `${ep.method} ${ep.path}`;
+        document.title = `${ep.method} ${ep.path} | Impact Gate`;
+      }
+    } else {
+      if (titleEl) titleEl.textContent = "APIs";
+      document.title = "APIs | Impact Gate";
+    }
+  }
   if (!session) return;
   const account = session.user.name ?? session.user.email ?? "Account";
   const profile = $(".ig-profile");
@@ -150,6 +168,7 @@ function workflowBar(ariaLabel: string, segments: Array<{ label: string; count: 
 }
 
 function evidenceState(candidate: WorkspaceSnapshot["candidates"][number], endpoint?: WorkspaceEndpoint): { label: string; tone: string; action: string } {
+  if (endpoint?.runtimeCoverage === "available" && endpoint.runtimeCallsInWindow === 0) return { label: "0 calls in observation window", tone: "possible", action: "Review observation window" };
   if (candidate.evidenceState === "measured_usage_observed" || endpoint?.runtimeCoverage === "available") return { label: "Measured usage observed", tone: "measured", action: "Review observation window" };
   if (candidate.evidenceState === "static_callers_found" || (endpoint?.staticCallerCount ?? 0) > 0) return { label: "Static callers found", tone: "mapped", action: "Review static callers" };
   if (endpoint?.runtimeCoverage === "not_connected") return { label: "Needs runtime coverage", tone: "unknown", action: "Connect runtime data" };
@@ -271,32 +290,109 @@ function filters(placeholder: string, options: Array<[string, string]>): string 
   return `<div class="ig-filters"><input data-query aria-label="${escape(placeholder)}" placeholder="${escape(placeholder)}" value="${escape(query)}"><select data-filter aria-label="Filter records"><option value="">All</option>${options.map(([value, label]) => `<option value="${escape(value)}" ${filter === value ? "selected" : ""}>${escape(label)}</option>`).join("")}</select>${button("clear-filters", "Clear", "", true)}</div>`;
 }
 function coverage(endpoint: WorkspaceEndpoint): string { return endpoint.runtimeCoverage === "available" ? endpoint.runtimeCallsInWindow != null ? `${endpoint.runtimeCallsInWindow.toLocaleString(undefined, {maximumFractionDigits: 2})} ${endpoint.runtimeRequestSource === "datadog" ? "indexed spans" : "estimated requests"}` : "Traffic observed" : endpoint.runtimeCoverage === "not_connected" ? "Runtime not connected" : "No current observations"; }
-function endpointPanel(endpoint: WorkspaceEndpoint): string {
+function renderEndpointDetailScreen(endpoint: WorkspaceEndpoint): string {
   const s = snapshot!;
+  const service = s.services.find(svc => svc.id === endpoint.serviceId);
   const edges = s.edges.filter(edge => edge.endpointId === endpoint.id);
   const findings = s.findings.filter(f => f.endpointId === endpoint.id);
+  const candidate = s.candidates.find(item => item.endpointId === endpoint.id);
+  const state = candidate
+    ? hasConfirmedMonthOfZeroCalls(s, candidate, endpoint)
+      ? { label: "0 calls in 30 days", tone: "possible", action: "Review zero-call evidence" }
+      : evidenceState(candidate, endpoint)
+    : { label: "Needs review", tone: "unknown", action: "Review evidence" };
   let content: string;
-  if (endpointTab === "consumers") content = edges.length ? table(["Consumer", "Evidence", "Confidence", "Source evidence"], edges.map(edge => [escape(s.services.find(service => service.id === edge.callerServiceId)?.name ?? edge.callerServiceId), badge(edge.evidence), badge(edge.confidence), evidence(edge.references)])) : empty("No known callers", "Static analysis has not identified a caller for this endpoint. This does not prove it is unused.");
+  if (endpointTab === "consumers") content = edges.length ? table(["Consumer", "Evidence", "Confidence", "Source evidence"], edges.map(edge => [escape(s.services.find(svc => svc.id === edge.callerServiceId)?.name ?? edge.callerServiceId), badge(edge.evidence), badge(edge.confidence), evidence(edge.references)])) : empty("No known callers", "Static analysis has not identified a caller for this endpoint. This does not prove it is unused.");
   else if (endpointTab === "flow") content = renderCodeFlow(s, endpoint);
   else if (endpointTab === "changes") content = findings.length ? findings.map(f => `<div class="ig-card"><strong>${escape(f.changeKind)} · ${escape(f.verdict)}</strong><p>${escape(f.explanation)}</p><a href="${escape(url(f.pullRequestUrl))}" target="_blank" rel="noopener noreferrer">PR #${f.pullRequestNumber} ↗</a>${evidence(f.evidence)}</div>`).join("") : '<p class="ig-note">No analyzed contract changes have been recorded for this endpoint.</p>';
   else if (endpointTab === "retirement") {
-    const candidate = s.candidates.find(item => item.endpointId === endpoint.id);
-    const state = candidate ? evidenceState(candidate, endpoint) : { label: "Needs review", tone: "unknown", action: "Review evidence" };
-    content = `<div class="ig-retirement-callout">${productBadge(state.label, state.tone)}<strong>${escape(state.action)}</strong><p>Missing runtime evidence is not proof of zero usage. Review static callers, observation windows, measured function entries, and unknown external consumers together.</p></div>${candidate ? table(["Evidence", "Value"], [["Static callers", String(candidate.staticCallerCount)], ["Runtime status", coverage(endpoint)], ["Measured function entries", endpoint.measuredFunctionEntriesInWindow == null ? "Unknown — instrumentation not connected" : endpoint.measuredFunctionEntriesInWindow.toLocaleString()], ["Review state", candidate.reviewState?.replaceAll("_", " ") ?? "Not reviewed"], ["Snapshot", s.snapshotId ?? "Not available"]]) : empty("No retirement record", "This endpoint has not entered the retirement evidence inventory.")}`;
-  } else content = `<div class="ig-detail-grid"><dl><dt>Service</dt><dd>${escape(s.services.find(service => service.id === endpoint.serviceId)?.name)}</dd><dt>Static callers</dt><dd>${endpoint.staticCallerCount}</dd><dt>Runtime traffic</dt><dd>${coverage(endpoint)}</dd><dt>Measured functions</dt><dd>${endpoint.measuredFunctionEntriesInWindow == null ? "Unknown" : endpoint.measuredFunctionEntriesInWindow.toLocaleString()}</dd><dt>Release / source SHA</dt><dd>${escape(endpoint.releaseId ?? endpoint.source.sha.slice(0, 12))}</dd><dt>Criticality / confidence</dt><dd>${escape(endpoint.criticality)} / ${escape(endpoint.confidence ?? "not established")}</dd></dl><div>${evidence([endpoint.source])}</div></div><h3>Runtime observation</h3>${runtimeEndpointDetails(endpoint)}${endpoint.requestSchema ? `<h3>Request schema</h3><pre class="ig-schema">${escape(JSON.stringify(endpoint.requestSchema, null, 2))}</pre>` : ""}${endpoint.responseSchema ? `<h3>Response schema</h3><pre class="ig-schema">${escape(JSON.stringify(endpoint.responseSchema, null, 2))}</pre>` : ""}`;
-  return `<section class="ig-card"><div class="ig-live-heading"><div><h2><code>${escape(endpoint.method)} ${escape(endpoint.path)}</code></h2><p>${escape(endpoint.summary ?? "API operation")}</p></div><div class="ig-actions">${["overview", "flow", "consumers", "changes", "retirement"].map(tab => button("endpoint-tab", tab[0].toUpperCase() + tab.slice(1), `data-tab="${tab}" aria-pressed="${endpointTab === tab}"`, endpointTab !== tab)).join("")}</div></div>${content}</section>`;
+    const retirementState = candidate && hasConfirmedMonthOfZeroCalls(s, candidate, endpoint)
+      ? { label: "0 calls in 30 days", tone: "possible", action: "Review zero-call evidence" }
+      : state;
+    content = `<div class="ig-retirement-callout">${productBadge(retirementState.label, retirementState.tone)}<strong>${escape(retirementState.action)}</strong><p>Missing runtime evidence is not proof of zero usage. Review static callers, observation windows, measured function entries, and unknown external consumers together.</p></div>${candidate ? table(["Evidence", "Value"], [["Static callers", String(candidate.staticCallerCount)], ["Runtime status", coverage(endpoint)], ["Measured function entries", endpoint.measuredFunctionEntriesInWindow == null ? "Unknown — instrumentation not connected" : endpoint.measuredFunctionEntriesInWindow.toLocaleString()], ["Review state", candidate.reviewState?.replaceAll("_", " ") ?? "Not reviewed"], ["Snapshot", s.snapshotId ?? "Not available"]]) : empty("No retirement record", "This endpoint has not entered the retirement evidence inventory.")}`;
+  } else content = `<div class="ig-detail-grid"><dl><dt>Service</dt><dd>${escape(service?.name ?? "Unknown")}</dd><dt>Static callers</dt><dd>${endpoint.staticCallerCount}</dd><dt>Runtime traffic</dt><dd>${coverage(endpoint)}</dd><dt>Measured functions</dt><dd>${endpoint.measuredFunctionEntriesInWindow == null ? "Unknown" : endpoint.measuredFunctionEntriesInWindow.toLocaleString()}</dd><dt>Release / source SHA</dt><dd>${escape(endpoint.releaseId ?? endpoint.source.sha.slice(0, 12))}</dd><dt>Criticality / confidence</dt><dd>${escape(endpoint.criticality)} / ${escape(endpoint.confidence ?? "not established")}</dd></dl><div>${evidence([endpoint.source])}</div></div><h3>Runtime observation</h3>${runtimeEndpointDetails(endpoint)}${endpoint.requestSchema ? `<h3>Request schema</h3><pre class="ig-schema">${escape(JSON.stringify(endpoint.requestSchema, null, 2))}</pre>` : ""}${endpoint.responseSchema ? `<h3>Response schema</h3><pre class="ig-schema">${escape(JSON.stringify(endpoint.responseSchema, null, 2))}</pre>` : ""}`;
+
+  const backButton = `<button type="button" class="ig-button ig-button-secondary ig-screen-back-btn" data-action="back-to-apis" aria-label="Back to APIs list"><svg class="ig-ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg><span>Back to APIs</span></button>`;
+  const tabButtons = ["overview", "flow", "consumers", "changes", "retirement"].map(tab => button("endpoint-tab", tab[0].toUpperCase() + tab.slice(1), `data-tab="${tab}" role="tab" aria-selected="${endpointTab === tab}" aria-pressed="${endpointTab === tab}"`, endpointTab !== tab)).join("");
+
+  return `<div class="ig-screen-detail-view" data-endpoint-detail-screen tabindex="-1">
+    <div class="ig-detail-toolbar">
+      <div class="ig-detail-breadcrumb">
+        <button type="button" class="ig-breadcrumb-btn" data-action="back-to-apis">← Back to APIs</button>
+        <span class="ig-breadcrumb-sep" aria-hidden="true">/</span>
+        <span class="ig-breadcrumb-current"><code><span class="ig-method-badge ig-method-${endpoint.method.toLowerCase()}">${escape(endpoint.method)}</span> ${escape(endpoint.path)}</code></span>
+      </div>
+      <div class="ig-actions">
+        ${backButton}
+      </div>
+    </div>
+    <section class="ig-card ig-detail-hero">
+      <div class="ig-live-heading ig-detail-header">
+        <div class="ig-endpoint-info">
+          <div class="ig-endpoint-title">
+            <span class="ig-method-badge ig-method-${endpoint.method.toLowerCase()}">${escape(endpoint.method)}</span>
+            <h2><code>${escape(endpoint.path)}</code></h2>
+          </div>
+          <p class="ig-endpoint-summary">${escape(endpoint.summary ?? "API operation")}</p>
+        </div>
+        <div class="ig-actions ig-detail-tablist" role="tablist" aria-label="API detail tabs">
+          ${tabButtons}
+        </div>
+      </div>
+      <div class="ig-endpoint-meta-tags">
+        <span class="ig-meta-tag"><strong>Service:</strong> ${escape(service?.name ?? "Unknown")}</span>
+        <span class="ig-meta-tag"><strong>Static callers:</strong> ${endpoint.staticCallerCount}</span>
+        <span class="ig-meta-tag"><strong>Runtime traffic:</strong> ${escape(coverage(endpoint))}</span>
+        <span class="ig-meta-tag"><strong>Measured functions:</strong> ${endpoint.measuredFunctionEntriesInWindow == null ? "Unknown" : endpoint.measuredFunctionEntriesInWindow.toLocaleString()}</span>
+        <span class="ig-meta-tag"><strong>Release / SHA:</strong> ${escape(endpoint.releaseId ?? endpoint.source.sha.slice(0, 12))}</span>
+        <span class="ig-meta-tag"><strong>Retirement:</strong> ${productBadge(state.label, state.tone)}</span>
+      </div>
+    </section>
+    <section class="ig-card ig-detail-body">
+      ${content}
+    </section>
+  </div>`;
 }
+
 function renderEndpoints(): string {
   const s = snapshot!;
+  const selected = selectedEndpoint ? s.endpoints.find(e => e.id === selectedEndpoint) : null;
+  if (selected) {
+    return renderEndpointDetailScreen(selected);
+  }
+  if (selectedEndpoint) {
+    selectedEndpoint = null;
+  }
   const endpoints = s.endpoints.filter(e => `${e.method} ${e.path} ${s.services.find(service => service.id === e.serviceId)?.name}`.toLowerCase().includes(query.toLowerCase()) && (!filter || e.serviceId === filter));
-  const selected = selectedEndpoint ? s.endpoints.find(e => e.id === selectedEndpoint) : endpoints[0];
   const noResults = query || filter
     ? empty("No matching endpoints", "Try another search or clear the filters.", button("clear-filters", "Clear filters", "", true))
     : s.repositories.length
       ? empty("No endpoints discovered yet", "Check repository indexing and OpenAPI coverage. Consumer repositories can still contribute caller evidence.", '<a class="ig-button ig-button-secondary" href="/dashboard/repositories">Check repository coverage</a>')
       : empty("Connect repositories to discover APIs", "Choose an API repository and the applications that call it to build your first impact view.", '<a class="ig-button" href="/onboarding">Connect repositories</a>');
-  const selectedPanel = selected ? endpointPanel(selected) : "";
-  return heading("APIs", "Explore API operations, code flows, consumers, changes, and retirement evidence.") + `${selectedEndpoint ? selectedPanel : ""}<section class="ig-card">${filters("Search APIs and services", s.services.map(service => [service.id, service.name]))}${endpoints.length ? table(["Method / path", "Service", "Code flow", "Static callers", "Runtime traffic", "Measured functions", "Open findings", "Retirement state"], endpoints.map(e => { const candidate = s.candidates.find(item => item.endpointId === e.id); const state = candidate ? evidenceState(candidate, e) : { label: "Needs review", tone: "unknown" }; return [`<button data-action="endpoint" data-id="${escape(e.id)}"><code>${escape(e.method)} ${escape(e.path)}</code></button>`, escape(s.services.find(service => service.id === e.serviceId)?.name), `<button data-action="endpoint" data-id="${escape(e.id)}">${e.source.functionName ? escape(e.source.functionName) : "Mapped flow"}</button>`, String(e.staticCallerCount), escape(coverage(e)), e.measuredFunctionEntriesInWindow == null ? productBadge("Unknown", "unknown") : productBadge(e.measuredFunctionEntriesInWindow.toLocaleString(), "measured"), String(s.findings.filter(f => f.endpointId === e.id && f.status === "open").length), productBadge(state.label, state.tone)]; })) : noResults}</section>${selectedEndpoint ? "" : selectedPanel}`;
+
+  return heading("APIs", "Explore API operations, code flows, consumers, changes, and retirement evidence.") +
+    `<section class="ig-card ig-apis-catalog-screen">` +
+    filters("Search APIs and services", s.services.map(service => [service.id, service.name])) +
+    (endpoints.length
+      ? table(
+          ["Method / path", "Service", "Code flow", "Static callers", "Runtime traffic", "Measured functions", "Open findings", "Retirement state"],
+          endpoints.map(e => {
+            const candidate = s.candidates.find(item => item.endpointId === e.id);
+            const state = candidate ? evidenceState(candidate, e) : { label: "Needs review", tone: "unknown" };
+            return [
+              `<button type="button" class="ig-endpoint-btn" data-action="endpoint" data-id="${escape(e.id)}"><code><span class="ig-method-badge ig-method-${e.method.toLowerCase()}">${escape(e.method)}</span> ${escape(e.path)}</code></button>`,
+              escape(s.services.find(service => service.id === e.serviceId)?.name),
+              `<button type="button" class="ig-endpoint-btn" data-action="endpoint" data-id="${escape(e.id)}" data-tab="flow">${e.source.functionName ? escape(e.source.functionName) : "Mapped flow"}</button>`,
+              String(e.staticCallerCount),
+              escape(coverage(e)),
+              e.measuredFunctionEntriesInWindow == null ? productBadge("Unknown", "unknown") : productBadge(e.measuredFunctionEntriesInWindow.toLocaleString(), "measured"),
+              String(s.findings.filter(f => f.endpointId === e.id && f.status === "open").length),
+              productBadge(state.label, state.tone),
+            ];
+          })
+        )
+      : noResults) +
+    `</section>`;
 }
 function renderCandidates(): string {
   const s = snapshot!;
@@ -318,7 +414,17 @@ function renderPRImpact(): string {
 function renderRepositories(): string {
   const s = snapshot!;
   const repos = s.repositories.filter(r => r.fullName.toLowerCase().includes(query.toLowerCase()) && (!filter || r.status === filter));
-  return heading("Repositories", "Manage GitHub App access, indexing, and parser coverage.", button("import", "Select repositories", writeDisabled()) + button("add-workspace", "Add account or organization", `${writeDisabled()}`, true)) + `<section class="ig-card">${filters("Search repositories", [["indexed", "Indexed"], ["queued", "Queued"], ["indexing", "Indexing"], ["partial", "Partial"], ["failed", "Failed"]])}${repos.length ? table(["Repository", "Branch", "Status", "Services", "Last index", "Actions"], repos.map(r => [`<strong>${escape(r.fullName)}</strong>${r.error ? `<p class="ig-note">${escape(r.error)}</p>` : ""}`, escape(r.defaultBranch), badge(r.status), String(r.serviceCount), date(r.indexedAt), `<div class="ig-actions">${button("repository", "Coverage", `data-id="${escape(r.id)}"`, true)}${button("reindex", "Re-index", `data-id="${escape(r.id)}" ${writeDisabled()} ${["queued", "indexing", "discovering"].includes(r.status) ? "disabled" : ""}`, true)}</div>`])) : empty("No repositories selected", "Choose repositories from the active GitHub account or organization. Add another connection to switch repository owners.", button("import", "Select repositories", writeDisabled()))}</section>${jobs()}`;
+  return heading("Repositories", "Manage GitHub App access, indexing, and parser coverage.", button("import", "Select repositories", writeDisabled()) + button("add-workspace", "Add account or organization", `${writeDisabled()}`, true)) + `<section class="ig-card">${filters("Search repositories", [["indexed", "Indexed"], ["queued", "Queued"], ["indexing", "Indexing"], ["partial", "Partial"], ["failed", "Failed"]])}${repos.length ? table(["Repository", "Branch", "Status", "Services", "Last index", "Actions"], repos.map(r => {
+    const activeIndexJob = s.jobs
+      .filter(job => job.repositoryId === r.id && job.type === "index_repository" && ["queued", "running"].includes(job.status))
+      .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
+    const indexing = ["queued", "discovering", "indexing"].includes(r.status) || Boolean(activeIndexJob);
+    const progress = activeIndexJob
+      ? `Re-index job · ${escape(activeIndexJob.phase.replaceAll("_", " "))} · ${Math.round(activeIndexJob.progress)}%`
+      : indexing ? `Repository ${escape(r.status)} · waiting for job progress` : "";
+    const status = `${badge(r.status)}${progress ? `<p class="ig-note" role="status">${progress}</p>` : ""}${reindexErrors.has(r.id) ? `<p class="ig-inline-error" role="alert">${escape(reindexErrors.get(r.id))}</p>` : ""}`;
+    return [`<strong>${escape(r.fullName)}</strong>${r.error ? `<p class="ig-note">${escape(r.error)}</p>` : ""}`, escape(r.defaultBranch), status, String(r.serviceCount), date(r.indexedAt), `<div class="ig-actions">${button("repository", "Coverage", `data-id="${escape(r.id)}"`, true)}${button("reindex", indexing ? "Indexing…" : "Re-index", `data-id="${escape(r.id)}" ${writeDisabled()} ${indexing ? "disabled" : ""}`, true)}</div>`];
+  })) : empty("No repositories selected", "Choose repositories from the active GitHub account or organization. Add another connection to switch repository owners.", button("import", "Select repositories", writeDisabled()))}</section>${jobs()}`;
 }
 function renderSettings(): string {
   const s = snapshot!.settings;
@@ -387,12 +493,37 @@ function mountGraph(): void {
     ] });
   graph.on("tap", "node", event => { const service = s.services.find(item => item.id === event.target.id()); const inspector = $("[data-graph-inspector]"); if (!service || !inspector) return; inspector.innerHTML = `<h2>${escape(service.name)}</h2><p class="ig-note">${escape(service.rootPath)} · ${escape(service.criticality)} criticality</p>${table(["Method", "Endpoint", "Static callers"], s.endpoints.filter(e => e.serviceId === service.id).map(e => [escape(e.method), `<button data-action="endpoint-dialog" data-id="${escape(e.id)}">${escape(e.path)}</button>`, String(e.staticCallerCount)]))}`; });
 }
+function focusEndpointScreen(): void {
+  try {
+    if (typeof window.scrollTo === "function") window.scrollTo({ top: 0, behavior: "instant" });
+  } catch { /* Scroll fallback */ }
+  const runFocus = () => {
+    const backBtn = document.querySelector<HTMLElement>('[data-action="back-to-apis"]');
+    const screen = document.querySelector<HTMLElement>("[data-endpoint-detail-screen]");
+    (backBtn ?? screen)?.focus();
+  };
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(runFocus);
+  } else {
+    setTimeout(runFocus, 0);
+  }
+}
+function focusEndpointTab(tab: string): void {
+  const runFocus = () => {
+    document.querySelector<HTMLElement>(`[data-action="endpoint-tab"][data-tab="${tab}"]`)?.focus();
+  };
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(runFocus);
+  } else {
+    setTimeout(runFocus, 0);
+  }
+}
 function render(): void {
   if (disposed || !snapshot) return;
   graph?.destroy(); graph = null;
   codeGraph?.destroy(); codeGraph = null;
   main.innerHTML = ({ home: renderHome, "api-usage": renderEndpoints, "dependency-graph": renderGraph, "function-usage": renderFunctionUsage, "deprecation-candidates": renderCandidates, "pr-impact": renderPRImpact, repositories: renderRepositories, settings: renderSettings, onboarding: renderOnboarding, "github-setup": renderOnboarding }[page] ?? renderHome)();
-  if (["home", "api-usage"].includes(page) && workspace?.accountLogin === "impact-gate" && snapshot?.services.some(service => service.name === "ig-lab-petclinic")) {
+  if ((page === "home" || (page === "api-usage" && !selectedEndpoint)) && workspace?.accountLogin === "impact-gate" && snapshot?.services.some(service => service.name === "ig-lab-petclinic")) {
     const panel = document.createElement("div");
     panel.innerHTML = renderDemoTraffic();
     main.append(panel);
@@ -424,7 +555,40 @@ function renderOnboarding(): string {
       : availableCount
         ? `Choose from ${availableCount} repositories to build your first API map.`
         : "No repositories are ready to map yet.";
-    steps = `<section class="ig-card ig-onboarding-discovery"><div class="ig-onboarding-discovery-heading"><div><span class="ig-eyebrow">Discovery</span><h2>${discoveryTitle}</h2></div><span class="ig-onboarding-stage">${escape(onboardingStatus?.stage.replaceAll("_", " ") ?? "choose api")}</span></div><p class="ig-note">Choose a small starting scope. Impact Gate indexes the provider and recommended consumer repositories immediately; runtime data can be added after the first map.</p><section class="ig-api-choice"><strong>Which API should we map first?</strong><div>${(onboardingStatus?.providerRepositories.length ? onboardingStatus.providerRepositories : (available ?? []).slice(0, 3).map(repo => ({ id: repo.githubRepositoryId, fullName: repo.fullName, selected: repo.selected }))).map(repo => `<span>${escape(repo.fullName)}</span>`).join("") || "No OpenAPI repositories discovered yet"}</div></section><div class="ig-actions"><button type="button" class="ig-button" data-action="quickstart" ${writeDisabled()}>Start with recommended repositories</button>${button("import", "Choose repositories manually", "", true)}</div></section>
+
+    const discoveryRepos: Array<{ id: number; fullName: string; isProvider: boolean }> = [];
+    if (onboardingStatus?.providerRepositories?.length || onboardingStatus?.recommendedConsumerRepositories?.length) {
+      for (const r of onboardingStatus.providerRepositories ?? []) {
+        discoveryRepos.push({ id: r.id, fullName: r.fullName, isProvider: true });
+      }
+      for (const r of onboardingStatus.recommendedConsumerRepositories ?? []) {
+        if (!discoveryRepos.some(d => d.id === r.id)) {
+          discoveryRepos.push({ id: r.id, fullName: r.fullName, isProvider: false });
+        }
+      }
+    } else if (available?.length) {
+      for (const r of available.slice(0, 3)) {
+        discoveryRepos.push({ id: r.githubRepositoryId, fullName: r.fullName, isProvider: true });
+      }
+    }
+
+    const quickCount = selectedRepos.size;
+    const quickstartLabel = quickCount === 0
+      ? "Start with recommended repositories"
+      : quickCount === 1
+        ? "Start with 1 selected repository"
+        : `Start with ${quickCount} selected repositories`;
+
+    const choiceChips = discoveryRepos.map(repo => {
+      const isSel = selectedRepos.has(repo.id);
+      return `<button type="button" class="ig-repo-chip ${isSel ? "is-selected" : ""}" data-action="toggle-discovery-repo" data-id="${repo.id}" data-selected="${isSel ? "true" : "false"}" aria-pressed="${isSel}">
+        <span class="ig-repo-chip-check">${isSel ? "✓" : "+"}</span>
+        <span class="ig-repo-chip-name">${escape(repo.fullName)}</span>
+        <span class="ig-repo-chip-badge ${repo.isProvider ? "provider" : "consumer"}">${repo.isProvider ? "OpenAPI Contract" : "Consumer"}</span>
+      </button>`;
+    }).join("") || "<span>No OpenAPI repositories discovered yet</span>";
+
+    steps = `<section class="ig-card ig-onboarding-discovery"><div class="ig-onboarding-discovery-heading"><div><span class="ig-eyebrow">Discovery</span><h2>${discoveryTitle}</h2></div><span class="ig-onboarding-stage">${escape(onboardingStatus?.stage.replaceAll("_", " ") ?? "choose api")}</span></div><p class="ig-note">Choose a small starting scope. Impact Gate indexes the provider and recommended consumer repositories immediately; runtime data can be added after the first map.</p><section class="ig-api-choice"><div class="ig-api-choice-header"><strong>Which API should we map first?</strong>${discoveryRepos.length > 1 ? `<div class="ig-api-choice-actions"><button type="button" class="ig-button-link" data-action="discovery-select-all">Select all (${discoveryRepos.length})</button><span class="ig-sep">·</span><button type="button" class="ig-button-link" data-action="discovery-clear-all">Clear</button></div>` : ""}</div><p class="ig-note" style="margin:2px 0 8px 0;font-size:12px">Choose one or more repositories to map. Impact Gate analyzes contracts and consumer call paths immediately.</p><div class="ig-api-choice-chips">${choiceChips}</div></section><div class="ig-actions"><button type="button" class="ig-button" data-action="quickstart" ${writeDisabled()} ${quickCount === 0 && !discoveryRepos.length ? "disabled" : ""}>${quickstartLabel}</button>${button("import", "Choose repositories manually", "", true)}</div></section>
       <section class="ig-card"><h2>1. GitHub organization</h2><p><strong>${escape(workspace.accountLogin)}</strong> · ${badge(workspace.installationStatus)}</p>${button("connect-github", "Connect another installation", "", true)}</section>
       <section class="ig-card"><h2>2. Choose repositories</h2><p class="ig-note">Include the repository that owns the OpenAPI contract and the consumer repositories whose callers you want to review. You can start with a small set; runtime connections are optional.</p>${available ? repoSelection() : '<p class="ig-note">Loading repositories authorized by your installation…</p>'}</section>${jobs()}
       ${snapshot?.repositories.length ? `<section class="ig-card"><h2>3. Review your first result</h2><p class="ig-note">${indexedRepositories} of ${snapshot.repositories.length} selected repositories indexed. Indexing continues in the background; check each repository’s coverage before relying on a report.</p><a class="ig-button" href="/dashboard">Open engineering overview</a> <a class="ig-button ig-button-secondary" href="/dashboard/repositories">Review repository coverage</a></section>` : ""}`;
@@ -433,9 +597,178 @@ function renderOnboarding(): string {
   }
   return `<div class="ig-onboarding">${heading("Connect your workspace", "Get to your first API map in under five minutes. Runtime setup is an optional enhancement.")}${setupSteps}${steps}<aside class="ig-onboarding-help">${uiIcon("help")}<div><strong>What happens next?</strong><p>Impact Gate requests repository read access, PR checks/comments, and no source execution. You control the repository scope. Missing runtime data remains unknown rather than zero usage.</p></div></aside></div>`;
 }
+function getRecommendedRepoIds(): Set<number> {
+  const ids = new Set<number>();
+  if (onboardingStatus) {
+    for (const r of onboardingStatus.providerRepositories ?? []) ids.add(r.id);
+    for (const r of onboardingStatus.recommendedConsumerRepositories ?? []) ids.add(r.id);
+  }
+  return ids;
+}
+function getProviderRepoIds(): Set<number> {
+  const ids = new Set<number>();
+  if (onboardingStatus) {
+    for (const r of onboardingStatus.providerRepositories ?? []) ids.add(r.id);
+  }
+  return ids;
+}
+function syncRecommendedRepos(): void {
+  if (!repoSelectionInitialized && available?.length) {
+    repoSelectionInitialized = true;
+    if (selectedRepos.size === 0) {
+      const rec = getRecommendedRepoIds();
+      for (const r of available) {
+        if (rec.has(r.githubRepositoryId)) selectedRepos.add(r.githubRepositoryId);
+      }
+    }
+  }
+}
+function updateRepoListFiltering(form: HTMLFormElement): void {
+  const q = repoSearchQuery.toLowerCase().trim();
+  const options = form.querySelectorAll<HTMLElement>(".ig-repo-option");
+  const recommendedIds = getRecommendedRepoIds();
+  let visibleCount = 0;
+  options.forEach(option => {
+    const name = option.dataset.repoName ?? "";
+    const lang = option.dataset.repoLang ?? "";
+    const id = Number(option.dataset.repoId);
+    const matchesQuery = !q || name.includes(q) || lang.includes(q);
+    let matchesFilter = true;
+    if (repoFilter === "selected") {
+      matchesFilter = selectedRepos.has(id);
+    } else if (repoFilter === "recommended") {
+      matchesFilter = recommendedIds.has(id);
+    }
+    const isVisible = matchesQuery && matchesFilter;
+    option.style.display = isVisible ? "" : "none";
+    if (isVisible) visibleCount++;
+  });
+  const emptyFilterEl = form.querySelector<HTMLElement>("[data-repo-empty-filter]");
+  if (emptyFilterEl) {
+    emptyFilterEl.style.display = visibleCount === 0 ? "" : "none";
+  }
+}
+function updateRepoSelectionUI(): void {
+  const count = selectedRepos.size;
+  const total = available?.length ?? 0;
+
+  document.querySelectorAll<HTMLFormElement>("[data-repositories-form]").forEach(form => {
+    form.querySelectorAll<HTMLInputElement>("input[name='repositoryIds']").forEach(input => {
+      const id = Number(input.value);
+      const isChecked = selectedRepos.has(id);
+      input.checked = isChecked;
+      const label = input.closest<HTMLElement>(".ig-repo-option");
+      if (label) {
+        label.classList.toggle("is-selected", isChecked);
+        label.dataset.selected = isChecked ? "true" : "false";
+      }
+    });
+
+    const countEl = form.querySelector<HTMLElement>("[data-repo-count]");
+    if (countEl) {
+      countEl.innerHTML = `<strong>${count}</strong> of ${total} selected`;
+    }
+
+    const tabSelectedCount = form.querySelector<HTMLElement>("[data-tab-selected-count]");
+    if (tabSelectedCount) {
+      tabSelectedCount.textContent = String(count);
+    }
+
+    const submitBtn = form.querySelector<HTMLButtonElement>("button[type='submit']");
+    if (submitBtn) {
+      submitBtn.textContent = `Save selection (${count} ${count === 1 ? "repository" : "repositories"}) and start indexing`;
+    }
+
+    if (repoFilter === "selected") {
+      updateRepoListFiltering(form);
+    }
+  });
+
+  document.querySelectorAll<HTMLElement>("[data-action='toggle-discovery-repo']").forEach(chip => {
+    const id = Number(chip.dataset.id);
+    const isSelected = selectedRepos.has(id);
+    chip.classList.toggle("is-selected", isSelected);
+    chip.setAttribute("aria-pressed", isSelected ? "true" : "false");
+    chip.dataset.selected = isSelected ? "true" : "false";
+    const checkEl = chip.querySelector(".ig-repo-chip-check");
+    if (checkEl) checkEl.textContent = isSelected ? "✓" : "+";
+  });
+
+  const quickstartBtn = document.querySelector<HTMLButtonElement>("[data-action='quickstart']");
+  if (quickstartBtn) {
+    quickstartBtn.disabled = count === 0;
+    quickstartBtn.textContent = count === 0
+      ? "Select at least 1 repository"
+      : count === 1
+        ? "Start with 1 selected repository"
+        : `Start with ${count} selected repositories`;
+  }
+}
 function repoSelection(): string {
   if (!available?.length) return empty("No repositories available", "Grant repository access to the Impact Gate GitHub App, then reconnect to refresh permissions.", button("connect-github", "Refresh GitHub access", "", true));
-  return `<form data-repositories-form><p class="ig-note">Selected repositories will be indexed on their default branch. Deselecting a repository removes it from this workspace.</p><div class="ig-repo-options">${available.map(repo => `<label class="ig-repo-option"><input type="checkbox" name="repositoryIds" value="${repo.githubRepositoryId}" ${selectedRepos.has(repo.githubRepositoryId) ? "checked" : ""} ${writeDisabled()}><span><strong>${escape(repo.fullName)}</strong><small>${repo.private ? "Private" : "Public"} · ${escape(repo.language ?? "Language not detected")} · ${escape(repo.defaultBranch)}</small></span></label>`).join("")}</div><div class="ig-actions" style="margin-top:18px"><button type="submit" class="ig-button" ${writeDisabled()}>Save selection and start indexing</button></div><p data-save-status role="status"></p></form>`;
+  const recommendedIds = getRecommendedRepoIds();
+  const providerIds = getProviderRepoIds();
+  const totalCount = available.length;
+  const selectedCount = selectedRepos.size;
+  const recommendedCount = available.filter(r => recommendedIds.has(r.githubRepositoryId)).length;
+
+  return `<form data-repositories-form class="ig-repo-form">
+    <p class="ig-note">Selected repositories will be indexed on their default branch. Deselecting a repository removes it from this workspace.</p>
+    <div class="ig-repo-toolbar">
+      <div class="ig-repo-search-wrap">
+        <input type="search" data-repo-search placeholder="Search repositories by name or language…" value="${escape(repoSearchQuery)}" aria-label="Search repositories" autocomplete="off">
+      </div>
+      <div class="ig-repo-bulk-actions">
+        <button type="button" class="ig-button ig-button-secondary ig-button-sm" data-action="repo-select-all">Select all (${totalCount})</button>
+        <button type="button" class="ig-button ig-button-secondary ig-button-sm" data-action="repo-deselect-all">Clear</button>
+        ${recommendedCount > 0 ? `<button type="button" class="ig-button ig-button-secondary ig-button-sm" data-action="repo-select-recommended">Select recommended (${recommendedCount})</button>` : ""}
+      </div>
+    </div>
+    <div class="ig-repo-status-bar">
+      <span class="ig-repo-count" data-repo-count><strong>${selectedCount}</strong> of ${totalCount} selected</span>
+      <div class="ig-repo-filter-tabs">
+        <button type="button" class="ig-repo-tab ${repoFilter === "all" ? "active" : ""}" data-action="repo-filter" data-filter="all">All (${totalCount})</button>
+        <button type="button" class="ig-repo-tab ${repoFilter === "selected" ? "active" : ""}" data-action="repo-filter" data-filter="selected">Selected (<span data-tab-selected-count>${selectedCount}</span>)</button>
+        ${recommendedCount > 0 ? `<button type="button" class="ig-repo-tab ${repoFilter === "recommended" ? "active" : ""}" data-action="repo-filter" data-filter="recommended">Recommended (${recommendedCount})</button>` : ""}
+      </div>
+    </div>
+    <div class="ig-repo-options" data-repo-list>
+      ${available.map(repo => {
+        const isSelected = selectedRepos.has(repo.githubRepositoryId);
+        const isRec = recommendedIds.has(repo.githubRepositoryId);
+        const isProvider = providerIds.has(repo.githubRepositoryId);
+        const q = repoSearchQuery.toLowerCase().trim();
+        const matchesQuery = !q || repo.fullName.toLowerCase().includes(q) || (repo.language ?? "").toLowerCase().includes(q);
+        let matchesTab = true;
+        if (repoFilter === "selected") matchesTab = isSelected;
+        else if (repoFilter === "recommended") matchesTab = isRec;
+        const visible = matchesQuery && matchesTab;
+        return `<label class="ig-repo-option ${isSelected ? "is-selected" : ""}" data-repo-id="${repo.githubRepositoryId}" data-repo-name="${escape(repo.fullName.toLowerCase())}" data-repo-lang="${escape((repo.language ?? "").toLowerCase())}" data-is-rec="${isRec ? "true" : "false"}" ${visible ? "" : 'style="display:none"'}>
+          <input type="checkbox" name="repositoryIds" value="${repo.githubRepositoryId}" ${isSelected ? "checked" : ""} ${writeDisabled()}>
+          <div class="ig-repo-option-body">
+            <div class="ig-repo-option-header">
+              <strong class="ig-repo-name">${escape(repo.fullName)}</strong>
+              ${isProvider ? '<span class="ig-repo-badge ig-repo-badge-provider">OpenAPI Contract</span>' : isRec ? '<span class="ig-repo-badge ig-repo-badge-rec">Recommended</span>' : ""}
+            </div>
+            <div class="ig-repo-meta">
+              <span>${repo.private ? "Private" : "Public"}</span>
+              <span class="ig-repo-dot">·</span>
+              <span>${escape(repo.language ?? "Language not detected")}</span>
+              <span class="ig-repo-dot">·</span>
+              <span class="ig-repo-branch">${escape(repo.defaultBranch)}</span>
+            </div>
+          </div>
+        </label>`;
+      }).join("")}
+    </div>
+    <div class="ig-repo-empty-filter" data-repo-empty-filter style="display:none">
+      <p class="ig-note">No repositories match the current search or filter.</p>
+    </div>
+    <div class="ig-actions" style="margin-top:18px">
+      <button type="submit" class="ig-button" data-repo-submit ${writeDisabled()} ${selectedCount === 0 ? "disabled" : ""}>Save selection (${selectedCount} ${selectedCount === 1 ? "repository" : "repositories"}) and start indexing</button>
+    </div>
+    <p data-save-status role="status"></p>
+  </form>`;
 }
 function modal(title: string, contents: string): HTMLDialogElement {
   const dialog = $<HTMLDialogElement>(".ig-dialog")!;
@@ -456,6 +789,7 @@ async function loadAvailable(): Promise<void> {
   if (!workspace) return;
   const response = await api.request<{ repositories: InstallationRepository[] }>(`${route(workspace.id)}/repositories/available`);
   available = response.repositories; selectedRepos = new Set(available.filter(repo => repo.selected).map(repo => repo.githubRepositoryId));
+  syncRecommendedRepos();
 }
 async function discoverRuntimeServices(form: HTMLFormElement): Promise<void> {
   if (!workspace || !snapshot) return;
@@ -521,8 +855,9 @@ function handleError(error: unknown): void {
 function clearSession(): void {
   identifyAnalyticsUser(null);
   reportedWorkspace = null; reportedSetup = false;
+  reindexErrors.clear();
   codeGraph?.destroy(); codeGraph = null; codeQuery = ""; codePage = 0;
-  api?.cancel(); clearTimeout(poll); snapshot = null; session = null; workspace = null; available = null; selectedRepos.clear(); graph?.destroy(); graph = null; query = ""; filter = ""; showAllFindings = false; errorMessage = "";
+  api?.cancel(); clearTimeout(poll); snapshot = null; session = null; workspace = null; available = null; selectedRepos.clear(); repoSearchQuery = ""; repoFilter = "all"; repoSelectionInitialized = false; graph?.destroy(); graph = null; query = ""; filter = ""; showAllFindings = false; errorMessage = "";
 }
 function chooseWorkspace(): void {
   const requested = new URL(location.href).searchParams.get("workspaceId");
@@ -543,6 +878,7 @@ async function bootstrap(): Promise<void> {
   await refresh();
   if (["onboarding", "github-setup"].includes(page)) {
     onboardingStatus = await api.request<WorkspaceOnboardingStatus>(`${route(workspace.id)}/onboarding`);
+    syncRecommendedRepos();
     render();
   }
   if (new URL(location.href).searchParams.has("import") && page === "repositories") await importRepositories();
@@ -554,13 +890,13 @@ async function chooseInstallation(flow: string): Promise<void> {
 async function importRepositories(): Promise<void> {
   await loadAvailable(); modal("Select repositories", repoSelection());
 }
-async function mutate(action: () => Promise<void>, success?: string): Promise<void> {
-  if (busy) return;
+async function mutate(action: () => Promise<void>, success?: string, onError?: (error: unknown) => void): Promise<boolean> {
+  if (busy) return false;
   busy = true;
   const controls = [...document.querySelectorAll<HTMLButtonElement | HTMLInputElement>("[data-settings-form] button,[data-repositories-form] button,[data-action=confirm-review],[data-action=reindex],[data-runtime-form] button,button[data-provider]")];
   const previous = controls.map(control => control.disabled); controls.forEach(control => { control.disabled = true; });
-  try { await action(); if (success) toast(success); }
-  catch (error) { handleError(error); const status = $("[data-save-status]", $<HTMLDialogElement>(".ig-dialog")?.open ? $(".ig-dialog")! : main); if (status) status.textContent = error instanceof Error ? error.message : "The change was not saved."; }
+  try { await action(); if (success) toast(success); return true; }
+  catch (error) { onError?.(error); handleError(error); const status = $("[data-save-status]", $<HTMLDialogElement>(".ig-dialog")?.open ? $(".ig-dialog")! : main); if (status) status.textContent = error instanceof Error ? error.message : "The change was not saved."; return false; }
   finally { busy = false; controls.forEach((control, index) => { if (control.isConnected) control.disabled = previous[index]; }); }
 }
 
@@ -577,14 +913,20 @@ document.addEventListener("input", event => {
   }
   const input = event.target; if (!(input instanceof HTMLInputElement)) return;
   if (input.matches("[data-query]")) { query = input.value; const position = input.selectionStart; render(); const replacement = $<HTMLInputElement>("[data-query]"); replacement?.focus(); replacement?.setSelectionRange(position, position); }
-  if (input.name === "repositoryIds") { const id = Number(input.value); if (input.checked) selectedRepos.add(id); else selectedRepos.delete(id); }
+  if (input.matches("[data-repo-search]")) {
+    repoSearchQuery = input.value;
+    const form = input.closest<HTMLFormElement>("[data-repositories-form]");
+    if (form) updateRepoListFiltering(form);
+    return;
+  }
+  if (input.name === "repositoryIds") { const id = Number(input.value); if (input.checked) selectedRepos.add(id); else selectedRepos.delete(id); updateRepoSelectionUI(); }
 });
 document.addEventListener("change", event => {
   const runtimeForm = event.target instanceof Element ? event.target.closest<HTMLFormElement>("[data-runtime-form]") : null;
   if (runtimeForm && event.target instanceof Element) { runtimeConnectionChanged(runtimeForm, event.target); return; }
   const select = event.target; if (!(select instanceof HTMLSelectElement)) return;
   if (select.matches("[data-filter]")) { filter = select.value; render(); }
-  if (select.matches("[data-workspace-picker]")) { const id = select.value; if (document.body.dataset.navOpen === "true") closeNavigation(); api.cancel(); clearTimeout(poll); snapshot = null; available = null; query = ""; filter = ""; showAllFindings = false; workspace = session?.workspaces.find(w => w.id === id) ?? null; try { sessionStorage.setItem("impact-gate-workspace", id); } catch { /* Preference only. */ } state("Loading workspace", "Fetching the selected organization’s data."); void refresh().catch(handleError); }
+  if (select.matches("[data-workspace-picker]")) { const id = select.value; if (document.body.dataset.navOpen === "true") closeNavigation(); api.cancel(); clearTimeout(poll); snapshot = null; available = null; selectedRepos.clear(); repoSearchQuery = ""; repoFilter = "all"; repoSelectionInitialized = false; query = ""; filter = ""; showAllFindings = false; workspace = session?.workspaces.find(w => w.id === id) ?? null; try { sessionStorage.setItem("impact-gate-workspace", id); } catch { /* Preference only. */ } state("Loading workspace", "Fetching the selected organization’s data."); void refresh().catch(handleError); }
 });
 document.addEventListener("submit", event => {
   const form = event.target; if (!(form instanceof HTMLFormElement)) return;
@@ -609,11 +951,42 @@ document.addEventListener("submit", event => {
   }
   if (form.matches("[data-repositories-form]")) {
     event.preventDefault(); if (!workspace || !canWrite()) return;
-    const repositoryIds = [...new FormData(form).getAll("repositoryIds")].map(Number);
+    const formIds = [...new FormData(form).getAll("repositoryIds")].map(Number);
+    const repositoryIds = formIds.length ? formIds : [...selectedRepos];
     void mutate(async () => { snapshot = await api.request<WorkspaceSnapshot>(`${route(workspace!.id)}/repositories`, { method: "PUT", body: { repositoryIds } }); trackEvent("repository_selection_saved", { repository_count: repositoryIds.length }); await loadAvailable(); $<HTMLDialogElement>(".ig-dialog")?.close(); render(); schedulePoll(); }, "Repository selection saved. Indexing jobs are queued.");
   }
 });
 document.addEventListener("click", event => {
+  const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a") : null;
+  if (link && page === "api-usage" && selectedEndpoint) {
+    try {
+      const targetUrl = new URL(link.href, location.origin);
+      if (targetUrl.pathname === "/dashboard/api-usage" && !targetUrl.searchParams.has("endpointId")) {
+        event.preventDefault();
+        const prevId = selectedEndpoint;
+        selectedEndpoint = null;
+        endpointTab = "overview";
+        try {
+          history.pushState({ endpointId: null }, "", "/dashboard/api-usage");
+        } catch { /* History fallback */ }
+        render();
+        try {
+          if (typeof window.scrollTo === "function") window.scrollTo({ top: 0, behavior: "instant" });
+        } catch { /* Scroll fallback */ }
+        if (prevId) {
+          const restoreFocus = () => {
+            document.querySelector<HTMLElement>(`[data-action="endpoint"][data-id="${prevId}"]`)?.focus();
+          };
+          if (typeof requestAnimationFrame === "function") {
+            requestAnimationFrame(restoreFocus);
+          } else {
+            setTimeout(restoreFocus, 0);
+          }
+        }
+        return;
+      }
+    } catch { /* Link fallback */ }
+  }
   const trigger = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-action]") : null; if (!trigger || trigger instanceof HTMLButtonElement && trigger.disabled) return;
   const action = trigger.dataset.action; const id = trigger.dataset.id;
   if (action === "runtime-apply-suggestions" || action === "runtime-fill-names") {
@@ -660,22 +1033,196 @@ document.addEventListener("click", event => {
   if (action === "connect-github" || action === "add-workspace") { void mutate(async () => { const installation = new URL(location.href).searchParams.get("installation_id"); const result = await api.request<{ url: string }>("/api/v1/github/connect/start", { method: "POST", body: { returnTo: "/onboarding", ...(installation && /^\d+$/.test(installation) ? { installationId: Number(installation) } : {}) } }); const destination = new URL(result.url); if (destination.protocol !== "https:" || destination.hostname !== "github.com") throw new Error("The GitHub authorization URL is invalid."); trackEvent("github_connection_start", { provider: "github" }); location.assign(destination.href); }); return; }
   if (action === "finish-github" && id) { void mutate(async () => { const result = await api.request<{ workspace: WorkspaceMembership }>("/api/v1/github/connect/finish", { method: "POST", body: { flow: trigger.dataset.flow, installationId: Number(id) } }); try { sessionStorage.setItem("impact-gate-workspace", result.workspace.id); } catch { /* The new workspace remains available in the workspace picker. */ } trackEvent("github_connected", { provider: "github" }); history.replaceState(null, "", "/onboarding"); await bootstrap(); }, "GitHub account connected."); return; }
   if (action === "import") { void importRepositories().catch(handleError); return; }
+  if (action === "repo-select-all") {
+    const form = trigger.closest<HTMLFormElement>("[data-repositories-form]");
+    if (form) {
+      const isFiltered = Boolean(repoSearchQuery.trim()) || repoFilter !== "all";
+      form.querySelectorAll<HTMLElement>(".ig-repo-option").forEach(opt => {
+        if (!isFiltered || opt.style.display !== "none") {
+          const id = Number(opt.dataset.repoId);
+          if (id) selectedRepos.add(id);
+        }
+      });
+    } else if (available) {
+      available.forEach(r => selectedRepos.add(r.githubRepositoryId));
+    }
+    updateRepoSelectionUI();
+    return;
+  }
+  if (action === "repo-deselect-all") {
+    const form = trigger.closest<HTMLFormElement>("[data-repositories-form]");
+    if (form) {
+      const isFiltered = Boolean(repoSearchQuery.trim()) || repoFilter !== "all";
+      if (isFiltered) {
+        form.querySelectorAll<HTMLElement>(".ig-repo-option").forEach(opt => {
+          if (opt.style.display !== "none") {
+            const id = Number(opt.dataset.repoId);
+            if (id) selectedRepos.delete(id);
+          }
+        });
+      } else {
+        selectedRepos.clear();
+      }
+    } else {
+      selectedRepos.clear();
+    }
+    updateRepoSelectionUI();
+    return;
+  }
+  if (action === "repo-select-recommended") {
+    const recIds = getRecommendedRepoIds();
+    recIds.forEach(id => selectedRepos.add(id));
+    updateRepoSelectionUI();
+    return;
+  }
+  if (action === "repo-filter") {
+    const requestedFilter = trigger.dataset.filter as "all" | "selected" | "recommended";
+    if (["all", "selected", "recommended"].includes(requestedFilter)) {
+      repoFilter = requestedFilter;
+      const form = trigger.closest<HTMLFormElement>("[data-repositories-form]");
+      if (form) {
+        form.querySelectorAll<HTMLElement>(".ig-repo-tab").forEach(tab => {
+          tab.classList.toggle("active", tab.dataset.filter === repoFilter);
+        });
+        updateRepoListFiltering(form);
+      }
+    }
+    return;
+  }
+  if (action === "toggle-discovery-repo") {
+    const id = Number(trigger.dataset.id);
+    if (id) {
+      if (selectedRepos.has(id)) selectedRepos.delete(id);
+      else selectedRepos.add(id);
+      updateRepoSelectionUI();
+    }
+    return;
+  }
+  if (action === "discovery-select-all") {
+    const recIds = getRecommendedRepoIds();
+    if (recIds.size) {
+      recIds.forEach(id => selectedRepos.add(id));
+    } else if (available) {
+      available.slice(0, 3).forEach(r => selectedRepos.add(r.githubRepositoryId));
+    }
+    updateRepoSelectionUI();
+    return;
+  }
+  if (action === "discovery-clear-all") {
+    selectedRepos.clear();
+    updateRepoSelectionUI();
+    return;
+  }
   if (action === "quickstart" && workspace && canWrite()) {
-    const ids = (onboardingStatus?.providerRepositories ?? []).concat(onboardingStatus?.recommendedConsumerRepositories ?? []).map((repo) => repo.id);
-    if (!ids.length) { toast("No recommended repositories are available yet. Choose repositories manually."); return; }
-    void mutate(async () => { snapshot = await api.request<WorkspaceSnapshot>(`${route(workspace!.id)}/quickstart`, { method: "POST", body: { repositoryIds: [...new Set(ids)] } }); onboardingStatus = await api.request<WorkspaceOnboardingStatus>(`${route(workspace!.id)}/onboarding`); render(); }, "Your API map is building."); return;
+    let ids: number[] = [];
+    if (selectedRepos.size > 0) {
+      ids = [...selectedRepos];
+    } else {
+      ids = (onboardingStatus?.providerRepositories ?? []).concat(onboardingStatus?.recommendedConsumerRepositories ?? []).map((repo) => repo.id);
+      if (!ids.length && available?.length) {
+        ids = available.slice(0, 3).map(r => r.githubRepositoryId);
+      }
+    }
+    if (!ids.length) { toast("No repositories selected. Please select at least one repository."); return; }
+    void mutate(async () => {
+      snapshot = await api.request<WorkspaceSnapshot>(`${route(workspace!.id)}/quickstart`, { method: "POST", body: { repositoryIds: [...new Set(ids)] } });
+      onboardingStatus = await api.request<WorkspaceOnboardingStatus>(`${route(workspace!.id)}/onboarding`);
+      await loadAvailable();
+      render();
+    }, "Your API map is building.");
+    return;
   }
   if (action === "clear-filters") { query = ""; filter = ""; render(); return; }
   if (action === "demo-traffic-refresh") { const traffic = trigger.closest<HTMLElement>("[data-demo-traffic]"); if (traffic) void refreshDemoTraffic(traffic); return; }
   if (action === "toggle-findings" && page === "home") { showAllFindings = !showAllFindings; render(); $('[data-action="toggle-findings"]')?.focus(); return; }
-  if (action === "endpoint" && id) { selectedEndpoint = id; endpointTab = "overview"; render(); return; }
-  if (action === "endpoint-tab") { endpointTab = trigger.dataset.tab ?? "overview"; render(); return; }
-  if (action === "endpoint-dialog" && id) { const endpoint = snapshot?.endpoints.find(e => e.id === id); if (endpoint) modal(`${endpoint.method} ${endpoint.path}`, evidence([endpoint.source]) + `<p>${endpoint.staticCallerCount} static callers · ${escape(coverage(endpoint))}</p><a class="ig-button ig-button-secondary" href="/dashboard/api-usage?endpointId=${encodeURIComponent(endpoint.id)}">Inspect API and code flow</a>`); return; }
+  if (action === "endpoint" && id) {
+    $<HTMLDialogElement>(".ig-dialog")?.close();
+    if (page !== "api-usage") {
+      const tabParam = trigger.dataset.tab ? `&tab=${encodeURIComponent(trigger.dataset.tab)}` : "";
+      location.assign(`/dashboard/api-usage?endpointId=${encodeURIComponent(id)}${tabParam}`);
+      return;
+    }
+    selectedEndpoint = id;
+    const requestedTab = trigger.dataset.tab;
+    if (requestedTab && ["overview", "flow", "consumers", "changes", "retirement"].includes(requestedTab)) {
+      endpointTab = requestedTab;
+    } else {
+      endpointTab = "overview";
+    }
+    try {
+      const nextUrl = new URL(location.href);
+      nextUrl.pathname = "/dashboard/api-usage";
+      nextUrl.searchParams.set("endpointId", id);
+      if (endpointTab !== "overview") nextUrl.searchParams.set("tab", endpointTab);
+      else nextUrl.searchParams.delete("tab");
+      history.pushState({ endpointId: id, tab: endpointTab }, "", nextUrl.toString());
+    } catch { /* Navigation fallback */ }
+    render();
+    focusEndpointScreen();
+    return;
+  }
+  if (action === "endpoint-tab") {
+    endpointTab = trigger.dataset.tab ?? "overview";
+    try {
+      const nextUrl = new URL(location.href);
+      if (endpointTab !== "overview") nextUrl.searchParams.set("tab", endpointTab);
+      else nextUrl.searchParams.delete("tab");
+      history.replaceState({ endpointId: selectedEndpoint, tab: endpointTab }, "", nextUrl.toString());
+    } catch { /* History fallback */ }
+    render();
+    focusEndpointTab(endpointTab);
+    return;
+  }
+  if (action === "back-to-apis") {
+    const prevId = selectedEndpoint;
+    selectedEndpoint = null;
+    endpointTab = "overview";
+    try {
+      const nextUrl = new URL(location.href);
+      nextUrl.searchParams.delete("endpointId");
+      nextUrl.searchParams.delete("tab");
+      history.pushState({ endpointId: null }, "", nextUrl.toString());
+    } catch { /* History fallback */ }
+    render();
+    try {
+      if (typeof window.scrollTo === "function") window.scrollTo({ top: 0, behavior: "instant" });
+    } catch { /* Scroll fallback */ }
+    if (prevId) {
+      const restoreFocus = () => {
+        const returnTrigger = document.querySelector<HTMLElement>(`[data-action="endpoint"][data-id="${prevId}"]`);
+        returnTrigger?.focus();
+      };
+      if (typeof requestAnimationFrame === "function") {
+        requestAnimationFrame(restoreFocus);
+      } else {
+        setTimeout(restoreFocus, 0);
+      }
+    }
+    return;
+  }
+  if (action === "endpoint-dialog" && id) { const endpoint = snapshot?.endpoints.find(e => e.id === id); if (endpoint) modal(`${endpoint.method} ${endpoint.path}`, evidence([endpoint.source]) + `<p>${endpoint.staticCallerCount} static callers · ${escape(coverage(endpoint))}</p><button type="button" class="ig-button ig-button-secondary" data-action="endpoint" data-id="${escape(endpoint.id)}">Inspect API and code flow</button>`); return; }
   if (action === "finding" && id) { const finding = snapshot?.findings.find(f => f.id === id); if (finding) modal(finding.endpoint, `<p>${badge(finding.risk, "risk")} ${escape(finding.verdict)}</p><p>${escape(finding.explanation)}</p><p><a href="${escape(url(finding.pullRequestUrl))}" target="_blank" rel="noopener noreferrer">Open pull request #${finding.pullRequestNumber} ↗</a></p>${evidence(finding.evidence)}`); return; }
   if (action === "repository" && id) { const repository = snapshot?.repositories.find(r => r.id === id); if (repository) modal(repository.fullName, `<p>${badge(repository.status)} · ${escape(repository.defaultBranch)}</p><p>${repository.coverage.supportedFiles} supported files · ${repository.coverage.skippedFiles} skipped files · ${repository.coverage.openApiDocuments} OpenAPI documents</p><ul>${repository.coverage.notes.map(note => `<li>${escape(note)}</li>`).join("")}</ul>${repository.error ? `<p>${escape(repository.error)}</p>` : ""}<p class="ig-note">Indexed commit ${escape(repository.indexedSha ?? "not indexed")}</p>`); return; }
   if (action === "candidate" && id) { const candidate = snapshot?.candidates.find(c => c.endpointId === id); const endpoint = snapshot?.endpoints.find(e => e.id === id); if (candidate && endpoint) modal(`${endpoint.method} ${endpoint.path}`, `<p>${escape(candidate.reason)}</p><p>${candidate.staticCallerCount} static callers · ${escape(coverage(endpoint))}</p><p class="ig-note">Reviewing records your evidence review for this snapshot. Plan removals with your team and check unobserved consumers.</p>${evidence([endpoint.source, ...snapshot!.edges.filter(e => e.endpointId === id).flatMap(e => e.references)])}${button("confirm-review", candidate.reviewedAt && candidate.reviewedSnapshotId === snapshot?.snapshotId ? "Mark needs review" : "Mark reviewed for this snapshot", `data-id="${escape(id)}" data-reviewed="${!(candidate.reviewedAt && candidate.reviewedSnapshotId === snapshot?.snapshotId)}" ${writeDisabled()}`)}<p data-save-status role="status"></p>`); return; }
   if (action === "confirm-review" && id && canWrite()) { void mutate(async () => { snapshot = await api.request<WorkspaceSnapshot>(`${route(workspace!.id)}/candidates/${encodeURIComponent(id)}/review`, { method: "POST", body: { snapshotId: snapshot!.snapshotId, reviewed: trigger.dataset.reviewed === "true" } }); trackEvent("evidence_review_saved", { action: trigger.dataset.reviewed === "true" ? "reviewed" : "needs_review" }); $<HTMLDialogElement>(".ig-dialog")?.close(); render(); }, "Candidate review saved."); return; }
-  if (action === "reindex" && id && canWrite()) { void mutate(async () => { await api.request(`${route(workspace!.id)}/repositories/${encodeURIComponent(id)}/index`, { method: "POST" }); trackEvent("repository_reindex_requested"); await refresh(); }, "Indexing job queued."); return; }
+  if (action === "reindex" && id && canWrite()) {
+    reindexErrors.delete(id);
+    if (trigger instanceof HTMLButtonElement) trigger.disabled = true;
+    trigger.textContent = "Queueing…";
+    void mutate(async () => {
+      const result = await api.request<{ job: WorkspaceJob }>(`${route(workspace!.id)}/repositories/${encodeURIComponent(id)}/index`, { method: "POST" });
+      if (!result.job || result.job.type !== "index_repository" || result.job.repositoryId !== id || !["queued", "running"].includes(result.job.status))
+        throw new Error("The server did not confirm the repository indexing job.");
+      trackEvent("repository_reindex_requested");
+    }, "Indexing job queued.", error => {
+      reindexErrors.set(id, error instanceof Error ? error.message : "The repository could not be queued for indexing.");
+    }).then(async queued => {
+      if (!queued) { render(); return; }
+      try { await refresh(); }
+      catch (error) { handleError(error); }
+    });
+    return;
+  }
   if (action === "link-github" || action === "link-google") { void mutate(async () => { await auth.linkProvider(action === "link-github" ? "github" : "google"); session = await api.request<SessionResponse>("/api/v1/session"); render(); }, "Sign-in method connected."); return; }
   if (action === "graph-fit") { graph?.fit(undefined, 35); return; }
   if ((action === "graph-export" || action === "code-export") && snapshot) {
@@ -747,6 +1294,35 @@ async function start(): Promise<void> {
   });
   await auth.ready;
 }
+window.addEventListener("popstate", () => {
+  if (page === "api-usage") {
+    try {
+      const params = new URL(location.href).searchParams;
+      const newEndpointId = params.get("endpointId");
+      const rawTab = params.get("tab");
+      const newTab = ["overview", "flow", "consumers", "changes", "retirement"].includes(rawTab ?? "") ? rawTab! : "overview";
+      if (newEndpointId !== selectedEndpoint || newTab !== endpointTab) {
+        const returningToList = selectedEndpoint && !newEndpointId;
+        const prevId = selectedEndpoint;
+        selectedEndpoint = newEndpointId;
+        endpointTab = newTab;
+        render();
+        if (selectedEndpoint) {
+          focusEndpointScreen();
+        } else if (returningToList && prevId) {
+          const restoreFocus = () => {
+            document.querySelector<HTMLElement>(`[data-action="endpoint"][data-id="${prevId}"]`)?.focus();
+          };
+          if (typeof requestAnimationFrame === "function") {
+            requestAnimationFrame(restoreFocus);
+          } else {
+            setTimeout(restoreFocus, 0);
+          }
+        }
+      }
+    } catch { /* Popstate fallback */ }
+  }
+});
 window.addEventListener("pagehide", () => { disposed = true; cleanupAuthPage?.(); clearTimeout(poll); api?.cancel(); graph?.destroy(); auth?.dispose(); });
 startWebsiteAnalytics();
 void start().catch(error => { const info = describeAuthError(error); state("Sign-in unavailable", info.code === "auth/unknown" && error instanceof Error ? error.message : info.message, true); });

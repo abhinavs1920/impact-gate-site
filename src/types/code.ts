@@ -24,6 +24,7 @@ export interface IndexedFunctionCall {
   targetName: string;
   source: SourceReference;
   resolution: "resolved" | "external" | "unresolved";
+  modeled?: boolean;
   kind: "call" | "callback" | "constructor";
   conditional: boolean;
   repeated: boolean;
@@ -106,7 +107,7 @@ export interface ApiExecutionTreeNode {
   name: string;
   qualifiedName: string;
   source: SourceReference;
-  kind: "entrypoint" | "function" | "external" | "outbound_api" | "unresolved";
+  kind: "entrypoint" | "function" | "external" | "modeled" | "outbound_api" | "unresolved";
   execution: "sequential" | "parallel";
   conditional: boolean;
   repeated: boolean;

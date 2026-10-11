@@ -16,16 +16,19 @@ const fn = (id, extra = {}) => ({ id, name: id, qualifiedName: id, serviceId: 's
 const snapshot = { endpoints: [endpoint], services: [{ id: 'service', name: 'Order service' }], code: {
   version: 1, functions: [fn('handler'), fn('shared'), fn('unused', { attributedRequestsInWindow: null, countsPartial: true, attributions: [] })],
   calls: [{ id: 'helper', callerFunctionId: 'handler', calleeFunctionId: 'shared', targetName: 'shared', resolution: 'resolved', kind: 'call', conditional: true, repeated: false, source },
-    { id: 'dynamic', callerFunctionId: 'shared', calleeFunctionId: null, targetName: '<unknown>', resolution: 'unresolved', kind: 'call', conditional: false, repeated: false, source }],
-  flows: [{ endpointId: 'orders', entryFunctionIds: ['handler'], functionIds: ['handler', 'shared'], callIds: ['helper', 'dynamic'], callerFunctionIds: [], outboundCalls: [], status: 'partial', notes: ['Dynamic dispatch remains unresolved.'] }], missingRepositoryIds: [],
+    { id: 'dynamic', callerFunctionId: 'shared', calleeFunctionId: null, targetName: '<unknown>', resolution: 'unresolved', kind: 'call', conditional: false, repeated: false, source },
+    { id: 'response', callerFunctionId: 'handler', calleeFunctionId: null, targetName: 'reply.send', resolution: 'unresolved', modeled: true, kind: 'call', conditional: false, repeated: false, source }],
+  flows: [{ endpointId: 'orders', entryFunctionIds: ['handler'], functionIds: ['handler', 'shared'], callIds: ['helper', 'dynamic', 'response'], callerFunctionIds: [], outboundCalls: [], status: 'partial', notes: ['Dynamic dispatch remains unresolved.'] }], missingRepositoryIds: [],
 } };
 let document = parseHTML(`<html><body>${renderCodeFlow(snapshot, endpoint)}</body></html>`).document;
 assert.match(document.body.textContent, /2 reachable functions/);
 assert.match(document.body.textContent, /120 API requests/);
 assert.match(document.body.textContent, /measured function invocations/);
 assert.match(document.body.textContent, /unresolved boundary/);
+assert.match(document.body.textContent, /Modeled framework or language operation/);
+assert.match(document.body.textContent, /Modeled/);
 assert.equal(document.querySelector('[data-code-flow]').dataset.codeFlow, 'orders');
-assert.equal(document.querySelectorAll('a[href*="blob/"]').length, 4);
+assert.equal(document.querySelectorAll('a[href*="blob/"]').length, 5);
 globalThis.document = document;
 mountCodeFlow(snapshot, document.querySelector('[data-code-flow]'), document.querySelector('[data-code-inspector]'));
 assert.equal(globalThis.codeGraphOptions.elements[0].data.label, 'GET /orders');
