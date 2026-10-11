@@ -71,6 +71,90 @@ html[data-theme="dark"] .ig-badge[data-status="indexed"], html[data-theme="dark"
 @media (max-width: 960px) { .ig-sidebar { visibility: hidden; } .ig-workspace[data-nav-open="true"] .ig-sidebar { visibility: visible; } .ig-settings-grid { grid-template-columns: minmax(0, 1fr); } .ig-settings-preferences { grid-row: auto; } }
 @media (max-width: 640px) { .ig-live-table td { grid-template-columns: 100px minmax(0, 1fr); } .ig-sidebar-workspaces { display: grid; gap: 7px; } .ig-sidebar-workspaces .ig-workspace-picker { display: block; width: 100%; max-width: none; } .ig-top-actions { gap: 4px; } .ig-onboarding-brand { font-size: 16px; } }
 @media (max-width: 350px) { .ig-topbar { padding-inline: 12px; } .ig-top-actions > .ig-button { padding-inline: 8px; font-size: 11px; } .ig-onboarding-topbar .ig-actions { gap: 5px; } }
+
+/* Workspace readability at the browser's default zoom. */
+body.ig-workspace {
+  font-size: 15px;
+  line-height: 1.58;
+}
+.ig-sidebar .ig-nav-link {
+  font-size: 14px;
+}
+.ig-sidebar-bottom,
+.ig-sidebar-bottom a {
+  font-size: 13px;
+}
+.ig-main {
+  font-size: 15px;
+}
+.ig-main [class~="text-xs"] {
+  font-size: 0.8rem !important;
+}
+.ig-main [class~="text-sm"] {
+  font-size: 0.92rem !important;
+}
+.ig-main .ig-note,
+.ig-main .ig-live-heading p {
+  font-size: 14px;
+  line-height: 1.6;
+}
+.ig-main h2 {
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+.ig-main h3 {
+  font-size: 1.12rem;
+  line-height: 1.3;
+}
+.ig-main .ig-kpi span {
+  font-size: 13px;
+}
+.ig-main .ig-live-table,
+.ig-main .ig-table {
+  font-size: 13px;
+}
+.ig-main .ig-live-table th,
+.ig-main .ig-live-table td,
+.ig-main .ig-table th,
+.ig-main .ig-table td {
+  line-height: 1.55;
+}
+.ig-card,
+.ig-kpi,
+.ig-workflow-card,
+.ig-coverage-banner {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+.ig-card:hover,
+.ig-kpi:hover,
+.ig-workflow-card:hover,
+.ig-coverage-banner:hover {
+  border-color: color-mix(in srgb, var(--ig-primary) 42%, var(--ig-border));
+  box-shadow: 0 10px 26px rgb(13 30 56 / 8%);
+}
+.ig-workflow-card:hover {
+  transform: translateY(-3px);
+}
+@media (min-width: 641px) {
+  .ig-main h1 {
+    font-size: clamp(2rem, 3vw, 2.8rem) !important;
+    line-height: 1.12;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ig-card,
+  .ig-kpi,
+  .ig-workflow-card,
+  .ig-coverage-banner {
+    transition: none;
+  }
+  .ig-workflow-card:hover {
+    transform: none;
+  }
+}
 .ig-runtime-form { width: 100%; }
 .ig-runtime-form h3 { margin: 0 0 14px; font-size: 15px; }
 .ig-runtime-steps { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0; font-size: 12px; color: var(--ig-secondary); }

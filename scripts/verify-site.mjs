@@ -133,6 +133,8 @@ if (!css.includes("[data-theme=dark]"))
   throw new Error("Dark theme styles are missing.");
 if (!css.includes(".hero-video"))
   throw new Error("Hero video styles are missing.");
+if (!css.includes("hero-glow-drift") || !css.includes("no-preference"))
+  throw new Error("Lightweight motion styles are missing.");
 if (!css.includes("grid-template-columns:1.35rem minmax(0,1fr)"))
   throw new Error("Narrow-screen trace overflow fix is missing.");
 if (!assets.some((asset) => asset.endsWith(".js")))

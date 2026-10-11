@@ -2328,3 +2328,253 @@ summary span {
     padding-top: 0;
   }
 }
+
+/* Readable default scale: keep metadata compact, but let product copy breathe at 100%. */
+:root {
+  --text-xs: 0.8125rem;
+  --text-sm: 0.9375rem;
+  --text-lg: 1.2rem;
+}
+.eyebrow {
+  font-size: 0.72rem;
+}
+.section-heading p {
+  font-size: 1.03rem;
+  line-height: 1.68;
+}
+.header-inner .brand {
+  font-size: 1.08rem;
+}
+.site-header nav a {
+  font-size: 0.9rem;
+}
+.header-cta {
+  font-size: 0.86rem;
+}
+.hero-kicker {
+  font-size: 0.76rem;
+}
+.hero-supporting-copy {
+  font-size: 0.95rem;
+  line-height: 1.65;
+}
+.hero .button {
+  min-height: 3.15rem;
+  padding-inline: 1.25rem;
+  font-size: 0.94rem;
+}
+.hero-note {
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+.hero-note .fact {
+  font-size: 0.7rem;
+}
+.video-caption {
+  font-size: 0.82rem;
+}
+.step-card p,
+.state-card p,
+.change-copy p,
+.change-more p,
+.boundary-card li,
+.pilot-copy > p,
+.faq-item p {
+  font-size: 0.92rem;
+}
+.step-category,
+.step-bottom,
+.state-foot,
+.change-index,
+.change-token,
+.scope-note .fact,
+.boundary-card .fact,
+.pilot-status .fact {
+  font-size: 0.66rem;
+}
+.state-badge {
+  font-size: 0.62rem;
+}
+.change-copy h3 {
+  font-size: 0.98rem;
+}
+.scope-note > span {
+  font-size: 0.82rem;
+}
+.pilot-status,
+.pilot-details {
+  font-size: 0.82rem;
+}
+.form-heading strong {
+  font-size: 0.98rem;
+}
+.form-heading span,
+label,
+input,
+textarea,
+button {
+  font-size: 0.86rem;
+}
+.form-status,
+.form-email-alternative {
+  font-size: 0.8rem;
+}
+.form-privacy {
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+summary {
+  font-size: 0.95rem;
+}
+.footer-links a {
+  font-size: 0.86rem;
+}
+.footer-bottom p {
+  font-size: 0.76rem;
+}
+.workflow-key {
+  font-size: 0.66rem;
+}
+.workflow-card p {
+  font-size: 0.95rem;
+}
+.workflow-detail {
+  font-size: 0.7rem;
+}
+.workflow-card a {
+  font-size: 0.86rem;
+}
+.evidence-graph-step strong {
+  font-size: 1rem;
+}
+.evidence-graph-step code {
+  font-size: 0.7rem;
+}
+
+/* Motion uses opacity and transforms only; the document remains fully crawlable without JS. */
+.reveal-ready [data-reveal] {
+  transform: translate3d(0, 1rem, 0);
+  transition:
+    opacity 0.48s ease,
+    transform 0.58s cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+.reveal-ready [data-reveal].is-visible {
+  transform: translate3d(0, 0, 0);
+}
+.workflow-card,
+.step-card,
+.state-card,
+.boundary-card,
+.change-row,
+.evidence-graph-step {
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+.workflow-card:hover,
+.workflow-card:focus-within,
+.step-card:hover,
+.step-card:focus-within,
+.state-card:hover,
+.state-card:focus-within,
+.boundary-card:hover,
+.boundary-card:focus-within {
+  transform: translateY(-3px);
+  box-shadow: 0 0.75rem 1.8rem rgb(13 30 56 / 8%);
+}
+.change-row:hover,
+.change-row:focus-within {
+  transform: translateX(0.2rem);
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+.hero .button:active,
+button:active {
+  transform: translateY(1px);
+}
+.hero::before,
+.hero::after {
+  display: block;
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  content: "";
+}
+.hero::before {
+  top: -12rem;
+  right: -8rem;
+  width: 38rem;
+  height: 38rem;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(43 58 196 / 12%), rgb(43 58 196 / 0%) 68%);
+}
+.hero::after {
+  top: 5rem;
+  right: 14%;
+  width: 18rem;
+  height: 18rem;
+  border: 1px solid rgb(43 58 196 / 12%);
+  border-radius: 50%;
+}
+[data-theme="dark"] .hero::before {
+  background: radial-gradient(circle, rgb(173 181 255 / 15%), rgb(173 181 255 / 0%) 68%);
+}
+[data-theme="dark"] .hero::after {
+  border-color: rgb(173 181 255 / 18%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hero::before {
+    animation: hero-glow-drift 18s ease-in-out infinite alternate;
+  }
+  .hero::after {
+    animation: hero-ring-drift 16s ease-in-out infinite alternate;
+  }
+  .hero .kicker-mark {
+    animation: kicker-breathe 4s ease-in-out infinite;
+  }
+}
+@keyframes hero-glow-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(-1.5rem, 1rem, 0) scale(1.04); }
+}
+@keyframes hero-ring-drift {
+  from { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0.55; }
+  to { transform: translate3d(-0.75rem, 1rem, 0) rotate(8deg); opacity: 1; }
+}
+@keyframes kicker-breathe {
+  0%, 100% {
+    border-color: color-mix(in srgb, var(--color-primary) 25%, transparent);
+    background: color-mix(in srgb, var(--color-primary-soft) 72%, var(--color-surface));
+  }
+  50% {
+    border-color: var(--color-primary);
+    background: var(--color-primary-soft);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal-ready [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .workflow-card,
+  .step-card,
+  .state-card,
+  .boundary-card,
+  .change-row,
+  .evidence-graph-step {
+    transition: none;
+  }
+  .workflow-card:hover,
+  .workflow-card:focus-within,
+  .step-card:hover,
+  .step-card:focus-within,
+  .state-card:hover,
+  .state-card:focus-within,
+  .boundary-card:hover,
+  .boundary-card:focus-within,
+  .change-row:hover,
+  .change-row:focus-within {
+    transform: none;
+  }
+}
