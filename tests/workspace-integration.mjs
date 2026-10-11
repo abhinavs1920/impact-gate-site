@@ -152,7 +152,7 @@ try {
       assert.equal(document.querySelectorAll('#recent-findings th').length, screen === 'home' ? 5 : 0);
     }
     if (screen === 'home') {
-      assert.match(content, /remain unknown/);
+      assert.match(content, /remain (?:runtime-)?unknown/);
       assert.match(content, /API Flows/);
       assert.match(content, /PR Impact/);
       assert.match(content, /Retirement Radar/);
