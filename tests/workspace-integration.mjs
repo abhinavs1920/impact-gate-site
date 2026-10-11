@@ -94,9 +94,9 @@ try {
     }
     if (screen === 'home') {
       serverSnapshot.jobs = [{id:'queued-analysis',repositoryId:'r1',type:'analyze_pull_request',status:'queued',phase:'static_analysis_queue',progress:0,error:null,createdAt:source.generatedAt,updatedAt:source.generatedAt}];
-      serverSnapshot.endpoints = [0, 1, 2, 4, 5].map((count, index) => ({...source.endpoints[0],id:`e${index + 1}`,path:`/customer/v1/orders/${index + 1}`,staticCallerCount:count}));
       const monthEnd = new Date().toISOString();
-      const monthStart = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const monthStart = new Date(Date.parse(monthEnd) - 30 * 24 * 60 * 60 * 1000).toISOString();
+      serverSnapshot.endpoints = [0, 1, 2, 4, 5].map((count, index) => ({...source.endpoints[0],id:`e${index + 1}`,path:`/customer/v1/orders/${index + 1}`,staticCallerCount:count}));
       serverSnapshot.runtimeConnections = [{provider:'prometheus',config:{provider:'prometheus',windowHours:720,serviceMappings:{'customer-service':'s1'},baseUrl:'https://metrics.example.com',query:'increase(requests[{{window}}])',serviceLabel:'service',methodLabel:'method',routeLabel:'route',callerLabel:null},status:'connected',lastSyncedAt:monthEnd,lastAttemptAt:monthEnd,error:null,observationCount:1,matchedEndpointCount:1,unmatchedObservationCount:0,windowStart:monthStart,windowEnd:monthEnd,partial:false,warnings:[]}];
       serverSnapshot.endpoints[0] = {...serverSnapshot.endpoints[0],runtimeCoverage:'available',runtimeCallsInWindow:0,runtimeRequestSource:'prometheus',runtimeWindowStart:monthStart,runtimeWindowEnd:monthEnd,runtimePartial:false};
       serverSnapshot.endpoints[1] = {...serverSnapshot.endpoints[1],runtimeCoverage:'available',runtimeCallsInWindow:0,runtimeRequestSource:'prometheus',runtimeWindowStart:monthStart,runtimeWindowEnd:monthEnd,runtimePartial:true};
@@ -214,7 +214,7 @@ try {
       const click = element => element.dispatchEvent(new window.Event('click', {bubbles:true}));
       click(document.querySelector('[data-action=runtime-connect][data-provider=prometheus]'));
       const connectionForm = document.querySelector('[data-runtime-form]');
-      assert.equal(connectionForm.querySelector('[name=windowHours]').max, '720', 'runtime connections allow a full 30-day window');
+      assert.equal(connectionForm.querySelector('[name=windowHours]').getAttribute('max'), '720', 'runtime connections allow a full 30-day window');
       connectionForm.reportValidity=()=>true;
       connectionForm.querySelector('[name=baseUrl]').value = 'https://metrics.example.com';
       const authentication = connectionForm.querySelector('[name=authentication]');
