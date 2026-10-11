@@ -2000,6 +2000,47 @@ html[data-theme="dark"] .hero .trace-terminal .trace-node code {
     font-size: clamp(2.5rem, 5vw, 3.5rem);
   }
 }
+
+/* Product revamp: one graph, three workflows. */
+.hero-supporting-copy { max-width: 32rem; margin: .85rem 0 0; color: var(--color-secondary); font-size: .82rem; line-height: 1.55; }
+.code-method { color: #2f9a68; font-weight: 700; }
+.flow-connector { color: var(--color-primary); font-size: .75rem; line-height: 1; }
+.evidence-graph-section { background: #fff; }
+.evidence-graph { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; margin-top: 2.2rem; padding: 1.35rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-background); }
+.evidence-graph-step { position: relative; display: flex; min-height: 8.5rem; flex-direction: column; gap: .75rem; padding: .8rem; }
+.evidence-graph-step:not(:last-child) { border-right: 1px dashed var(--color-border-strong); }
+.evidence-graph-index { display: grid; width: 1.7rem; height: 1.7rem; place-items: center; border: 1px solid #d9dcff; border-radius: 50%; background: #f0f1ff; color: var(--color-primary); font: 500 .58rem/1 var(--font-mono); }
+.evidence-graph-step strong { display: block; color: var(--color-navy); font-size: .9rem; }
+.evidence-graph-step code { display: block; margin-top: .4rem; color: var(--color-secondary); font: 500 .62rem/1.5 var(--font-mono); overflow-wrap: anywhere; }
+.evidence-graph-arrow { position: absolute; top: 1.45rem; right: -.4rem; z-index: 1; display: grid; width: .8rem; height: .8rem; place-items: center; background: var(--color-background); color: var(--color-primary); font-size: .9rem; }
+.workflows { background: var(--color-background); }
+.workflow-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 2.2rem; }
+.workflow-card { display: flex; min-height: 16rem; flex-direction: column; padding: 1.35rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-surface); transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease; }
+.workflow-card:hover { border-color: var(--color-primary); box-shadow: 0 12px 28px #0d1e3810; transform: translateY(-2px); }
+.workflow-key { color: var(--color-primary); font: 600 .58rem/1.3 var(--font-mono); letter-spacing: .1em; }
+.workflow-card h3 { margin: 1.1rem 0 .45rem; font-size: 1.55rem; }
+.workflow-card p { margin: 0; color: var(--color-secondary); font-size: .84rem; line-height: 1.6; }
+.workflow-detail { margin-top: .75rem; color: var(--color-secondary); font: 500 .62rem/1.4 var(--font-mono); }
+.workflow-card a { display: inline-flex; gap: .45rem; align-items: center; margin-top: auto; padding-top: 1.5rem; color: var(--color-primary); font-size: .76rem; font-weight: 650; text-decoration: none; }
+.workflow-card a:hover { text-decoration: underline; }
+html[data-theme="dark"] .evidence-graph-section { background: var(--color-background); }
+html[data-theme="dark"] .evidence-graph { background: var(--color-surface); }
+html[data-theme="dark"] .evidence-graph-index { border-color: #41496f; background: #222a45; }
+html[data-theme="dark"] .evidence-graph-arrow { background: var(--color-surface); }
+@media (max-width: 58rem) {
+  .evidence-graph { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+  .evidence-graph-step { min-height: 7rem; }
+  .evidence-graph-step:not(:last-child) { border-right: 0; }
+  .evidence-graph-step:nth-child(odd) { border-right: 1px dashed var(--color-border-strong); }
+  .evidence-graph-step:nth-child(-n + 3) { border-bottom: 1px dashed var(--color-border-strong); }
+  .evidence-graph-arrow { display: none; }
+  .workflow-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 34rem) {
+  .evidence-graph { grid-template-columns: 1fr; padding: .8rem; }
+  .evidence-graph-step, .evidence-graph-step:nth-child(odd) { border-right: 0; border-bottom: 1px dashed var(--color-border-strong); }
+  .evidence-graph-step:last-child { border-bottom: 0; }
+}
 @media (max-width: 54rem) {
   .hero {
     padding-block: 4rem;

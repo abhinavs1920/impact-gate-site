@@ -43,7 +43,7 @@ export const docPages: DocPage[] = [
         title: "What Impact Gate does",
         blocks: [
           { type: "paragraph", text: "Impact Gate connects selected GitHub repositories into an engineering workspace. It discovers API endpoints from OpenAPI documents, finds supported HTTP client references in consumer code, and publishes an advisory report when a pull request changes a contract." },
-          { type: "bullets", items: ["See discovered services, endpoints, and static callers in one place.", "Review contract changes alongside consumer code and commit-specific evidence.", "Follow analysis progress in GitHub and the connected dashboard.", "Record deprecation evidence reviews against a particular workspace snapshot."] },
+          { type: "bullets", items: ["Explore API Flows from contracts to handlers and reachable functions.", "Review PR Impact alongside consumer code and commit-specific evidence.", "Follow analysis progress in GitHub and the connected workspace.", "Use Retirement Radar to record evidence reviews against a particular workspace snapshot."] },
           { type: "callout", tone: "note", title: "Current release", text: "The connected application uses deterministic static analysis. Google and passwordless email sign-in are enabled. Connect existing Prometheus or Datadog accounts to import runtime evidence. External model availability is shown in Settings." },
         ],
       },
@@ -67,7 +67,7 @@ export const docPages: DocPage[] = [
           { type: "links", items: [
             { label: "Set up your first workspace", href: "/docs/quickstart", description: "Follow the complete path from sign-in to your first PR report." },
             { label: "Read a pull request report", href: "/docs/pull-request-reports", description: "Understand tiers, evidence, coverage gaps, and updated reports." },
-            { label: "Explore APIs and callers", href: "/docs/api-usage", description: "Inspect discovered endpoints and their source references." },
+            { label: "Explore API Flows", href: "/docs/api-usage", description: "Inspect discovered APIs, code paths, consumers, and source references." },
             { label: "Resolve a problem", href: "/docs/troubleshooting", description: "Find the next action for sign-in, indexing, and missing reports." },
           ] },
         ],
@@ -97,10 +97,10 @@ export const docPages: DocPage[] = [
             { title: "Sign in", text: "Open [Sign in](/sign-in). Choose **Continue with Google**, or enter your email and choose **Send sign-in link**. New users are sent to workspace setup." },
             { title: "Authorize GitHub", text: "On [Connect your workspace](/onboarding), choose **Connect GitHub**. Complete authorization using the GitHub account that administers the intended organization." },
             { title: "Install or select the App", text: "If no installation is available, choose **Install GitHub App** and grant access to the intended repositories. Return to setup, refresh installations, and choose **Connect** beside the correct organization." },
-            { title: "Select both sides of the dependency", text: "Under **Choose repositories**, select the API provider and the consumers you want included. Choose **Save selection and start indexing**." },
+            { title: "Choose an API and its consumers", text: "Under **Choose repositories**, select the API provider and recommended consumers you want included. Choose **Save selection and start indexing**. Runtime setup is optional for the first map." },
             { title: "Check indexing results", text: "Open [Repositories](/dashboard/repositories). Wait for queued or indexing jobs to finish, then open **Coverage** for each repository. Resolve missing contracts or other relevant coverage gaps before relying on a report." },
           ] },
-          { type: "paragraph", text: "The expected result is a connected workspace with selected repositories, detected services, and any supported OpenAPI endpoints in [API usage](/dashboard/api-usage). A consumer-only repository can provide caller evidence even when it has no provider contract of its own." },
+          { type: "paragraph", text: "The expected result is a connected workspace with selected repositories, detected services, and supported OpenAPI endpoints in [APIs](/dashboard/api-usage). A consumer-only repository can provide caller evidence even when it has no provider contract of its own." },
         ],
       },
       {
@@ -111,7 +111,7 @@ export const docPages: DocPage[] = [
             { title: "Make a contract change on a branch", text: "In the selected provider repository, make a deliberate change to its committed OpenAPI document. Keep the implementation and published contract consistent. For a reversible walkthrough, use a draft PR on a dedicated branch." },
             { title: "Open the pull request", text: "Create the PR against the appropriate base branch. Draft PRs are analyzed too. Impact Gate receives the event and queues analysis for the PR's exact head and base commits." },
             { title: "Find the check and comment", text: "In GitHub, look for the **Impact Gate** check. If **Publish findings as pull request comments** is enabled, the PR also receives a report comment. Analysis continues in the background." },
-            { title: "Inspect dashboard findings", text: "Open [Engineering overview](/dashboard), find the PR under **Open findings**, and select an endpoint to read the explanation and source evidence. Coverage findings can appear even when no affected consumer was confirmed." },
+             { title: "Inspect PR Impact", text: "Open [Overview](/dashboard), select **PR Impact**, and read the explanation and source evidence. Coverage findings can appear even when no affected consumer was confirmed." },
             { title: "Complete the walkthrough", text: "Read the coverage notes, confirm the analyzed head matches your latest commit, and close an example draft PR when finished. Keep normal review and compatibility checks in your delivery process." },
           ] },
           { type: "callout", tone: "tip", title: "Nothing appeared?", text: "Start with [Missing PR reports](/docs/troubleshooting#missing-pr-report). Confirm installation access, saved repository selection, completed indexing, and the current PR head before opening another PR." },
@@ -431,8 +431,8 @@ export const docPages: DocPage[] = [
   },
   {
     slug: "api-usage",
-    title: "Explore APIs and callers",
-    description: "Inspect discovered endpoints, request and response schemas, caller evidence, and contract change history.",
+     title: "Explore APIs and code flows",
+     description: "Inspect discovered APIs, request and response schemas, code flows, consumer evidence, and contract changes.",
     group: "Review changes",
     readingTime: 4,
     sections: [
@@ -441,7 +441,7 @@ export const docPages: DocPage[] = [
         title: "Find an endpoint",
         blocks: [
           { type: "steps", items: [
-            { title: "Open API usage", text: "Go to [API usage](/dashboard/api-usage). The table lists HTTP method, endpoint path, provider service, static callers, runtime coverage, and criticality." },
+             { title: "Open APIs", text: "Go to [APIs](/dashboard/api-usage). The table lists method and path, provider service, code flow, static callers, runtime traffic, measured functions, and retirement state." },
             { title: "Search or filter", text: "Use **Search APIs and services** to find a method, path, or service. Select a service in the filter to narrow the table; choose **Clear** to reset it." },
             { title: "Select the endpoint", text: "Choose its path to open the endpoint detail panel below the table." },
           ] },
@@ -453,8 +453,10 @@ export const docPages: DocPage[] = [
         blocks: [
           { type: "table", headers: ["Tab", "What it shows", "How to use it"], rows: [
             ["Overview", "Provider service, static caller count, runtime state, criticality/confidence, source, and available schemas.", "Check the contract source and inspect the request/response shape."],
-            ["Callers", "Detected caller services, evidence type, confidence, and source references.", "Follow the caller source to review the relationship and field usage."],
-            ["Change history", "Recorded findings associated with this endpoint and links to their pull requests.", "Review previous detected contract changes in the retained history."],
+             ["Code flow", "API entrypoint, application functions, boundaries, conditions, repeats, and measured entries when available.", "Separate mapped reachability from measured function usage."],
+             ["Consumers", "Detected consumer services, evidence type, confidence, and source references.", "Follow the consumer source to review the relationship and field usage."],
+             ["Changes", "Recorded findings associated with this endpoint and links to their pull requests.", "Review previous detected contract changes in the retained history."],
+             ["Retirement evidence", "Static callers, runtime status, measured function usage, review state, and next action.", "Keep missing data explicit while planning a removal."],
           ] },
           { type: "paragraph", text: "A source reference includes a file, line, and commit SHA. GitHub opens the recorded commit rather than the latest branch, so the evidence remains tied to the snapshot or analysis that produced it." },
           { type: "paragraph", text: "The displayed request and response schemas are extracted from supported documents. Complex or unsupported schema constructs can leave analysis incomplete. Review the repository's Coverage notes when an expected schema or endpoint is missing." },
@@ -471,7 +473,7 @@ export const docPages: DocPage[] = [
             ["Estimated requests / indexed spans", "Positive runtime traffic matched the endpoint. The endpoint detail includes source, window, and available caller identity."],
           ] },
           { type: "callout", tone: "note", title: "Current deployment", text: "Runtime starts disconnected. Follow the [Prometheus and Datadog guide](/docs/runtime-observability) to connect an existing source. Its query scope, sampling, and service mapping determine coverage." },
-          { type: "links", items: [{ label: "Understand coverage", href: "/docs/coverage-and-limitations" }, { label: "Review deprecation candidates", href: "/docs/deprecation-review" }] },
+           { type: "links", items: [{ label: "Understand coverage", href: "/docs/coverage-and-limitations" }, { label: "Open Retirement Radar", href: "/docs/deprecation-review" }] },
         ],
       },
     ],
@@ -517,8 +519,8 @@ export const docPages: DocPage[] = [
   },
   {
     slug: "deprecation-review",
-    title: "Review deprecation candidates",
-    description: "Assess evidence, record a review for the current snapshot, and plan removals with service owners.",
+     title: "Use Retirement Radar",
+     description: "Assess static, runtime, and measured function evidence, record a review for the current snapshot, and plan removals with service owners.",
     group: "Review changes",
     readingTime: 4,
     sections: [
@@ -526,9 +528,9 @@ export const docPages: DocPage[] = [
         id: "review-boundary",
         title: "What a candidate means",
         blocks: [
-          { type: "paragraph", text: "[Deprecation candidates](/dashboard/deprecation-candidates) collects endpoints for evidence review. The status and reason summarize what is known about static callers and runtime coverage. A candidate is a starting point for investigation." },
-          { type: "callout", tone: "warning", title: "Unknown usage is not zero usage", text: "Missing, stale, sampled, or unmapped runtime observations leave usage unknown. No static caller located means none was found in the selected repositories; it does not prove that an endpoint is unused. A review acknowledgment does not approve a production removal." },
-          { type: "paragraph", text: "With runtime usage unknown, candidates remain in states such as **flagged** or **building confidence**. The page also has filters for **rare caller** and **strong candidate**, but these can be empty with the available evidence." },
+           { type: "paragraph", text: "[Retirement Radar](/dashboard/deprecation-candidates) collects APIs for evidence review. The evidence state and next action summarize what is known about static callers, runtime coverage, measured function entries, and external usage. An item is a starting point for investigation." },
+           { type: "callout", tone: "warning", title: "Unknown usage is not zero usage", text: "Missing, stale, sampled, or unmapped runtime observations leave usage unknown. No static caller located means none was found in the selected repositories; it does not prove that an API is unused. A review acknowledgment does not approve a production removal." },
+           { type: "paragraph", text: "Use **Needs runtime coverage**, **Static callers found**, **Measured usage observed**, and **Unknown external usage** to choose the next evidence step. Review state is independent and tied to the workspace snapshot." },
         ],
       },
       {
@@ -638,7 +640,7 @@ export const docPages: DocPage[] = [
             { title: "Use OpenAPI 3 and valid paths", text: "Include an OpenAPI 3 version and a valid `paths` object. Swagger 2 documents are not supported by the connected indexer." },
             { title: "Bundle schema references", text: "Use resolvable local references such as `#/components/schemas/Product`. External references and unresolved references prevent a complete contract comparison." },
             { title: "Describe the interface faithfully", text: "Include request parameters, required fields, responses, media types, and relevant security requirements. Update this contract when the implementation changes." },
-            { title: "Index and inspect", text: "Save repository selection or choose **Re-index**. Open **Coverage**, then inspect the endpoint and its schemas in **API usage**." },
+             { title: "Index and inspect", text: "Save repository selection or choose **Re-index**. Open **Coverage**, then inspect the API and its schemas in **APIs**." },
           ] },
           { type: "code", language: "yaml", filename: "openapi.yaml", value: "# Minimal illustrative provider contract.\nopenapi: 3.0.3\ninfo:\n  title: Product API\n  version: 1.0.0\npaths:\n  /v1/products/{id}:\n    get:\n      parameters:\n        - name: id\n          in: path\n          required: true\n          schema:\n            type: string\n      responses:\n        '200':\n          description: Product details\n          content:\n            application/json:\n              schema:\n                type: object\n                required: [id, priceCents]\n                properties:\n                  id:\n                    type: string\n                  priceCents:\n                    type: integer" },
           { type: "paragraph", text: "This example illustrates document shape. Adapt it to your actual interface and normal contract validation process. Renaming the response field would change the contract, while a source-only rename without a matching contract update can leave drift unverified." },

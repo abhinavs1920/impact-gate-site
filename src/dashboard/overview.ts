@@ -23,9 +23,9 @@ interface CardDestination {
 const destinations = {
   repositories: { href: "/dashboard/repositories", label: "View repositories" },
   services: { href: "/dashboard/dependency-graph", label: "View dependency graph" },
-  endpoints: { href: "/dashboard/api-usage", label: "View API usage" },
+  endpoints: { href: "/dashboard/api-usage", label: "View APIs" },
   findings: { href: "#recent-findings", label: "Review findings" },
-  candidates: { href: "/dashboard/deprecation-candidates", label: "Review candidates" },
+  candidates: { href: "/dashboard/deprecation-candidates", label: "Review Retirement Radar" },
 } satisfies Record<keyof typeof icons, CardDestination>;
 
 function metric(label: string, value: number, detail: string, icon: keyof typeof icons): string {
@@ -86,7 +86,7 @@ export function overviewPanels(snapshot: WorkspaceSnapshot): string {
     metric("Services", snapshot.services.length, "Across selected repositories", "services"),
     metric("APIs / Endpoints", snapshot.endpoints.length, "Discovered API inventory", "endpoints"),
     metric("Open Findings", open.length, "Current open pull request findings", "findings"),
-    metric("Deprecation Candidates", snapshot.candidates.length, candidateDetail, "candidates"),
+    metric("Retirement Radar", snapshot.candidates.length, candidateDetail, "candidates"),
   ].join("");
 
   // Exact caller counts avoid implying traffic bands or runtime observations.
@@ -104,7 +104,7 @@ export function overviewPanels(snapshot: WorkspaceSnapshot): string {
 
   return `<div class="ig-overview-metrics" aria-label="Workspace summary">${metrics}</div><div class="ig-overview-panels">
     ${panel("Findings by Severity", "Triage priority", donut(severity, "Open findings"), "Current open pull request findings", destinations.findings)}
-    ${panel("API Usage Distribution", "Static callers", bars, usageNote, destinations.endpoints)}
-    ${panel("Deprecation Candidates", "Evidence review", donut(candidates, "Candidates"), "Verify runtime coverage before removal", destinations.candidates)}
+    ${panel("API Flows distribution", "Static callers", bars, usageNote, destinations.endpoints)}
+    ${panel("Retirement Radar", "Evidence review", donut(candidates, "Candidates"), "Review runtime coverage before planning removal", destinations.candidates)}
   </div>`;
 }

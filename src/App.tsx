@@ -140,11 +140,11 @@ function Header({ innerPage = false, active }: { innerPage?: boolean; active?: "
   }
 
   const links = [
-    ["#how-it-works", "How it works"],
-    ["#evidence", "Analysis states"],
-    ["#changes", "Contract support"],
-    ["#limits", "Limitations"],
-    ["#pilot", "Pilot"],
+    ["#workflows", "Workflows"],
+    ["#evidence-graph", "Evidence graph"],
+    ["#evidence", "Evidence states"],
+    ["#limits", "Coverage"],
+    ["#pilot", "Private pilot"],
     ["/docs", "Docs"],
     ["/contact", "Contact"],
   ];
@@ -218,42 +218,20 @@ function Hero() {
     <section className="hero" aria-labelledby="hero-title">
       <div className="container hero-grid" style={{ gridTemplateColumns: "minmax(0, 760px)" }}>
         <div className="hero-copy" data-reveal>
-          <div className="hero-kicker">
-            <span className="kicker-mark" aria-hidden="true">
-              ↳
-            </span>{" "}
-            API change impact across repositories
-          </div>
-          <h1 id="hero-title">
-            See which
-            <br />
-            downstream services
-            <br />
-            may be affected<span className="period">.</span>
-          </h1>
-          <p className="hero-lede">
-            Impact Gate links an OpenAPI change to evidence in connected
-            consumer code, so engineering teams can review potential impact
-            before a pull request merges.
-          </p>
+          <div className="hero-kicker"><span className="kicker-mark" aria-hidden="true">◇</span> API Change Intelligence</div>
+          <h1 id="hero-title">Know what your API changes will affect<span className="period">.</span></h1>
+          <p className="hero-lede">Impact Gate maps OpenAPI endpoints to services, functions, and consumers across your repositories—then uses that evidence to review pull requests and plan API retirement.</p>
+          <p className="hero-supporting-copy">See which downstream services may be affected, with source and uncertainty visible at every step.</p>
           <div className="hero-actions">
-            <a className="button primary" href="/sign-in?demo=1" data-analytics-action="live_demo">
-              Try the live demo <span aria-hidden="true">→</span>
-            </a>
-            <a className="button secondary" href="/sign-in" data-analytics-action="use_tool">
-              Use the tool
+            <a className="button primary" href="/sign-in" data-analytics-action="connect_github">Connect GitHub <span aria-hidden="true">↗</span></a>
+            <a className="button secondary" href="/review-desk" data-analytics-action="experience_product">View a sample impact report <span aria-hidden="true">→</span></a>
+            <a className="button secondary" href="/sign-in?demo=1" data-analytics-action="live_demo" style={{ marginLeft: "0.5rem" }}>
+              Try demo <span aria-hidden="true">→</span>
             </a>
           </div>
           <p className="hero-demo-note">
             No account needed for the demo.{" "}
             <a href="#pilot" data-analytics-action="request_pilot">Join pilot waitlist</a>
-          </p>
-          <p className="hero-demo-note">
-            Then open a pull request on the{" "}
-            <a href="https://github.com/impact-gate/ig-lab-petclinic" target="_blank" rel="noopener noreferrer" data-analytics-action="demo_repo">
-              demo repository
-            </a>{" "}
-            and watch the Impact Gate bot comment.
           </p>
           <div className="hero-note">
             <Fact
@@ -263,20 +241,35 @@ function Hero() {
             />
             <span>Warn-only review; your team stays in control.</span>
           </div>
+          <div className="hero-note"><Fact status={siteFacts.warnOnly.status} label="Warn-only review" compact /><span>Runtime data enhances the map; it is not required for first value.</span></div>
         </div>
-        <div data-reveal style={{ marginTop: "2rem" }}>
-          <video
-            controls
-            playsInline
-            preload="metadata"
-            src="https://impact-gate-api.eastus.cloudapp.azure.com/media/commercial.mp4#t=0.1"
-            aria-label="Impact Gate in one minute"
-            style={{ width: "100%", height: "auto", display: "block", borderRadius: "12px", background: "#0b0f14" }}
-          />
+        <div className="review-card" aria-label="Illustrative example of one API evidence graph" data-reveal>
+          <div className="review-top"><span className="bot-mark" aria-hidden="true"><span>ig</span></span><div className="review-byline"><strong>One evidence graph</strong><small>Illustrative preview · not a live workspace</small></div><span className="illustrative-tag">ILLUSTRATIVE · NOT LIVE</span></div>
+          <div className="contract-block"><div className="block-label"><span>API FLOW</span><span>OpenAPI → source → consumers</span></div><div className="schema-code">
+            <div><span className="code-method">GET</span> <span className="code-muted">/orders/&#123;id&#125;</span></div><div className="flow-connector">↓</div><div><span className="code-muted">OrderController</span>.getOrder()</div><div className="flow-connector">↓</div><div><span className="code-muted">OrderService</span>.loadOrder()</div><div className="flow-connector">↓</div><div><span className="code-muted">BillingClient</span>.fetchInvoice()</div>
+          </div></div>
+          <div className="trace-heading"><span>CONNECTED OUTCOMES</span><span className="trace-caption">Same graph, three workflows</span></div>
+          <ol className="trace-list">
+            <li><span className="trace-index">01</span><span className="trace-node"><code>PR Impact</code><small>2 consumers may be affected</small></span><span className="trace-arrow" aria-hidden="true">→</span></li>
+            <li><span className="trace-index">02</span><span className="trace-node"><code>Retirement Radar</code><small>Runtime traffic observed</small></span><span className="trace-arrow" aria-hidden="true">→</span></li>
+            <li><span className="trace-index">03</span><span className="trace-node"><code>API Flows</code><small>4 static callers found</small></span><span className="trace-arrow" aria-hidden="true">→</span></li>
+            <li className="trace-terminal"><span className="trace-index">04</span><span className="trace-node"><code>Evidence stays linked</code><small>Source · release · coverage</small></span><span className="trace-end" aria-hidden="true" /></li>
+          </ol>
+          <div className="review-footnote"><span className="footnote-icon" aria-hidden="true">i</span><p>Static analysis maps possible paths. Runtime instrumentation measures actual function entries when connected. This diagram is an example path, not a result from a live repository analysis.</p></div>
         </div>
       </div>
     </section>
   );
+}
+
+function EvidenceGraph() {
+  const nodes = [["01", "Contract", "GET /orders/{id}"], ["02", "Code", "OrderController → OrderService"], ["03", "Runtime", "Observed requests · optional"], ["04", "Change review", "Downstream consumers"], ["05", "Retirement review", "Evidence-backed next action"]];
+  return <section className="section evidence-graph-section" id="evidence-graph" aria-labelledby="evidence-graph-title"><div className="container"><div className="section-heading" data-reveal><span className="eyebrow">One evidence graph</span><h2 id="evidence-graph-title">From contract to consequence.</h2><p>Impact Gate combines what your contracts declare, what your repositories expose, and what production telemetry observes. Each result keeps its source and uncertainty visible.</p></div><div className="evidence-graph" role="list" aria-label="Impact Gate evidence graph">{nodes.map(([number, label, value], index) => <div className="evidence-graph-step" role="listitem" key={label} data-reveal><span className="evidence-graph-index">{number}</span><div><strong>{label}</strong><code>{value}</code></div>{index < nodes.length - 1 && <span className="evidence-graph-arrow" aria-hidden="true">→</span>}</div>)}</div></div></section>;
+}
+
+function WorkflowCards() {
+  const workflows = [{ key: "MAP", title: "API Flows", copy: "See the code behind every endpoint.", detail: "API-to-code observability", href: "/sign-in", cta: "Explore API flows" }, { key: "GUARD", title: "PR Impact", copy: "See downstream impact before merge.", detail: "Downstream break detection", href: "/review-desk", cta: "See a sample report" }, { key: "RETIRE", title: "Retirement Radar", copy: "Plan removals with evidence, not assumptions.", detail: "Evidence-based API retirement", href: "/sign-in", cta: "Explore retirement evidence" }];
+  return <section className="section workflows" id="workflows" aria-labelledby="workflows-title"><div className="container"><div className="section-heading" data-reveal><span className="eyebrow">Three moments, one graph</span><h2 id="workflows-title">Map. Guard. Retire.</h2><p>Use the same evidence as you understand an API, review a change, and decide what needs a closer look.</p></div><div className="workflow-grid">{workflows.map((workflow) => <article className="workflow-card" data-reveal key={workflow.key}><span className="workflow-key">{workflow.key}</span><h3>{workflow.title}</h3><p>{workflow.copy}</p><span className="workflow-detail">{workflow.detail}</span><a href={workflow.href}>{workflow.cta} <span aria-hidden="true">→</span></a></article>)}</div></div></section>;
 }
 
 function UseCase() {
@@ -366,36 +359,36 @@ function HowItWorks() {
 
 const states = [
   {
-    label: "VERIFIED",
-    title: "Direct evidence",
-    copy: "A connected code path directly uses the changed API value. Findings should link to the evidence that supports review.",
+    label: "MEASURED",
+    title: "Runtime function entries",
+    copy: "Supported runtime instrumentation counted actual function entries in an observed window. The source, release, and telemetry quality remain visible.",
     className: "verified",
     symbol: "✓",
-    footer: "EVIDENCE-LINKED",
+    footer: "RUNTIME INSTRUMENTATION",
   },
   {
-    label: "LIKELY",
-    title: "Inferred path",
-    copy: "The available code connects the change to a consumer, but one or more steps rely on inference.",
+    label: "MAPPED",
+    title: "Static code path",
+    copy: "Static analysis connected the API contract to source code and reachable functions. This describes possible execution, not exact invocation counts.",
     className: "likely",
-    symbol: "≈",
-    footer: "INFERRED CONNECTION",
+    symbol: "→",
+    footer: "STATIC ANALYSIS",
   },
   {
-    label: "UNCERTAIN",
-    title: "Coverage gap",
-    copy: "Dynamic behavior, missing source, or an unresolved boundary prevents a reliable conclusion.",
+    label: "POSSIBLE",
+    title: "Plausible relationship",
+    copy: "The relationship is plausible but not fully proven. Keep the source reference and the uncertainty visible while reviewing the change.",
     className: "uncertain",
-    symbol: "?",
-    footer: "ABSTAIN, DON'T GUESS",
+    symbol: "≈",
+    footer: "REVIEW WITH CONTEXT",
   },
   {
-    label: "NOT AFFECTED",
-    title: "No observed use",
-    copy: "Available connected code does not show use of the changed field. This is limited to the code that was analyzed.",
+    label: "UNKNOWN",
+    title: "Coverage incomplete",
+    copy: "Coverage, dynamic behavior, or telemetry is incomplete. Missing data is not zero usage and should lead to a clear next action.",
     className: "not-affected",
-    symbol: "—",
-    footer: "SCOPE-LIMITED",
+    symbol: "?",
+    footer: "DO NOT GUESS",
   },
 ];
 
@@ -510,9 +503,9 @@ const does = [
   "Links potential impact to evidence engineers can review.",
 ];
 const doesNot = [
-  "Guarantee every consumer is known.",
+  "Guarantee every consumer is known; selected repository scope matters.",
   "Analyze contracts outside the current OpenAPI scope.",
-  "Make merge decisions for your team.",
+  "Make merge decisions for your team or treat missing data as zero usage.",
 ];
 
 function Boundaries() {
@@ -529,7 +522,9 @@ function Boundaries() {
           <p>
             Impact Gate reviews supported OpenAPI changes against connected,
             indexed consumer code. Every result is advisory and reflects only
-            the evidence available for review.
+            the evidence available for review. Runtime telemetry is optional for
+            the first static map; measured function entries require supported
+            instrumentation.
           </p>
         </div>
         <div className="boundary-grid">
@@ -570,7 +565,7 @@ function Boundaries() {
             </ul>
             <Fact
               status={siteFacts.analysis.status}
-              label="Coverage and resolution have limits"
+              label="External consumers and dynamic behavior may remain unknown"
             />
           </article>
         </div>
@@ -798,10 +793,10 @@ function FAQ() {
 
 function Footer({ innerPage = false }: { innerPage?: boolean }) {
   const links = [
-    ["#how-it-works", "How it works"],
-    ["#evidence", "Analysis states"],
-    ["#changes", "Contract support"],
-    ["#limits", "Limitations"],
+    ["#workflows", "Workflows"],
+    ["#evidence-graph", "Evidence graph"],
+    ["#evidence", "Evidence states"],
+    ["#limits", "Coverage and limits"],
     ["#faq", "FAQ"],
     ["#pilot", "Private pilot"],
     ["/docs", "Documentation"],
@@ -896,6 +891,8 @@ export default function App({ pathname: requestedPath }: { pathname?: string } =
       <Header />
       <main id="main-content" tabIndex={-1}>
         <Hero />
+        <EvidenceGraph />
+        <WorkflowCards />
         <UseCase />
         <HowItWorks />
         <EvidenceStates />

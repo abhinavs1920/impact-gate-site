@@ -68,7 +68,7 @@ export function ReviewDeskScreen() {
         <nav className="product-screen-nav" aria-label="Product screens">
           <a href="/review-desk" aria-current="page">Review Desk</a>
           <a href="/dashboard/dependency-graph">Dependency Graph</a>
-          <a href="/dashboard/deprecation-candidates">Deprecation Candidates</a>
+          <a href="/dashboard/deprecation-candidates">Retirement Radar</a>
         </nav>
         <button
           className="product-theme-toggle"

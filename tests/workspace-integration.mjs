@@ -132,25 +132,20 @@ try {
     assert.ok(requested.includes('/api/v1/workspaces/w1/snapshot'), `${screen} loads actual workspace snapshot`);
     assert.doesNotMatch(content, /Demo workspace|sample records|billing-service|mobile-bff/);
     if (screen.startsWith('home')) {
-      assert.equal(document.querySelector('h1').textContent, 'Engineering Overview');
-      assert.equal(document.querySelectorAll('.ig-overview-metric').length, 5, 'Stitch summary cards remain visible');
-      assert.equal(document.querySelectorAll('.ig-overview-panel').length, 3, 'Stitch analytics panels remain visible');
+      assert.equal(document.querySelector('h1').textContent, 'Overview');
+      assert.equal(document.querySelectorAll('.ig-workflow-card').length, 3, 'Map, Guard, and Retire workflows remain visible');
+      assert.equal(document.querySelectorAll('.ig-coverage-banner').length, 1, 'coverage status is explicit');
       assert.equal(document.querySelector('.ig-job'), null, 'job queues do not replace the dashboard overview');
       assert.doesNotMatch(content, /Analysis jobs|static_analysis_queue/);
       assert.equal(document.querySelectorAll('#recent-findings th').length, screen === 'home' ? 5 : 0);
     }
     if (screen === 'home') {
-      assert.deepEqual([...document.querySelectorAll('.ig-overview-value')].map(node => node.textContent), ['1','1','5','7','4']);
-      assert.deepEqual([...document.querySelectorAll('.ig-overview-ring-label strong')].map(node => node.textContent), ['7','4']);
-      assert.deepEqual([...document.querySelectorAll('.ig-overview-panel:first-child .ig-overview-legend strong')].map(node => node.textContent), ['2','2','2','1']);
-      assert.deepEqual([...document.querySelectorAll('.ig-overview-bar-item strong')].map(node => node.textContent), ['2','1','1','1']);
-      assert.match(content, /runtime usage unknown/);
+      assert.match(content, /remain unknown/);
+      assert.match(content, /API Flows/);
+      assert.match(content, /PR Impact/);
+      assert.match(content, /Retirement Radar/);
       assert.equal(document.querySelectorAll('#recent-findings tbody tr').length, 5);
       assert.equal(document.querySelector('[data-action=finding]').dataset.id, 'f7', 'recent findings sort newest first');
-      document.querySelector('[data-action=toggle-findings]').click();
-      assert.equal(document.querySelectorAll('#recent-findings tbody tr').length, 7);
-      document.querySelector('[data-action=toggle-findings]').click();
-      assert.equal(document.querySelectorAll('#recent-findings tbody tr').length, 5);
       const severity = document.querySelector('[data-filter]');
       severity.querySelector('[value=high]').selected = true;
       severity.dispatchEvent(new window.Event('change', {bubbles:true}));
@@ -164,9 +159,7 @@ try {
       document.querySelector('[data-action=close-dialog]').click();
     }
     if (screen === 'home-empty') {
-      assert.deepEqual([...document.querySelectorAll('.ig-overview-value')].map(node => node.textContent), ['0','0','0','0','0']);
-      assert.deepEqual([...document.querySelectorAll('.ig-overview-ring-label strong')].map(node => node.textContent), ['0','0']);
-      assert.equal(document.querySelectorAll('.ig-overview-ring circle[stroke-dasharray]').length, 0);
+      assert.equal(document.querySelectorAll('.ig-workflow-card').length, 3);
       assert.match(content, /No open findings/);
       assert.equal(document.querySelector('#recent-findings .ig-button').getAttribute('href'), '/dashboard/repositories?import=1');
       assert.doesNotMatch(document.querySelector('.ig-overview').innerHTML, /NaN|Infinity/);

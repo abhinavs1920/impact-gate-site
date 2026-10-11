@@ -43,7 +43,7 @@ export function runtimeConnectionsPanel(
   canWrite: boolean,
 ): string {
   const connections = snapshot.runtimeConnections ?? [];
-  return `<section class="ig-card" id="runtime-connections"><h2>Runtime observability connections</h2><p>Use your existing Prometheus metrics or Datadog APM to see traffic for the APIs in your repositories.</p><p class="ig-note">Enter source access, find and review service matches, then connect. Imports refresh every 15 minutes. No traffic in a query does not establish that an API is unused.</p><a href="/docs/runtime-observability">Connection guide and instrumentation requirements →</a>${!enabled ? '<p class="ig-permission">Runtime connections are unavailable on this deployment.</p>' : !snapshot.services.length ? '<p class="ig-permission">Index a provider repository before connecting a source.</p>' : ""}<div class="ig-runtime-providers">${(
+  return `<section class="ig-card" id="runtime-connections"><h2>Runtime observability connections</h2><p>Use your existing Prometheus metrics or Datadog APM to see traffic for the APIs in your repositories.</p><p class="ig-note">Enter source access, find and review service matches, then connect. Imports refresh every 15 minutes. No observed traffic in this window does not establish zero usage.</p><a href="/docs/runtime-observability">Connection guide and instrumentation requirements →</a>${!enabled ? '<p class="ig-permission">Runtime connections are unavailable on this deployment.</p>' : !snapshot.services.length ? '<p class="ig-permission">Index a provider repository before connecting a source.</p>' : ""}<div class="ig-runtime-providers">${(
     ["prometheus", "datadog"] as const
   )
     .map((provider) => {

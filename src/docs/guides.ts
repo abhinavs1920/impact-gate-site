@@ -58,7 +58,7 @@ export const guidePages: DocPage[] = [
   },
   {
     slug: "api-deprecation-impact-analysis-checklist",
-    title: "API deprecation checklist: impact analysis before you remove an endpoint",
+    title: "Retirement Radar checklist: evidence before removing an API",
     description: "A step-by-step checklist for deprecating an API endpoint: find consumers, mark it deprecated, set a sunset date, watch traffic, then remove.",
     group: "Guides",
     readingTime: 5,
@@ -75,7 +75,7 @@ export const guidePages: DocPage[] = [
         ]),
       ] },
       { id: "where-impact-gate-fits", title: "Where Impact Gate fits", blocks: [
-        p("Impact Gate lists deprecation candidates from static callers and imported Prometheus or Datadog evidence, lets an owner record an evidence review for a specific snapshot, and shows coverage gaps. A review does not approve a production removal."),
+         p("Retirement Radar combines static callers, imported Prometheus or Datadog evidence, measured function entries when available, and coverage gaps. An owner can record an evidence review for a specific snapshot; a review does not approve a production removal."),
         note("Unknown usage is not zero usage", "No static caller located means none was found in the selected repositories. Check traffic and outside consumers before you remove anything."),
       ] },
       { id: "faq", title: "Common questions", blocks: [
@@ -99,7 +99,7 @@ export const guidePages: DocPage[] = [
   },
   {
     slug: "api-usage-observability-prometheus-datadog",
-    title: "API usage observability with Prometheus or Datadog",
+    title: "Runtime evidence for APIs with Prometheus or Datadog",
     description: "How to match runtime request metrics to the endpoints in your OpenAPI contracts so you can see which routes are used and which are not.",
     group: "Guides",
     readingTime: 4,

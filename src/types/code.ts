@@ -63,6 +63,33 @@ export interface WorkspaceCodeFunction extends IndexedCodeFunction {
   attributions: FunctionRequestAttribution[];
   /** True when an API has unknown usage or the contributing windows differ. */
   countsPartial: boolean;
+  /** Actual instrumented function-entry usage, when supported runtime telemetry is connected. */
+  measuredUsage?: FunctionMeasuredUsage | null;
+}
+
+export type ObservationQuality =
+  | "complete"
+  | "partial"
+  | "estimated_boundary"
+  | "unmapped_release"
+  | "unknown";
+
+export interface FunctionMeasuredUsage {
+  functionId: string;
+  totalEntries: number;
+  totalCompleted: number | null;
+  totalFailures: number | null;
+  byApiOperation: Array<{
+    apiOperationId: string | null;
+    entries: number;
+    entriesPerRequest: number | null;
+  }>;
+  quality: ObservationQuality;
+  releaseId: string;
+  conditionalBranch: boolean;
+  repeatedExecution: boolean;
+  windowStart: string;
+  windowEnd: string;
 }
 
 export interface WorkspaceOutboundCall {

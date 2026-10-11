@@ -14,14 +14,14 @@ export const runtimeObservabilityDoc: DocPage = {
       blocks: [
         {
           type: "paragraph",
-          text: "Impact Gate reads your existing observability data and matches it to APIs discovered in your selected repositories. Continue using Prometheus for metrics and Datadog for full traces, dashboards, and alerts. Impact Gate adds the runtime evidence to API usage and dependency review.",
+          text: "Impact Gate reads your existing observability data and matches it to APIs discovered in your selected repositories. Continue using Prometheus for metrics and Datadog for full traces, dashboards, and alerts. Impact Gate adds runtime evidence to API Flows, PR Impact, and Retirement Radar.",
         },
         {
           type: "steps",
           items: [
             {
               title: "Index the API providers",
-              text: "Connect GitHub and index repositories containing supported OpenAPI contracts. Confirm that the provider service and API paths appear in [API usage](/dashboard/api-usage).",
+              text: "Connect GitHub and index repositories containing supported OpenAPI contracts. Confirm that the provider service and API paths appear in [APIs](/dashboard/api-usage).",
             },
             {
               title: "Instrument every provider you want to observe",
@@ -66,7 +66,7 @@ export const runtimeObservabilityDoc: DocPage = {
             },
             {
               title: "Review exceptions and connect",
-              text: "Choose the correct indexed service from a dropdown for uncertain matches. **Use all suggested matches** applies the available suggestions in one action after your review. Leave services outside this workspace unselected. Choose **Connect** to validate and save the selected mappings, then open API usage. **Manual mapping** supports inactive services, additional aliases, and **Fill with repository names** without requiring discovery.",
+              text: "Choose the correct indexed service from a dropdown for uncertain matches. **Use all suggested matches** applies the available suggestions in one action after your review. Leave services outside this workspace unselected. Choose **Connect** to validate and save the selected mappings, then open APIs. **Manual mapping** supports inactive services, additional aliases, and **Fill with repository names** without requiring discovery.",
             },
           ],
         },
@@ -203,8 +203,8 @@ export const runtimeObservabilityDoc: DocPage = {
         {
           type: "callout",
           tone: "warning",
-          title: "Keep deprecation decisions explicit",
-          text: "Connecting a source does not automatically declare an endpoint safe to remove. Zero counters, absent spans, incomplete indexing, and unobserved scheduled callers can leave usage unknown. Review application owners, callers, and observation coverage before changing a contract.",
+          title: "Keep retirement decisions explicit",
+          text: "Connecting a source does not automatically approve an endpoint removal. Zero counters, absent spans, incomplete indexing, and unobserved scheduled callers can leave usage unknown. Review application owners, callers, measured function coverage, and observation windows before changing a contract.",
         },
       ],
     },

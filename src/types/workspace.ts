@@ -5,6 +5,16 @@ export type WorkspaceRole = "owner" | "admin" | "viewer";
 export type IndexStatus = "selected" | "queued" | "discovering" | "indexing" | "indexed" | "partial" | "failed" | "removed";
 export type RuntimeCoverage = "not_connected" | "not_observed" | "available";
 export type EvidenceSource = "static" | "runtime" | "both";
+export type RetirementEvidenceState =
+  | "needs_runtime_coverage"
+  | "static_callers_found"
+  | "measured_usage_observed"
+  | "no_known_caller_selected_repositories"
+  | "unknown_external_usage";
+export type RetirementReviewState =
+  | "not_reviewed"
+  | "reviewed_current_snapshot"
+  | "reviewed_previous_snapshot";
 
 export interface WorkspaceIdentity {
   uid: string;
@@ -83,6 +93,13 @@ export interface WorkspaceEndpoint {
   runtimeWindowStart?: string | null;
   runtimeWindowEnd?: string | null;
   runtimePartial?: boolean;
+  measuredFunctionEntriesInWindow?: number | null;
+  measuredFunctionEntriesSource?: RuntimeProvider | null;
+  measuredFunctionWindowStart?: string | null;
+  measuredFunctionWindowEnd?: string | null;
+  releaseId?: string | null;
+  releaseSourceSha?: string | null;
+  instrumentationCoverage?: "measured" | "partial" | "not_instrumented" | "unknown";
   source: SourceReference;
   requestSchema: unknown | null;
   responseSchema: unknown | null;
@@ -126,6 +143,10 @@ export interface WorkspaceCandidate {
   reviewedAt: string | null;
   reviewedBy: string | null;
   reviewedSnapshotId: string | null;
+  evidenceState?: RetirementEvidenceState;
+  reviewState?: RetirementReviewState;
+  nextAction?: string;
+  measuredFunctionUsage?: number | null;
 }
 export interface WorkspaceSettings {
   version: number;
@@ -163,6 +184,44 @@ export interface WorkspaceSnapshot {
   settings: WorkspaceSettings;
   code?: WorkspaceCodeSnapshot;
   runtimeConnections?: RuntimeConnection[];
+  indexCoverage?: { missingCodeRepositoryIds: string[]; missingCallSiteRepositoryIds: string[] };
+}
+
+export type WorkspaceOnboardingStage =
+  | "connect_github"
+  | "choose_api"
+  | "build_map"
+  | "first_value"
+  | "runtime_enhancement"
+  | "complete";
+export interface WorkspaceOnboardingStatus {
+  version: 1;
+  workspaceId: string;
+  stage: WorkspaceOnboardingStage;
+  providerRepositories: Array<{ id: number; fullName: string; selected: boolean }>;
+  recommendedConsumerRepositories: Array<{ id: number; fullName: string; selected: boolean }>;
+  firstValue: { ready: boolean; apiCount: number; flowCount: number; staticCallerCount: number; unresolvedBoundaryCount: number };
+  runtime: { connected: boolean; functionMetricsDetected: boolean };
+  deployment: { platform: string; confidence: string };
+  nextAction: string;
+}
+export interface WorkspaceDeployment {
+  id: string;
+  platform: "unknown" | "kubernetes" | "gke" | "ecs" | "cloud_run";
+  confidence: "unknown" | "low" | "medium" | "high";
+  source: "not_detected" | "repository_metadata" | "deployment_metadata";
+  releaseId: string | null;
+  sourceSha: string | null;
+  discoveredAt: string;
+  notes: string[];
+}
+export interface WorkspaceInstrumentationStatus {
+  version: 1;
+  detected: boolean;
+  enrolledServiceIds: string[];
+  measuredFunctionEntries: number;
+  supportedServices: string[];
+  nextAction: string;
 }
 /** Queue only identifiers and immutable event refs, never ports, Maps, code or credentials. */
 export interface IndexRepositoryJob {

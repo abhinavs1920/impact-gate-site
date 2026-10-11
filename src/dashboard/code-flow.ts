@@ -21,6 +21,11 @@ function contributions(fn: WorkspaceCodeFunction, snapshot: WorkspaceSnapshot): 
 function total(fn: WorkspaceCodeFunction): string {
   return `${count(fn.attributedRequestsInWindow)}${fn.countsPartial ? '<p class="ig-note">Partial or incomparable API coverage</p>' : ""}`;
 }
+function measured(fn: WorkspaceCodeFunction): string {
+  const usage = fn.measuredUsage;
+  if (!usage) return '<span class="ig-product-badge" data-tone="unknown">Unknown</span><p class="ig-note">Instrumentation not connected</p>';
+  return `<span class="ig-product-badge" data-tone="measured">${count(usage.totalEntries)} measured entries</span><p class="ig-note">${escape(usage.quality.replaceAll("_", " "))}${usage.conditionalBranch ? " · conditional branch" : ""}${usage.repeatedExecution ? " · repeated execution" : ""}</p>`;
+}
 
 function buildTreeFallback(
   flow: WorkspaceApiFlow,
@@ -162,7 +167,7 @@ export function renderFunctionInventory(snapshot: WorkspaceSnapshot, query = "",
   const currentPage = Math.max(0, Math.min(Math.trunc(page), Math.max(0, Math.ceil(functions.length / 100) - 1)));
   const visible = functions.slice(currentPage * 100, (currentPage + 1) * 100);
   const pagination = `<div class="ig-code-summary"><span>Showing ${functions.length ? currentPage * 100 + 1 : 0}–${currentPage * 100 + visible.length} of ${functions.length}</span><button type="button" class="ig-button ig-button-secondary" data-action="function-page" data-direction="previous" data-page="${currentPage - 1}" ${currentPage === 0 ? "disabled" : ""}>Previous</button><button type="button" class="ig-button ig-button-secondary" data-action="function-page" data-direction="next" data-page="${currentPage + 1}" ${(currentPage + 1) * 100 >= functions.length ? "disabled" : ""}>Next</button></div>`;
-  return `<section class="ig-card" id="function-usage" aria-labelledby="function-usage-title"><h2 id="function-usage-title">Function usage</h2><p class="ig-note">Request counts come from the APIs that can reach each function. Shared functions combine comparable API windows. Actual invocation counts require function telemetry.</p><div class="ig-filters"><input data-code-query aria-label="Search functions and source files" placeholder="Search functions and source files" value="${escape(query)}"></div><p class="ig-note">${functions.length} functions match${code.missingRepositoryIds.length ? ` · ${code.missingRepositoryIds.length} repositories need reindexing` : ""}</p>${pagination}${table(["Function", "Service", "Attributed requests", "APIs / observation window", "Source"], visible.map(fn => [`<code>${escape(fn.qualifiedName)}</code>`, escape(snapshot.services.find(service => service.id === fn.serviceId)?.name), total(fn), contributions(fn, snapshot), source(fn.source)]))}</section>`;
+  return `<section class="ig-card" id="function-usage" aria-labelledby="function-usage-title"><h2 id="function-usage-title">Function usage</h2><p class="ig-note">Static reachability attributes API requests to possible functions. Measured function entries appear separately when supported runtime instrumentation is connected.</p><div class="ig-filters"><input data-code-query aria-label="Search functions and source files" placeholder="Search functions and source files" value="${escape(query)}"></div><p class="ig-note">${functions.length} functions match${code.missingRepositoryIds.length ? ` · ${code.missingRepositoryIds.length} repositories need reindexing` : ""}</p>${pagination}${table(["Function", "Service", "API-request attribution", "Measured function entries", "APIs / observation window", "Source"], visible.map(fn => [`<code>${escape(fn.qualifiedName)}</code>`, escape(snapshot.services.find(service => service.id === fn.serviceId)?.name), total(fn), measured(fn), contributions(fn, snapshot), source(fn.source)]))}</section>`;
 }
 
 export function renderCodeFlow(snapshot: WorkspaceSnapshot, endpoint: WorkspaceEndpoint): string {

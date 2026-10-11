@@ -71,13 +71,13 @@ function ScreenHeader({
           href="/dependency-graph"
           aria-current={active === "graph" ? "page" : undefined}
         >
-          Dependency Graph
+          Dependency graph
         </a>
         <a
           href="/deprecation-candidates"
           aria-current={active === "deprecation" ? "page" : undefined}
         >
-          Deprecation Candidates
+          Retirement Radar
         </a>
       </nav>
       <button
@@ -638,7 +638,7 @@ export function DeprecationCandidatesScreen() {
   const [expandedEvidence, setExpandedEvidence] = useState<string[]>([]);
 
   useEffect(() => {
-    document.title = "Deprecation Candidates | Impact Gate";
+    document.title = "Retirement Radar | Impact Gate";
   }, []);
 
   const rows = preview ? [evaluationCandidate] : [];
@@ -697,7 +697,7 @@ export function DeprecationCandidatesScreen() {
       <main className="product-screen-main">
         <div className="product-screen-title">
           <div>
-            <span className="eyebrow">Deprecation Candidates</span>
+            <span className="eyebrow">Retirement Radar</span>
             <h1>Leads worth a closer look.</h1>
             <p className="product-screen-description">
               Review possible unused APIs; nothing here is confirmed dead code.

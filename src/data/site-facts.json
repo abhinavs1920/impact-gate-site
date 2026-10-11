@@ -11,8 +11,8 @@
   },
   "mechanism": {
     "status": "available",
-    "label": "Contract diff to evidence",
-    "copy": "It compares an OpenAPI change with connected consumer code and shows engineers the evidence behind potential impact."
+    "label": "One evidence graph",
+    "copy": "Impact Gate connects what your contracts declare, what your repositories expose, and what runtime telemetry observes—then keeps source and uncertainty visible."
   },
   "policy": {
     "status": "available",
@@ -44,8 +44,8 @@
   },
   "analysis": {
     "status": "in_testing",
-    "label": "Static consumer tracing",
-    "copy": "Consumer tracing is being prepared for a private pilot and should be reviewed with the limits of the connected codebase in mind."
+    "label": "API-to-code observability",
+    "copy": "Static analysis maps possible execution paths. Runtime instrumentation measures actual function entries when supported coverage is connected."
   },
   "model": {
     "status": "planned",

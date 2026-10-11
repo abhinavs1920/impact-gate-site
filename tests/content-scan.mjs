@@ -10,6 +10,8 @@ assert.equal(facts.stage.status, "in_testing");
 const source = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
 for (const section of [
   "Hero",
+  "EvidenceGraph",
+  "WorkflowCards",
   "HowItWorks",
   "EvidenceStates",
   "SupportedChanges",
@@ -23,6 +25,11 @@ for (const section of [
     `Homepage should render the ${section} section.`,
   );
 }
+assert.match(source, /ILLUSTRATIVE · NOT LIVE/);
+assert.match(source, /Know what your API changes will affect/);
+assert.match(source, /Connect GitHub/);
+assert.match(source, /View a sample impact report/);
+assert.match(source, /href="\/review-desk"/);
 assert.match(source, /Join pilot waitlist/);
 assert.match(source, /See which/);
 assert.match(source, /downstream services/);
@@ -42,7 +49,8 @@ const workspace = readFileSync(
   "utf8",
 );
 assert.match(workspace, /ig-setup-steps/);
-assert.match(workspace, /Choose the API contract repository and applications that call its APIs/);
-assert.match(workspace, /Connect repositories to discover APIs/);
+assert.match(workspace, /Which API should we map first/);
+assert.match(workspace, /Runtime data is optional/);
+assert.match(workspace, /Retirement Radar/);
 console.log("Content source checks passed.");
 
