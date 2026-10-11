@@ -9,6 +9,7 @@ import type { RuntimeServiceDiscovery } from "../types/runtime";
 import type { InstallationRepository, SessionResponse, SourceReference, WorkspaceEndpoint, WorkspaceMembership, WorkspaceSettings, WorkspaceSnapshot, WorkspaceOnboardingStatus } from "../types/workspace";
 import cytoscape from "cytoscape";
 import "./connected.css";
+import "./overview.css";
 import "../auth/auth.css";
 import { identifyAnalyticsUser, startWebsiteAnalytics, trackEvent } from "../analytics";
 
@@ -185,7 +186,7 @@ function renderHome(): string {
       ${workflowCard("GUARD", "PR Impact", `${open.length} open finding${open.length === 1 ? "" : "s"} across ${pullRequests} pull request${pullRequests === 1 ? "" : "s"}`, "Review the downstream blast radius of an API change before the pull request merges.", "/dashboard/pr-impact", "Review PR impact", "guard")}
       ${workflowCard("RETIRE", "Retirement Radar", `${retirementNeedsEvidence} API${retirementNeedsEvidence === 1 ? " needs" : "s need"} more evidence`, "Find APIs that need a closer look, with evidence and next actions kept separate.", "/dashboard/deprecation-candidates", "Review retirement radar", "retire")}
     </section>
-    <section class="ig-overview-findings" id="recent-findings" tabindex="-1" aria-labelledby="recent-findings-title">
+    <section class="ig-card ig-overview-findings" id="recent-findings" tabindex="-1" aria-labelledby="recent-findings-title">
       <header class="ig-overview-findings-header"><div class="ig-overview-findings-title"><h2 id="recent-findings-title">Recent PR Impact</h2><span class="ig-overview-findings-count">${count}</span></div><a class="ig-overview-all" href="/dashboard/pr-impact">View PR Impact →</a></header>
       ${open.length ? filters("Search findings, services, and endpoints", [["high", "High severity"], ["medium", "Medium severity"], ["low", "Low severity"], ["none", "No risk"]]) : ""}
       <div id="overview-findings-table">${rows.length ? table(["Service / Repository", "Change", "Severity", "Status", "GitHub PR"], rows) : noFindings}</div>
@@ -648,8 +649,26 @@ async function start(): Promise<void> {
     cleanupAuthPage = mountAuthPage(main, auth, { mode: page === "sign-up" ? "sign-up" : "sign-in", onAuthenticated: async (_user, next) => { const current = await api.request<SessionResponse>("/api/v1/session"); const requested = safeReturnPath(next, location.origin); location.assign(current.workspaces.length ? requested : `/onboarding?${new URLSearchParams({ next: requested })}`); } });
     return;
   }
-  auth.subscribe(current => {
-    if (current.status === "signed-out") { clearSession(); location.replace(signInDestination(`${location.pathname}${location.search}`, location.origin)); }
+  let attemptingDemo = false;
+  auth.subscribe(async current => {
+    if (current.status === "signed-out") {
+      clearSession();
+      if (!attemptingDemo && !["onboarding", "github-setup"].includes(page)) {
+        attemptingDemo = true;
+        try {
+          state("Opening the live demo", "Loading read-only demo workspace.");
+          const demo = await fetch("/api/v1/demo/session", { method: "POST", cache: "no-store", credentials: "same-origin" });
+          if (demo.ok) {
+            const { token } = await demo.json() as { token: string };
+            await auth.signInWithDemoToken(token);
+            return;
+          }
+        } catch {
+          /* Fall through to sign-in on demo failure */
+        }
+      }
+      location.replace(signInDestination(`${location.pathname}${location.search}`, location.origin));
+    }
     else if (current.status === "error") { clearSession(); state("Authentication unavailable", current.error.message, true); }
     else if (current.status === "signed-in" && current.user.uid !== loadingUid) { loadingUid = current.user.uid; clearSession(); state("Loading your workspace", "Fetching your authorized GitHub workspace."); void bootstrap().catch(handleError); }
   });
