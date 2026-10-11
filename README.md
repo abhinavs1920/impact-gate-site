@@ -53,7 +53,7 @@ The Cloudflare Worker proxies `/api/v1/*` to the fixed `IMPACT_GATE_API_ORIGIN`,
 
 ## Product documentation
 
-API Usage includes a **Code flow** tab showing persisted handlers, reachable functions, call boundaries, immutable source evidence and API request attribution. The **Function usage** sidebar link opens `/dashboard/dependency-graph#function-usage`, a searchable function usage table; Dependency Graph exports the function graph with its snapshot. Shared functions combine comparable API observation windows; counters describe attributed requests, while actual function invocation counts require function telemetry. Reindex older repositories after deploying the backend code observability update to populate their flows.
+API Usage includes a **Code flow** tab showing persisted handlers, reachable functions, call boundaries, immutable source evidence and API request attribution. The **Function usage** sidebar link opens `/dashboard/function-usage`, a separate searchable function usage screen. Dependency Graph focuses on service relationships and exports the dependency snapshot. Shared functions combine comparable API observation windows; counters describe attributed requests, while actual function invocation counts require function telemetry. Reindex older repositories after deploying the backend code observability update to populate their flows.
 
 Public customer documentation is available at `https://impactgate.in/docs`. The guides cover account setup, GitHub authorization, repository indexing, pull request reports, every workspace screen, runtime observability, permissions, website analytics, coverage, troubleshooting, and the website's workspace API.
 

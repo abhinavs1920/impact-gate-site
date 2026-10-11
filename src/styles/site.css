@@ -225,7 +225,6 @@ summary:focus-visible {
   border-color: var(--color-border);
 }
 [data-theme="dark"] .menu-toggle,
-[data-theme="dark"] .header-inner nav,
 [data-theme="dark"] .hero .button.secondary {
   border-color: var(--color-border);
   background: var(--color-surface);
@@ -237,9 +236,6 @@ summary:focus-visible {
 [data-theme="dark"] .bot-mark {
   background: var(--color-primary);
   color: #101722;
-}
-[data-theme="dark"] .header-inner nav {
-  box-shadow: 0 12px 30px #00000047;
 }
 [data-theme="dark"] .hero {
   background: var(--color-background);
@@ -472,7 +468,6 @@ html[data-theme="dark"] .bot-mark {
   color: #101722;
 }
 html[data-theme="dark"] .menu-toggle,
-html[data-theme="dark"] .header-inner nav,
 html[data-theme="dark"] .hero .button.secondary,
 html[data-theme="dark"] .review-card,
 html[data-theme="dark"] .review-top,
@@ -986,6 +981,14 @@ html[data-theme="dark"] .pilot .form-status[data-state="error"] {
   .theme-toggle {
     width: 2.4rem;
     height: 2.4rem;
+  }
+}
+@media (max-width: 54rem) {
+  [data-theme="dark"] .header-inner nav,
+  html[data-theme="dark"] .header-inner nav {
+    border-color: var(--color-border);
+    background: var(--color-surface);
+    box-shadow: 0 12px 30px #00000047;
   }
 }
 .process {
@@ -1643,8 +1646,8 @@ button:disabled {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-  gap: clamp(2rem, 4vw, 3.5rem);
+  grid-template-columns: minmax(0, 0.9fr) minmax(28rem, 1.1fr);
+  gap: clamp(2.5rem, 5vw, 5.5rem);
   align-items: start;
 }
 .hero-kicker {
@@ -2305,7 +2308,8 @@ summary span {
 
 .hero-video-wrap {
   min-width: 0;
-  padding-top: 2.2rem;
+  align-self: start;
+  padding-top: 0;
 }
 .hero-video {
   display: block;
@@ -2326,6 +2330,10 @@ summary span {
   .hero-video-wrap {
     max-width: 42rem;
     padding-top: 0;
+  }
+  .hero-grid {
+    grid-template-columns: 1fr;
+    gap: 2.8rem;
   }
 }
 

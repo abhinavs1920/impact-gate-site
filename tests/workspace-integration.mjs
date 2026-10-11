@@ -81,7 +81,7 @@ try {
     has(name) { return this.fields.has(name); }
   }
   class DOMForm { static [Symbol.hasInstance](node) { return node?.tagName === 'FORM'; } }
-  for (const screen of ['home', 'home-empty', 'api-usage', 'dependency-graph', 'deprecation-candidates', 'repositories', 'settings', 'onboarding']) {
+  for (const screen of ['home', 'home-empty', 'api-usage', 'dependency-graph', 'function-usage', 'deprecation-candidates', 'repositories', 'settings', 'onboarding']) {
     const { document, window } = parseHTML(`<html data-page="${screen === 'home-empty' ? 'home' : screen}"><body><main id="workspace-content"></main><dialog class="ig-dialog"></dialog><div class="ig-toast" hidden></div></body></html>`);
     const timerIds = new Set();
     const requested = [];
@@ -173,7 +173,8 @@ try {
     }
     if (screen === 'repositories') assert.match(content, /impact-gate\/customer-api/);
     if (screen === 'settings') assert.match(content, /Save preferences/);
-    if (screen === 'dependency-graph') assert.equal(context.graphFixture.elements[0].data.label, 'customer-service');
+    if (screen === 'dependency-graph') assert.equal(context.graphFixture.elements[0].data.label, '◆ customer-service');
+    if (screen === 'function-usage') assert.match(content, /Function usage/);
     if (screen === 'settings') {
       const form = document.querySelector('[data-settings-form]'); form.reportValidity = () => true;
       form.querySelector('[name=retentionDays]').value = '14';

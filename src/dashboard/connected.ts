@@ -49,7 +49,6 @@ let showAllFindings = false;
 let selectedEndpoint: string | null = new URL(location.href).searchParams.get("endpointId");
 let codeQuery = "";
 let codePage = 0;
-let initialFunctionUsageNavigation = location.hash === "#function-usage";
 let endpointTab = new URL(location.href).searchParams.get("tab") === "flow" ? "flow" : "overview";
 let graph: cytoscape.Core | null = null;
 let codeGraph: cytoscape.Core | null = null;
@@ -112,13 +111,31 @@ function syncThemeControls(): void {
 function jobs(): string {
   if (!snapshot?.jobs.length) return "";
   const items = snapshot.jobs.slice(0, 12);
-  return `<section class="ig-card"><h2>Analysis jobs</h2>${items.map(job => `<div class="ig-job"><strong>${escape(snapshot?.repositories.find(r => r.id === job.repositoryId)?.fullName ?? job.repositoryId)}</strong>${badge(job.status)}<span class="ig-note">${escape(job.phase)} · ${escape(job.type.replaceAll("_", " "))}</span><span>${Math.round(job.progress)}%</span><progress max="100" value="${Math.max(0, Math.min(100, job.progress))}" aria-label="${escape(job.phase)}"></progress>${job.error ? `<p>${escape(job.error)}</p>` : ""}</div>`).join("")}</section>`;
+  return `<details class="ig-card ig-jobs"><summary>Previous analysis jobs <span>${items.length}</span></summary><div class="ig-jobs-list">${items.map(job => `<div class="ig-job"><strong>${escape(snapshot?.repositories.find(r => r.id === job.repositoryId)?.fullName ?? job.repositoryId)}</strong>${badge(job.status)}<span class="ig-note">${escape(job.phase)} · ${escape(job.type.replaceAll("_", " "))}</span><span>${Math.round(job.progress)}%</span><progress max="100" value="${Math.max(0, Math.min(100, job.progress))}" aria-label="${escape(job.phase)}"></progress>${job.error ? `<p>${escape(job.error)}</p>` : ""}</div>`).join("")}</div></details>`;
 }
 
 function coverageBanner(s: WorkspaceSnapshot): string {
   const connected = s.runtimeConnections?.some((connection) => connection.status === "connected") ?? false;
   const observed = s.endpoints.filter((endpoint) => endpoint.runtimeCoverage === "available").length;
   return `<aside class="ig-coverage-banner" data-connected="${connected}" role="status"><div><strong>${connected ? "Runtime data is connected." : "Runtime data is not connected."}</strong><p>${connected ? `${observed} API${observed === 1 ? " has" : "s have"} current observations; ${Math.max(0, s.endpoints.length - observed)} remain runtime-unknown.` : "Static API flows are available. Request volume and inactivity remain unknown."}</p></div><a class="ig-button ig-button-secondary" href="/dashboard/settings#runtime-connections">${connected ? "Review runtime coverage" : "Connect runtime data"} →</a></aside>`;
+}
+function renderDemoTraffic(): string {
+  return `<section class="ig-card ig-demo-traffic" data-demo-traffic aria-labelledby="demo-traffic-title"><header><div><h2 id="demo-traffic-title">Live demo traffic</h2><p class="ig-note">Real read-only requests are measured from the shared Petclinic Prometheus counter. Shared background traffic is included.</p></div><button type="button" class="ig-button ig-button-secondary" data-action="demo-traffic-refresh">Refresh traffic</button></header><p class="ig-demo-traffic-status" data-demo-traffic-status role="status">Loading observed counters…</p><div class="ig-live-table-wrap"><table class="ig-live-table"><thead><tr><th>Endpoint</th><th>Method</th><th>Observed counter</th><th>Sampled at</th></tr></thead><tbody data-demo-traffic-rows><tr><td colspan="4">Fetching the current observation window…</td></tr></tbody></table></div><p class="ig-note">No current observation is not the same as zero usage. Counters may reset when the demo service restarts.</p></section>`;
+}
+async function refreshDemoTraffic(container: HTMLElement): Promise<void> {
+  const status = $<HTMLElement>("[data-demo-traffic-status]", container);
+  const rows = $<HTMLElement>("[data-demo-traffic-rows]", container);
+  try {
+    const response = await fetch("/sandbox/traffic", { cache: "no-store" });
+    if (!response.ok) throw new Error("Observed traffic is temporarily unavailable.");
+    const result = await response.json() as { rows?: Array<{ path: string; method: string; count: number; sampleAt: string }>; description?: string };
+    if (!rows) return;
+    rows.innerHTML = result.rows?.length ? result.rows.map(row => `<tr><td><code>${escape(row.path)}</code></td><td>${escape(row.method)}</td><td><strong>${row.count.toLocaleString()}</strong></td><td>${escape(date(row.sampleAt))}</td></tr>`).join("") : '<tr><td colspan="4">No current observation is available.</td></tr>';
+    if (status) status.textContent = result.description ?? "Observed counters updated.";
+  } catch (error) {
+    if (status) status.textContent = error instanceof Error ? error.message : "Observed traffic is temporarily unavailable.";
+    if (rows) rows.innerHTML = '<tr><td colspan="4">Connect to the demo service and refresh to retry.</td></tr>';
+  }
 }
 
 function workflowCard(key: string, title: string, value: string, copy: string, href: string, action: string, tone: string): string {
@@ -198,13 +215,14 @@ function endpointPanel(endpoint: WorkspaceEndpoint): string {
 function renderEndpoints(): string {
   const s = snapshot!;
   const endpoints = s.endpoints.filter(e => `${e.method} ${e.path} ${s.services.find(service => service.id === e.serviceId)?.name}`.toLowerCase().includes(query.toLowerCase()) && (!filter || e.serviceId === filter));
-  const selected = s.endpoints.find(e => e.id === selectedEndpoint) ?? endpoints[0];
+  const selected = selectedEndpoint ? s.endpoints.find(e => e.id === selectedEndpoint) : endpoints[0];
   const noResults = query || filter
     ? empty("No matching endpoints", "Try another search or clear the filters.", button("clear-filters", "Clear filters", "", true))
     : s.repositories.length
       ? empty("No endpoints discovered yet", "Check repository indexing and OpenAPI coverage. Consumer repositories can still contribute caller evidence.", '<a class="ig-button ig-button-secondary" href="/dashboard/repositories">Check repository coverage</a>')
       : empty("Connect repositories to discover APIs", "Choose an API repository and the applications that call it to build your first impact view.", '<a class="ig-button" href="/onboarding">Connect repositories</a>');
-  return heading("APIs", "Explore API operations, code flows, consumers, changes, and retirement evidence.") + `<section class="ig-card">${filters("Search APIs and services", s.services.map(service => [service.id, service.name]))}${endpoints.length ? table(["Method / path", "Service", "Code flow", "Static callers", "Runtime traffic", "Measured functions", "Open findings", "Retirement state"], endpoints.map(e => { const candidate = s.candidates.find(item => item.endpointId === e.id); const state = candidate ? evidenceState(candidate, e) : { label: "Needs review", tone: "unknown" }; return [badge(`${e.method} ${e.path}`), escape(s.services.find(service => service.id === e.serviceId)?.name), `<button data-action="endpoint" data-id="${escape(e.id)}">${e.source.functionName ? escape(e.source.functionName) : "Mapped flow"}</button>`, String(e.staticCallerCount), escape(coverage(e)), e.measuredFunctionEntriesInWindow == null ? productBadge("Unknown", "unknown") : productBadge(e.measuredFunctionEntriesInWindow.toLocaleString(), "measured"), String(s.findings.filter(f => f.endpointId === e.id && f.status === "open").length), productBadge(state.label, state.tone)]; })) : noResults}</section>${selected ? endpointPanel(selected) : ""}`;
+  const selectedPanel = selected ? endpointPanel(selected) : "";
+  return heading("APIs", "Explore API operations, code flows, consumers, changes, and retirement evidence.") + `${selectedEndpoint ? selectedPanel : ""}<section class="ig-card">${filters("Search APIs and services", s.services.map(service => [service.id, service.name]))}${endpoints.length ? table(["Method / path", "Service", "Code flow", "Static callers", "Runtime traffic", "Measured functions", "Open findings", "Retirement state"], endpoints.map(e => { const candidate = s.candidates.find(item => item.endpointId === e.id); const state = candidate ? evidenceState(candidate, e) : { label: "Needs review", tone: "unknown" }; return [`<button data-action="endpoint" data-id="${escape(e.id)}"><code>${escape(e.method)} ${escape(e.path)}</code></button>`, escape(s.services.find(service => service.id === e.serviceId)?.name), `<button data-action="endpoint" data-id="${escape(e.id)}">${e.source.functionName ? escape(e.source.functionName) : "Mapped flow"}</button>`, String(e.staticCallerCount), escape(coverage(e)), e.measuredFunctionEntriesInWindow == null ? productBadge("Unknown", "unknown") : productBadge(e.measuredFunctionEntriesInWindow.toLocaleString(), "measured"), String(s.findings.filter(f => f.endpointId === e.id && f.status === "open").length), productBadge(state.label, state.tone)]; })) : noResults}</section>${selectedEndpoint ? "" : selectedPanel}`;
 }
 function renderCandidates(): string {
   const s = snapshot!;
@@ -241,7 +259,7 @@ function renderSettings(): string {
         <label class="ig-checkbox"><input type="checkbox" name="syncDefaultBranch" ${s.syncDefaultBranch ? "checked" : ""} ${writeDisabled()}> Sync default branch when code changes</label>
         <label class="ig-checkbox"><input type="checkbox" name="prCommentsEnabled" ${s.prCommentsEnabled ? "checked" : ""} ${writeDisabled()}> Publish findings as pull request comments</label>
         <label class="ig-checkbox"><input type="checkbox" name="externalModelsEnabled" ${s.externalModelsEnabled ? "checked" : ""} ${!session?.capabilities.externalModels ? "disabled" : writeDisabled()}> Allow external model analysis</label>
-        ${!session?.capabilities.externalModels ? '<p class="ig-note">External model analysis is unavailable on this deployment.</p>' : ""}
+        ${!session?.capabilities.externalModels ? `${button("external-model-info", "Why is this unavailable?", "", true)}<p class="ig-note">External model analysis is unavailable on this deployment; deterministic analysis remains active.</p>` : ""}
         <label>History retention in days<input type="number" name="retentionDays" min="7" max="365" required value="${s.retentionDays}" ${writeDisabled()}></label>
         <p class="ig-note">Applies to job and pull request history and reviews. Current repository snapshots remain while selected.</p>
         <button class="ig-button" type="submit" ${writeDisabled()}>Save preferences</button><p data-save-status role="status" aria-live="polite"></p>
@@ -259,36 +277,54 @@ function renderGraph(): string {
     : empty("Connect repositories to map your services", "Choose API-owning repositories and the applications that call them to build your dependency view.", '<a class="ig-button" href="/onboarding">Connect repositories</a>');
   return heading("Dependency graph", "Service relationships are derived from the current workspace evidence.") + `<section class="ig-card">${filters("Search services", [["static", "Static evidence"], ["runtime", "Runtime evidence"], ["both", "Static and runtime evidence"]])}<div class="ig-actions ig-graph-toolbar">${button("graph-fit", "Fit view", "", true)}${button("graph-export", "Export snapshot", "", true)}</div>${s.services.length ? '<div class="ig-connected-graph" role="group" aria-label="Service dependency graph"></div><div class="ig-graph-inspector" data-graph-inspector><p class="ig-note">Select a service to inspect its endpoints and callers. The table below provides keyboard accessible relationship details.</p></div>' : noServices}<p class="ig-note">${s.services.length} services · ${s.edges.length} endpoint relationships</p>${s.edges.length ? table(["Caller", "Target service", "Endpoint", "Evidence", "Confidence"], s.edges.filter(edge => !filter || edge.evidence === filter).map(edge => { const endpoint = s.endpoints.find(e => e.id === edge.endpointId); return [escape(s.services.find(service => service.id === edge.callerServiceId)?.name), escape(s.services.find(service => service.id === endpoint?.serviceId)?.name), `<button data-action="endpoint-dialog" data-id="${escape(edge.endpointId)}"><code>${escape(endpoint?.method)} ${escape(endpoint?.path)}</code></button>`, badge(edge.evidence), badge(edge.confidence)]; })) : '<p class="ig-note">No cross-service callers were found in the current snapshot.</p>'}</section>`;
 }
+function graphServiceKind(service: WorkspaceSnapshot["services"][number]): "gateway" | "proxy" | "third-party" | "service" {
+  const value = `${service.name} ${service.rootPath}`.toLowerCase();
+  if (/gateway|edge|ingress|bff/.test(value)) return "gateway";
+  if (/proxy|adapter|bridge|client/.test(value)) return "proxy";
+  if (/stripe|twilio|auth0|sentry|datadog|github|external|vendor|third/.test(value)) return "third-party";
+  return "service";
+}
+function renderFunctionUsage(): string {
+  return `<div class="ig-function-usage">${heading("Function usage", "Search indexed functions, API request attribution, and measured runtime entries.")}${renderFunctionInventory(snapshot!, codeQuery, codePage)}</div>`;
+}
 function mountGraph(): void {
   const container = $(".ig-connected-graph"); if (!container || !snapshot) return;
   const s = snapshot;
   const services = s.services.filter(service => service.name.toLowerCase().includes(query.toLowerCase()));
   const ids = new Set(services.map(service => service.id));
-  graph = cytoscape({ container, elements: [...services.map(service => ({ data: { id: service.id, label: service.name } })), ...s.edges.filter(edge => { const target = s.endpoints.find(e => e.id === edge.endpointId)?.serviceId; return target && target !== edge.callerServiceId && ids.has(target) && ids.has(edge.callerServiceId) && (!filter || edge.evidence === filter); }).map(edge => ({ data: { id: edge.id, source: edge.callerServiceId, target: s.endpoints.find(e => e.id === edge.endpointId)!.serviceId, label: edge.evidence } }))], layout: { name: "breadthfirst", directed: true, padding: 35 }, style: [{ selector: "node", style: { "background-color": "#2b3ac4", label: "data(label)", color: document.documentElement.dataset.theme === "dark" ? "#e8edf4" : "#191c1e", "font-size": 11, "text-valign": "bottom", "text-margin-y": 10, width: 30, height: 30 } }, { selector: "edge", style: { width: 2, "line-color": "#8896a6", "target-arrow-color": "#8896a6", "target-arrow-shape": "triangle", "curve-style": "bezier" } }] });
+  const theme = document.documentElement.dataset.theme === "dark";
+  const elements = [
+    ...services.map(service => { const kind = graphServiceKind(service); const mark = kind === "gateway" ? "⬢" : kind === "proxy" ? "◇" : kind === "third-party" ? "●" : "◆"; return { data: { id: service.id, label: `${mark} ${service.name}`, kind } }; }),
+    ...s.edges.filter(edge => {
+      const target = s.endpoints.find(e => e.id === edge.endpointId)?.serviceId;
+      return target && target !== edge.callerServiceId && ids.has(target) && ids.has(edge.callerServiceId) && (!filter || edge.evidence === filter);
+    }).map(edge => ({ data: { id: edge.id, source: edge.callerServiceId, target: s.endpoints.find(e => e.id === edge.endpointId)!.serviceId, label: edge.evidence, evidence: edge.evidence } })),
+  ];
+  graph = cytoscape({ container, elements, layout: { name: "cose", animate: false, fit: true, padding: 48, nodeRepulsion: 7000, idealEdgeLength: 150, componentSpacing: 120, nodeOverlap: 24 }, minZoom: 0.2, maxZoom: 2.5,
+    style: [
+      { selector: "node", style: { "background-color": theme ? "#2b3152" : "#dfe0ff", "border-color": theme ? "#adb5ff" : "#2b3ac4", "border-width": 2, label: "data(label)", color: theme ? "#e8edf4" : "#191c1e", "font-size": 12, "font-family": "Hanken Grotesk", "font-weight": 600, "text-wrap": "wrap", "text-max-width": "110px", "text-valign": "center", "text-halign": "center", width: 108, height: 52, shape: "round-rectangle", "overlay-opacity": 0 } },
+      { selector: 'node[kind = "gateway"]', style: { "background-color": theme ? "#193b4a" : "#d9f4f1", "border-color": theme ? "#58c7c0" : "#238a84", shape: "hexagon" } },
+      { selector: 'node[kind = "proxy"]', style: { "background-color": theme ? "#302b4c" : "#eee8ff", "border-color": theme ? "#b89cf4" : "#7654b8", shape: "diamond" } },
+      { selector: 'node[kind = "third-party"]', style: { "background-color": theme ? "#49351d" : "#fff1cf", "border-color": theme ? "#efc66f" : "#c88b19", shape: "ellipse" } },
+      { selector: "edge", style: { width: 2, "line-color": theme ? "#64748b" : "#8896a6", "target-arrow-color": theme ? "#64748b" : "#8896a6", "target-arrow-shape": "triangle", "curve-style": "bezier", "control-point-step-size": 55, "arrow-scale": 1.1 } },
+      { selector: 'edge[evidence = "both"]', style: { "line-color": theme ? "#70c99a" : "#26825d", "target-arrow-color": theme ? "#70c99a" : "#26825d" } },
+      { selector: 'edge[evidence = "runtime"]', style: { "line-color": theme ? "#efc66f" : "#c88b19", "target-arrow-color": theme ? "#efc66f" : "#c88b19", "line-style": "dashed" } },
+    ] });
   graph.on("tap", "node", event => { const service = s.services.find(item => item.id === event.target.id()); const inspector = $("[data-graph-inspector]"); if (!service || !inspector) return; inspector.innerHTML = `<h2>${escape(service.name)}</h2><p class="ig-note">${escape(service.rootPath)} · ${escape(service.criticality)} criticality</p>${table(["Method", "Endpoint", "Static callers"], s.endpoints.filter(e => e.serviceId === service.id).map(e => [escape(e.method), `<button data-action="endpoint-dialog" data-id="${escape(e.id)}">${escape(e.path)}</button>`, String(e.staticCallerCount)]))}`; });
 }
 function render(): void {
   if (disposed || !snapshot) return;
   graph?.destroy(); graph = null;
   codeGraph?.destroy(); codeGraph = null;
-  const sandboxPanel = main.querySelector<HTMLIFrameElement>("[data-demo-sandbox]");
-  main.innerHTML = ({ home: renderHome, "api-usage": renderEndpoints, "dependency-graph": renderGraph, "deprecation-candidates": renderCandidates, "pr-impact": renderPRImpact, repositories: renderRepositories, settings: renderSettings, onboarding: renderOnboarding, "github-setup": renderOnboarding }[page] ?? renderHome)();
+  main.innerHTML = ({ home: renderHome, "api-usage": renderEndpoints, "dependency-graph": renderGraph, "function-usage": renderFunctionUsage, "deprecation-candidates": renderCandidates, "pr-impact": renderPRImpact, repositories: renderRepositories, settings: renderSettings, onboarding: renderOnboarding, "github-setup": renderOnboarding }[page] ?? renderHome)();
   if (["home", "api-usage"].includes(page) && workspace?.accountLogin === "impact-gate" && snapshot?.services.some(service => service.name === "ig-lab-petclinic")) {
-    const panel = sandboxPanel ?? document.createElement("iframe");
-    panel.dataset.demoSandbox = "true";
-    panel.title = "Near-live observed demo endpoint traffic and developer test instructions";
-    if (!sandboxPanel) panel.src = "/sandbox?panel=1";
-    panel.style.cssText = "width:100%;height:670px;border:1px solid #d6e1ea;border-radius:12px;margin:20px 0;background:#f4f7fa";
+    const panel = document.createElement("div");
+    panel.innerHTML = renderDemoTraffic();
     main.append(panel);
+    const traffic = panel.firstElementChild as HTMLElement | null;
+    if (traffic) void refreshDemoTraffic(traffic);
   }
   main.setAttribute("aria-busy", "false"); renderShell(); if (page === "dependency-graph") mountGraph();
-  if (page === "dependency-graph") {
-    main.insertAdjacentHTML("beforeend", renderFunctionInventory(snapshot, codeQuery, codePage));
-    if (initialFunctionUsageNavigation) {
-      $("#function-usage")?.scrollIntoView?.();
-      initialFunctionUsageNavigation = false;
-    }
-  }
   const flow = $<HTMLElement>("[data-code-flow]", main);
   if (flow) codeGraph = mountCodeFlow(snapshot, flow, $("[data-code-inspector]", main));
 }
@@ -322,6 +358,15 @@ function modal(title: string, contents: string): HTMLDialogElement {
   const dialog = $<HTMLDialogElement>(".ig-dialog")!;
   overlayFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   dialog.innerHTML = `<h2 id="dialog-title">${escape(title)}</h2>${contents}<div class="ig-dialog-actions">${button("close-dialog", "Close", "", true)}</div>`;
+  const runtimeForm = dialog.querySelector<HTMLFormElement>("[data-runtime-form]");
+  if (runtimeForm) {
+    const actions = document.createElement("div");
+    actions.className = "ig-runtime-form-actions";
+    const provider = runtimeForm.dataset.provider as "prometheus" | "datadog";
+    actions.innerHTML = `<button type="button" class="ig-button ig-button-secondary" data-action="runtime-test" data-provider="${provider}">Test connection</button><button type="submit" class="ig-button" data-runtime-primary>Find and match services</button><p data-save-status role="status" aria-live="polite"></p>`;
+    runtimeForm.append(actions);
+    updateRuntimeConnectButton(runtimeForm);
+  }
   dialog.showModal(); return dialog;
 }
 async function loadAvailable(): Promise<void> {
@@ -516,7 +561,7 @@ document.addEventListener("click", event => {
     }
     if (action === "runtime-test") {
       const form=$<HTMLFormElement>("[data-runtime-form]");if(!form || !form.reportValidity()) return;
-      void mutate(async()=>{const result=await api.request<{observationCount:number;matchedEndpointCount:number;unmatchedObservationCount:number;warnings:string[]}>(`${route(workspace!.id)}/runtime/${runtimeProvider}/test`,{method:"POST",body:runtimeConnectionBody(form)});const status=$("[data-save-status]",form);if(status) status.textContent=`Connection reached. ${result.observationCount} source rows; ${result.matchedEndpointCount} endpoints with observed traffic; ${result.unmatchedObservationCount} unmatched rows. ${result.warnings.join(" ")}`;});return;
+      void mutate(async()=>{const result=await api.request<{observationCount:number;matchedEndpointCount:number;unmatchedObservationCount:number;warnings:string[]}>(`${route(workspace!.id)}/runtime/${runtimeProvider}/test`,{method:"POST",body:runtimeConnectionBody(form, true)});const status=$("[data-save-status]",form);if(status) status.textContent=`Connection reached. ${result.observationCount} source rows; ${result.matchedEndpointCount} endpoints with observed traffic; ${result.unmatchedObservationCount} unmatched rows. ${result.warnings.join(" ")}`;});return;
     }
     if (action === "runtime-sync") {void mutate(async()=>{await api.request(`${route(workspace!.id)}/runtime/${runtimeProvider}/sync`,{method:"POST"});trackEvent("runtime_sync_completed", { provider: runtimeProvider });await refresh();},"Runtime evidence refreshed.");return;}
     if (action === "runtime-disconnect") {modal("Disconnect runtime source",`<p>Remove the stored credentials and imported evidence for ${escape(runtimeProvider)} from this workspace? Reconnect the source to import its observations again.</p>${button("confirm-runtime-disconnect","Disconnect",`data-provider="${runtimeProvider}"`)}<p data-save-status role="status"></p>`);return;}
@@ -526,6 +571,7 @@ document.addEventListener("click", event => {
   if (action === "menu") { const open = document.body.dataset.navOpen !== "true"; if (!open) { closeNavigation(); return; } overlayFocus = trigger; document.body.dataset.navOpen = "true"; trigger.setAttribute("aria-expanded", "true"); const backdrop = $(".ig-backdrop"); if (backdrop) backdrop.hidden = false; document.body.style.overflow = "hidden"; $(".ig-sidebar a")?.focus(); return; }
   if (action === "close-overlays") { closeNavigation(); return; }
   if (action === "close-dialog") { $<HTMLDialogElement>(".ig-dialog")?.close(); return; }
+  if (action === "external-model-info") { modal("External model analysis", '<p>This workspace is configured for deterministic analysis only. No external model credentials or model provider are connected, so this setting cannot be enabled here.</p><p class="ig-note">Your contract diffs, static code paths, and runtime evidence remain available without a model provider.</p>'); return; }
   if (action === "sign-out") { void mutate(async () => { trackEvent("sign_out"); clearSession(); await auth.signOut(); location.assign("/sign-in"); }); return; }
   if (action === "retry") { if (!auth) { location.reload(); return; } if (!auth.currentUser) { location.assign(signInDestination(location.pathname, location.origin)); return; } state("Loading workspace", "Fetching the latest data."); void bootstrap().catch(handleError); return; }
   if (action === "connect-github" || action === "add-workspace") { void mutate(async () => { const installation = new URL(location.href).searchParams.get("installation_id"); const result = await api.request<{ url: string }>("/api/v1/github/connect/start", { method: "POST", body: { returnTo: "/onboarding", ...(installation && /^\d+$/.test(installation) ? { installationId: Number(installation) } : {}) } }); const destination = new URL(result.url); if (destination.protocol !== "https:" || destination.hostname !== "github.com") throw new Error("The GitHub authorization URL is invalid."); trackEvent("github_connection_start", { provider: "github" }); location.assign(destination.href); }); return; }
@@ -537,6 +583,7 @@ document.addEventListener("click", event => {
     void mutate(async () => { snapshot = await api.request<WorkspaceSnapshot>(`${route(workspace!.id)}/quickstart`, { method: "POST", body: { repositoryIds: [...new Set(ids)] } }); onboardingStatus = await api.request<WorkspaceOnboardingStatus>(`${route(workspace!.id)}/onboarding`); render(); }, "Your API map is building."); return;
   }
   if (action === "clear-filters") { query = ""; filter = ""; render(); return; }
+  if (action === "demo-traffic-refresh") { const traffic = trigger.closest<HTMLElement>("[data-demo-traffic]"); if (traffic) void refreshDemoTraffic(traffic); return; }
   if (action === "toggle-findings" && page === "home") { showAllFindings = !showAllFindings; render(); $('[data-action="toggle-findings"]')?.focus(); return; }
   if (action === "endpoint" && id) { selectedEndpoint = id; endpointTab = "overview"; render(); return; }
   if (action === "endpoint-tab") { endpointTab = trigger.dataset.tab ?? "overview"; render(); return; }

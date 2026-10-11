@@ -2,7 +2,7 @@
 const publicPaths = new Set([
   "/", "/contact", "/sign-in", "/sign-up", "/auth/email-link", "/onboarding", "/onboarding/github", "/github/setup",
   "/dashboard", "/dashboard/api-usage", "/dashboard/dependency-graph",
-  "/dashboard/deprecation-candidates", "/dashboard/repositories", "/dashboard/settings",
+  "/dashboard/deprecation-candidates", "/dashboard/repositories", "/dashboard/settings", "/dashboard/function-usage",
   "/demo", "/docs",
   ...["overview", "quickstart", "sign-in", "connect-github", "repositories", "pull-request-reports",
     "dashboard", "api-usage", "dependency-graph", "deprecation-review", "settings",

@@ -11,7 +11,7 @@ function DemoHeader({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () 
       </a>
       <nav className="product-screen-nav" aria-label="Demo navigation">
         <a href="/">Overview</a>
-        <a href="/dashboard">Dashboard</a>
+        <a className="bot-demo-dashboard-link" href="/dashboard">Go to dashboard <span aria-hidden="true">↗</span></a>
         <a href="/docs/pull-request-reports">Docs</a>
       </nav>
       <button
@@ -121,6 +121,7 @@ export function GitHubBotDemoScreen() {
           </div>
           <div className="bot-demo-actions">
             <a className="button primary" href="/onboarding/github">Connect GitHub <span aria-hidden="true">↗</span></a>
+            <a className="button dashboard" href="/dashboard">Go to dashboard <span aria-hidden="true">↗</span></a>
             <a className="button secondary" href="/">Back to overview</a>
           </div>
         </section>

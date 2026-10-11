@@ -19,6 +19,7 @@ export const pages = [
   ['02-api-usage', 'api-usage', 'APIs'],
   ['07-pr-impact', 'pr-impact', 'PR Impact'],
   ['03-dependency-graph', 'dependency-graph', 'Dependency Graph'],
+  ['08-function-usage', 'function-usage', 'Function usage'],
   ['04-deprecation', 'deprecation-candidates', 'Retirement Radar'],
   ['05-repositories', 'repositories', 'Repositories'],
   ['06-settings', 'settings', 'Settings'],
@@ -235,7 +236,7 @@ export async function buildDashboard(outDir = path.join(root,'dist')) {
   const sidebar = home.querySelector('aside');
   sidebar.classList.add('ig-sidebar'); sidebar.id = 'workspace-nav';
   sidebar.querySelector('nav').setAttribute('aria-label','Workspace navigation');
-  sidebar.querySelector('nav').innerHTML = `<a href="/dashboard">${icon('grid')}<span>Overview</span></a><a href="/dashboard/api-usage">${icon('api')}<span>APIs</span></a><a href="/dashboard/pr-impact">${icon('warning')}<span>PR Impact</span></a><a href="/dashboard/deprecation-candidates">${icon('retire')}<span>Retirement Radar</span></a><a href="/dashboard/repositories">${icon('repositories')}<span>Repositories</span></a><a href="/dashboard/settings">${icon('settings')}<span>Settings</span></a><div class="ig-nav-secondary"><span>Explore</span><a href="/dashboard/dependency-graph">${icon('graph')}<span>Dependency graph</span></a><a href="/dashboard/dependency-graph#function-usage">${icon('code')}<span>Function usage</span></a></div><a href="/docs">${icon('book')}<span>Documentation</span></a>`;
+  sidebar.querySelector('nav').innerHTML = `<a href="/dashboard">${icon('grid')}<span>Overview</span></a><a href="/dashboard/api-usage">${icon('api')}<span>APIs</span></a><a href="/dashboard/pr-impact">${icon('warning')}<span>PR Impact</span></a><a href="/dashboard/deprecation-candidates">${icon('retire')}<span>Retirement Radar</span></a><a href="/dashboard/repositories">${icon('repositories')}<span>Repositories</span></a><a href="/dashboard/settings">${icon('settings')}<span>Settings</span></a><div class="ig-nav-secondary"><span>Explore</span><a href="/dashboard/dependency-graph">${icon('graph')}<span>Dependency graph</span></a><a href="/dashboard/function-usage">${icon('code')}<span>Function usage</span></a></div><a href="/docs">${icon('book')}<span>Documentation</span></a>`;
   sidebar.firstElementChild.firstElementChild.outerHTML = `<a class="ig-brand" href="/" aria-label="Impact Gate homepage"><img src="/favicon.svg" width="32" height="32" alt=""/><strong>Impact Gate</strong></a>`;
   sidebar.insertAdjacentHTML('beforeend', `<div class="ig-sidebar-bottom"><span>Authenticated workspace</span><label class="ig-sidebar-workspaces" data-workspace-switcher hidden>Workspace<select class="ig-workspace-picker" data-workspace-picker aria-label="Choose workspace" hidden></select></label><a href="mailto:${contactEmails.support}">${icon('help')}Contact support</a><a href="/contact">Contact the team</a><button type="button" data-analytics-toggle>Usage analytics</button><a href="/">Back to website ↗</a></div>`);
   for (const [key,slug,title] of pages) {
