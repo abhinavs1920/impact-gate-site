@@ -6,7 +6,7 @@ Source for [impactgate.in](https://impactgate.in): the Impact Gate site, docs an
 
 # Impact Gate teaser assembly
 
-This folder contains a ground-truth record and an evidence-gated teaser plan. The current record says the required CLI and renderer commands could not run because `pnpm` was unavailable, so blocked screenshot steps must be completed before any product-text shot is published.
+This folder contains a ground-truth record and an evidence-gated teaser plan. The site is now open to teams, and the hosted videos still carry the old waitlist outro. Re-cut the video end cards to match the live Connect GitHub call to action before publishing another version.
 
 Assemble in this order:
 
@@ -15,17 +15,17 @@ Assemble in this order:
 3. Capture the terminal and Markdown evidence as locked screen assets.
 4. Produce only the text-free generated b-roll from `IMAGE_PROMPTS.md`.
 5. Feed each locked capture or generated asset to Veo using the matching prompt in `VEO_PROMPTS.md`.
-6. Assemble the clips outside these tools in a video editor with the voiceover, sound design, exact composited product text, and waitlist CTA.
+6. Assemble the clips outside these tools in a video editor with the voiceover, sound design, exact composited product text, and Connect GitHub CTA.
 
 Veo prompts alone do not produce a finished file containing mixed real footage, generated animation, and voiceover. The final assembly happens in an editor.
 
 ## Website development
 
-The public site is a React/Vite application. The Cloudflare Worker in `src/worker.ts` serves the Vite `dist/` assets and handles `/api/waitlist`. Valid pilot requests are saved in private Cloudflare KV for 90 days and sent to `abxh1920@gmail.com` through Cloudflare Email Service; the reply-to address is set to the applicant. Campaign attribution and a random lead reference connect accepted requests with website conversion events.
+The public site is a React/Vite application. The Cloudflare Worker in `src/worker.ts` serves the Vite `dist/` assets and handles `/api/waitlist`. Contact requests are saved in private Cloudflare KV for 90 days and sent to `abxh1920@gmail.com` through Cloudflare Email Service; the reply-to address is set to the applicant. Campaign attribution and a random lead reference connect accepted requests with website conversion events.
 
 The public homepage is indexable. `public/robots.txt` permits search and AI-answer crawlers while excluding the API, and `public/sitemap.xml` lists the canonical URL. The homepage includes canonical/social metadata and structured software and FAQ data. Indexing and search rankings are controlled by the search engines and are not guaranteed.
 
-Before waitlist emails can be delivered, onboard `impactgate.in` under **Cloudflare Dashboard → Compute → Email Service → Email Sending**. Configure the DNS records Cloudflare provides and wait for sending-domain verification. The Worker binding is restricted to `pilot@impactgate.in` as sender and `abxh1920@gmail.com` as recipient.
+Before contact notifications can be delivered, onboard `impactgate.in` under **Cloudflare Dashboard → Compute → Email Service → Email Sending**. Configure the DNS records Cloudflare provides and wait for sending-domain verification. The Worker uses `beta@impactgate.in` as sender, keeps `pilot@impactgate.in` on the sender allowlist for old threads, and sends notifications to `abxh1920@gmail.com`.
 
 ```sh
 pnpm install --frozen-lockfile
@@ -37,13 +37,13 @@ GitHub Actions verifies pull requests and deploys pushes to `main` using Wrangle
 
 ## Website analytics and leads
 
-Firebase Analytics is connected to the dedicated `impact-gate-prod` project and GA4 property `557166280`, using measurement ID `G-PDKMBG4FD8`. It records visits, marketing calls to action, pilot submission outcomes, documentation topics, sign-in, GitHub/repository setup, and successful workspace actions. Anonymous visitors remain pseudonymous; signing in associates events with the opaque Firebase UID. Form contents and private repository data are excluded from usage events.
+Firebase Analytics is connected to the dedicated `impact-gate-prod` project and GA4 property `557166280`, using measurement ID `G-PDKMBG4FD8`. It records visits, marketing calls to action, contact submission outcomes, video engagement, demo interactions, documentation topics, sign-in, GitHub/repository setup, and successful workspace actions. Anonymous visitors remain pseudonymous; signing in associates events with the opaque Firebase UID. Form contents and private repository data are excluded from usage events.
 
 Start with [Firebase Analytics](https://console.firebase.google.com/project/impact-gate-prod/analytics) or [GA4 Realtime](https://analytics.google.com/analytics/web/#/p557166280/realtime/overview). The [operator guide](docs/ANALYTICS.md) explains the event catalog, lead retrieval, campaign links, funnel reports, visitor controls, and remaining Analytics-console report settings. Visitor-facing guidance is published at [/docs/permissions-and-data#website-analytics](https://impactgate.in/docs/permissions-and-data#website-analytics).
 
 ## Connected application
 
-The deployed application at `https://impactgate.in/sign-in` uses the dedicated Firebase project `impact-gate-prod`. The pilot enables Google and passwordless email links. GitHub identity sign-in is implemented and remains disabled until a dedicated identity OAuth provider is configured. GitHub repository authorization uses the organization-owned Impact Gate App.
+The deployed application at `https://impactgate.in/sign-in` uses the dedicated Firebase project `impact-gate-prod`. Google and passwordless email links are enabled. GitHub identity sign-in is implemented and remains disabled until a dedicated identity OAuth provider is configured. GitHub repository authorization uses the organization-owned Impact Gate App.
 
 After sign-in, `/onboarding` verifies GitHub organization ownership, links the installation, and selects repositories for indexing. All six `/dashboard` screens read persisted snapshots, jobs, findings, settings, and reviews. Missing runtime telemetry is shown as unknown. The existing shared shell and original design exports remain available; connected page content renders the real workspace instead of illustrative records.
 

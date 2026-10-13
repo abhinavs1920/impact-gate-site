@@ -232,7 +232,7 @@ summary:focus-visible {
 }
 [data-theme="dark"] .header-cta,
 [data-theme="dark"] .hero .button.primary,
-[data-theme="dark"] .pilot button,
+[data-theme="dark"] .contact-form button,
 [data-theme="dark"] .bot-mark {
   background: var(--color-primary);
   color: #101722;
@@ -258,7 +258,7 @@ summary:focus-visible {
 [data-theme="dark"] .state-card,
 [data-theme="dark"] .change-list,
 [data-theme="dark"] .boundary-card,
-[data-theme="dark"] .pilot form {
+[data-theme="dark"] .contact-form form {
   border-color: var(--color-border);
   background: var(--color-surface);
 }
@@ -272,7 +272,7 @@ summary:focus-visible {
 [data-theme="dark"] .change-more,
 [data-theme="dark"] .contract-block,
 [data-theme="dark"] .scope-note,
-[data-theme="dark"] .pilot-panel {
+[data-theme="dark"] .contact-form-panel {
   border-color: var(--color-border);
   background: var(--color-surface-muted);
 }
@@ -317,7 +317,7 @@ summary:focus-visible {
 [data-theme="dark"] .step-bottom,
 [data-theme="dark"] .state-foot,
 [data-theme="dark"] .form-heading span,
-[data-theme="dark"] .pilot-details,
+[data-theme="dark"] .contact-form-details,
 [data-theme="dark"] .form-privacy {
   color: #aab6c5;
 }
@@ -332,7 +332,7 @@ summary:focus-visible {
 }
 [data-theme="dark"] .process,
 [data-theme="dark"] .changes,
-[data-theme="dark"] .pilot {
+[data-theme="dark"] .contact-form {
   background: var(--color-background);
 }
 [data-theme="dark"] .removed-line {
@@ -390,24 +390,24 @@ summary:focus-visible {
 [data-theme="dark"] .form-heading {
   border-color: var(--color-border);
 }
-[data-theme="dark"] .pilot input,
-[data-theme="dark"] .pilot textarea {
+[data-theme="dark"] .contact-form input,
+[data-theme="dark"] .contact-form textarea {
   border-color: #455267;
   background: #111a27;
   color: var(--color-ink);
 }
-[data-theme="dark"] .pilot input::placeholder,
-[data-theme="dark"] .pilot textarea::placeholder {
+[data-theme="dark"] .contact-form input::placeholder,
+[data-theme="dark"] .contact-form textarea::placeholder {
   color: #8896a8;
 }
-[data-theme="dark"] .pilot label,
-[data-theme="dark"] .pilot-status .fact {
+[data-theme="dark"] .contact-form label,
+[data-theme="dark"] .contact-form-status .fact {
   color: #c2ccd9;
 }
-[data-theme="dark"] .pilot .form-status[data-state="success"] {
+[data-theme="dark"] .contact-form .form-status[data-state="success"] {
   color: #8dd7a8;
 }
-[data-theme="dark"] .pilot .form-status[data-state="error"] {
+[data-theme="dark"] .contact-form .form-status[data-state="error"] {
   color: #faa;
 }
 [data-theme="dark"] .faq summary {
@@ -462,7 +462,7 @@ html[data-theme="dark"] .site-header {
 }
 html[data-theme="dark"] .header-cta,
 html[data-theme="dark"] .hero .button.primary,
-html[data-theme="dark"] .pilot button,
+html[data-theme="dark"] .contact-form button,
 html[data-theme="dark"] .bot-mark {
   background: var(--color-primary);
   color: #101722;
@@ -476,13 +476,13 @@ html[data-theme="dark"] .state-card,
 html[data-theme="dark"] .step-card,
 html[data-theme="dark"] .change-list,
 html[data-theme="dark"] .boundary-card,
-html[data-theme="dark"] .pilot form {
+html[data-theme="dark"] .contact-form form {
   border-color: var(--color-border);
   background: var(--color-surface);
 }
 html[data-theme="dark"] .process,
 html[data-theme="dark"] .changes,
-html[data-theme="dark"] .pilot,
+html[data-theme="dark"] .contact-form,
 html[data-theme="dark"] .hero {
   background: var(--color-background);
 }
@@ -491,7 +491,7 @@ html[data-theme="dark"] .review-footnote,
 html[data-theme="dark"] .change-more,
 html[data-theme="dark"] .contract-block,
 html[data-theme="dark"] .scope-note,
-html[data-theme="dark"] .pilot-panel {
+html[data-theme="dark"] .contact-form-panel {
   border-color: var(--color-border);
   background: var(--color-surface-muted);
 }
@@ -520,20 +520,20 @@ html[data-theme="dark"] .step-category,
 html[data-theme="dark"] .step-bottom,
 html[data-theme="dark"] .state-foot,
 html[data-theme="dark"] .form-heading span,
-html[data-theme="dark"] .pilot-details,
+html[data-theme="dark"] .contact-form-details,
 html[data-theme="dark"] .form-privacy,
-html[data-theme="dark"] .pilot label,
-html[data-theme="dark"] .pilot-status .fact {
+html[data-theme="dark"] .contact-form label,
+html[data-theme="dark"] .contact-form-status .fact {
   color: #aab6c5;
 }
-html[data-theme="dark"] .pilot input,
-html[data-theme="dark"] .pilot textarea {
+html[data-theme="dark"] .contact-form input,
+html[data-theme="dark"] .contact-form textarea {
   border-color: #455267;
   background: #111a27;
   color: var(--color-ink);
 }
-html[data-theme="dark"] .pilot input::placeholder,
-html[data-theme="dark"] .pilot textarea::placeholder {
+html[data-theme="dark"] .contact-form input::placeholder,
+html[data-theme="dark"] .contact-form textarea::placeholder {
   color: #8896a8;
 }
 html[data-theme="dark"] .site-footer {
@@ -602,10 +602,10 @@ html[data-theme="dark"] .doesnt .boundary-icon {
 html[data-theme="dark"] .boundary-card .fact {
   border-color: var(--color-border);
 }
-html[data-theme="dark"] .pilot .form-status[data-state="success"] {
+html[data-theme="dark"] .contact-form .form-status[data-state="success"] {
   color: #8dd7a8;
 }
-html[data-theme="dark"] .pilot .form-status[data-state="error"] {
+html[data-theme="dark"] .contact-form .form-status[data-state="error"] {
   color: #faa;
 }
 .logo-mark {
@@ -741,19 +741,10 @@ html[data-theme="dark"] .pilot .form-status[data-state="error"] {
   background: var(--color-action);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-action) 20%, transparent);
 }
-[data-fact-status="in_testing"] .fact-dot {
-  background: var(--color-gold);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-gold) 20%, transparent);
-}
 [data-fact-status="planned"] .fact-dot {
   background: var(--color-primary);
   box-shadow: 0 0 0 3px
     color-mix(in srgb, var(--color-primary) 20%, transparent);
-}
-[data-fact-status="not_planned_for_pilot"] .fact-dot {
-  background: var(--color-secondary);
-  box-shadow: 0 0 0 3px
-    color-mix(in srgb, var(--color-secondary) 20%, transparent);
 }
 .site-header {
   position: sticky;
@@ -1434,10 +1425,10 @@ li > span {
     grid-template-columns: 1fr;
   }
 }
-.pilot {
+.contact-form {
   background: #fff;
 }
-.pilot-panel {
+.contact-form-panel {
   display: grid;
   grid-template-columns: 1fr minmax(19rem, 0.86fr);
   gap: clamp(2rem, 7vw, 6rem);
@@ -1447,23 +1438,23 @@ li > span {
   border-radius: 8px;
   background: var(--color-background);
 }
-.pilot-copy {
+.contact-form-copy {
   max-width: 34rem;
 }
-.pilot-copy h2 {
+.contact-form-copy h2 {
   margin: 1rem 0 0.75rem;
   color: var(--color-navy);
   font: 400 clamp(2.15rem, 4vw, 3.25rem)/1.05 var(--font-display);
   letter-spacing: -0.035em;
 }
-.pilot-copy > p {
+.contact-form-copy > p {
   max-width: 31rem;
   margin: 0;
   color: var(--color-secondary);
   font-size: 0.9rem;
   line-height: 1.7;
 }
-.pilot-status {
+.contact-form-status {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1472,19 +1463,19 @@ li > span {
   color: var(--color-secondary);
   font-size: 0.67rem;
 }
-.pilot-status .fact {
+.contact-form-status .fact {
   color: #546276;
   font-size: 0.58rem;
 }
-.pilot-status .fact-dot {
+.contact-form-status .fact-dot {
   width: 0.38rem;
   height: 0.38rem;
 }
-.pilot-status > span {
+.contact-form-status > span {
   padding-left: 0.7rem;
   border-left: 1px solid var(--color-border);
 }
-.pilot-details {
+.contact-form-details {
   display: flex;
   flex-wrap: wrap;
   gap: 0.65rem 1.1rem;
@@ -1492,12 +1483,12 @@ li > span {
   color: #788391;
   font-size: 0.64rem;
 }
-.pilot-details span {
+.contact-form-details span {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
 }
-.pilot-details i {
+.contact-form-details i {
   width: 0.38rem;
   height: 0.38rem;
   border-radius: 50%;
@@ -1615,19 +1606,19 @@ button:disabled {
   text-align: center;
 }
 @media (max-width: 48rem) {
-  .pilot-panel {
+  .contact-form-panel {
     grid-template-columns: 1fr;
     gap: 1.75rem;
   }
 }
 @media (max-width: 34rem) {
-  .pilot-panel {
+  .contact-form-panel {
     padding: 1rem;
   }
   form {
     padding: 0.9rem;
   }
-  .pilot-details {
+  .contact-form-details {
     display: grid;
   }
 }
@@ -2386,7 +2377,7 @@ summary span {
 .change-copy p,
 .change-more p,
 .boundary-card li,
-.pilot-copy > p,
+.contact-form-copy > p,
 .faq-item p {
   font-size: 0.92rem;
 }
@@ -2397,7 +2388,7 @@ summary span {
 .change-token,
 .scope-note .fact,
 .boundary-card .fact,
-.pilot-status .fact {
+.contact-form-status .fact {
   font-size: 0.66rem;
 }
 .state-badge {
@@ -2409,8 +2400,8 @@ summary span {
 .scope-note > span {
   font-size: 0.82rem;
 }
-.pilot-status,
-.pilot-details {
+.contact-form-status,
+.contact-form-details {
   font-size: 0.82rem;
 }
 .form-heading strong {

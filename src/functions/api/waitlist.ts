@@ -33,7 +33,7 @@ interface Payload {
 }
 
 const OWNER_EMAIL = "abxh1920@gmail.com";
-const SENDER_EMAIL = "pilot@impactgate.in";
+const SENDER_EMAIL = "beta@impactgate.in";
 
 const json = (body: Record<string, string | boolean>, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -78,7 +78,7 @@ export async function onRequestPost({
   const form = payload as Payload;
 
   if (typeof form.website === "string" && form.website.trim()) {
-    return json({ message: "Thanks. Your waitlist request was received.", accepted: false });
+    return json({ message: "Thanks. Your contact request was received.", accepted: false });
   }
 
   const email = typeof form.email === "string" ? form.email.trim() : "";
@@ -115,22 +115,22 @@ export async function onRequestPost({
       await env.WAITLIST.put(key, JSON.stringify(record),
         { expirationTtl: 60 * 60 * 24 * 90 });
       saved = true;
-    } catch { console.warn("Pilot lead persistence unavailable."); }
+    } catch { console.warn("Contact lead persistence unavailable."); }
   }
   await save(env.EMAIL ? "pending" : "unavailable");
-  const received = () => json({ message: "Thanks. Your pilot request was received.", accepted: true, leadId });
+  const received = () => json({ message: "Thanks. Your contact request was received.", accepted: true, leadId });
 
   if (!env.EMAIL) {
-    console.error("Pilot request email binding is not configured.");
+    console.error("Contact email binding is not configured.");
     if (saved) return received();
     return json(
-      { message: "The pilot form is temporarily unavailable. Please try again later." },
+      { message: "The contact form is temporarily unavailable. Please try again later." },
       503,
     );
   }
 
   const text = [
-    "A new Impact Gate pilot request was received.",
+    "A new Impact Gate contact request was received.",
     "",
     `Work email: ${email}`,
     `GitHub organization or repository: ${repository}`,
@@ -141,7 +141,7 @@ export async function onRequestPost({
     ...Object.entries(attribution).map(([key, value]) => key + ": " + value),
   ].join("\n");
   const html = [
-    "<h1>New Impact Gate pilot request</h1>",
+    "<h1>New Impact Gate contact request</h1>",
     `<p><strong>Work email:</strong> ${escapeHtml(email)}</p>`,
     `<p><strong>GitHub organization or repository:</strong> ${escapeHtml(repository)}</p>`,
     `<p><strong>Shared API context:</strong><br>${escapeHtml(notes || "(not provided)").replace(/\n/g, "<br>")}</p>`,
@@ -154,12 +154,12 @@ export async function onRequestPost({
       to: OWNER_EMAIL,
       from: SENDER_EMAIL,
       replyTo: email,
-      subject: "New Impact Gate pilot request",
+      subject: "New Impact Gate contact request",
       text,
       html,
     });
   } catch (structuredError) {
-    console.warn("Structured pilot email send failed, attempting EmailMessage fallback.");
+    console.warn("Structured contact email send failed, attempting EmailMessage fallback.");
     try {
       const moduleName = "cloudflare:email";
       const { EmailMessage } = (await import(
@@ -173,10 +173,10 @@ export async function onRequestPost({
       };
       const boundary = `boundary_${Date.now().toString(16)}`;
       const raw = [
-        `From: Impact Gate Pilot <${SENDER_EMAIL}>`,
+        `From: Impact Gate <${SENDER_EMAIL}>`,
         `To: <${OWNER_EMAIL}>`,
         `Reply-To: <${email}>`,
-        `Subject: New Impact Gate pilot request`,
+        `Subject: New Impact Gate contact request`,
         `MIME-Version: 1.0`,
         `Content-Type: multipart/alternative; boundary="${boundary}"`,
         ``,
@@ -206,7 +206,7 @@ export async function onRequestPost({
           ? structuredError.code
           : "unknown";
       void fallbackError;
-      console.error("Pilot request email delivery failed.", /^[a-z0-9_-]{1,64}$/i.test(code) ? code : "unknown");
+      console.error("Contact request email delivery failed.", /^[a-z0-9_-]{1,64}$/i.test(code) ? code : "unknown");
       await save("failed");
       if (saved) return received();
       return json(
@@ -217,5 +217,5 @@ export async function onRequestPost({
   }
 
   await save("sent");
-  return json({ message: "Thanks. Your pilot request was emailed successfully.", accepted: true, leadId });
+  return json({ message: "Thanks. Your contact request was emailed successfully.", accepted: true, leadId });
 }

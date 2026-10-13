@@ -3,7 +3,7 @@ import siteFacts from "./data/site-facts.json";
 import DocsApp from "./docs/DocsApp";
 import ContactPage from "./contact/ContactPage";
 import { emailHref, emails } from "./ui/contact";
-import { leadAttribution, trackEvent } from "./analytics";
+import { leadAttribution, trackEvent, trackVideoProgress } from "./analytics";
 
 const DependencyGraphScreen = lazy(() =>
   import("./screens/ProductScreens").then((module) => ({
@@ -21,13 +21,10 @@ const GitHubBotDemoScreen = lazy(() =>
   })),
 );
 
-type FactStatus =
-  "available" | "in_testing" | "planned" | "not_planned_for_pilot";
+type FactStatus = "available" | "planned";
 const factStatusLabels: Record<FactStatus, string> = {
   available: "Available",
-  in_testing: "In testing",
-  planned: "Planned",
-  not_planned_for_pilot: "Not planned for pilot",
+  planned: "*Roadmap. Not available yet.",
 };
 
 function isFactStatus(status: string): status is FactStatus {
@@ -149,7 +146,7 @@ function Header({ innerPage = false, active }: { innerPage?: boolean; active?: "
     ["#evidence-graph", "Evidence graph"],
     ["#evidence", "Evidence states"],
     ["#limits", "Coverage"],
-    ["#pilot", "Private pilot"],
+    ["#contact", "Get started"],
     ["/docs", "Docs"],
     ["/contact", "Contact"],
   ];
@@ -159,11 +156,7 @@ function Header({ innerPage = false, active }: { innerPage?: boolean; active?: "
       <div className="container header-inner">
         <LogoMark />
         <div className="header-status" aria-label="Product status">
-          <Fact
-            status={siteFacts.stage.status}
-            label="Private pilot prep"
-            compact
-          />
+          <Fact status={siteFacts.stage.status} label="Open to teams" compact />
           <Fact status={siteFacts.warnOnly.status} label="Warn-only" compact />
         </div>
         <button
@@ -229,16 +222,16 @@ function Hero() {
           <p className="hero-supporting-copy">See which downstream services may be affected, with source and uncertainty visible at every step.</p>
           <div className="hero-actions">
             <a className="button primary" href="/onboarding/github" data-analytics-action="connect_github">Connect GitHub <span aria-hidden="true">↗</span></a>
-            <a className="button secondary" href="/demo" data-analytics-action="live_demo">Try demo <span aria-hidden="true">→</span></a>
+            <a className="button secondary" href="/demo" data-analytics-action="demo_open">Try demo <span aria-hidden="true">→</span></a>
           </div>
           <p className="hero-demo-note">
             No account needed for the demo.{" "}
-            <a href="#pilot" data-analytics-action="request_pilot">Join pilot waitlist</a>
+            <a href="#contact" data-analytics-action="request_pilot">Get in touch</a>
           </p>
           <div className="hero-note">
             <Fact
               status={siteFacts.stage.status}
-              label="Private pilot in preparation"
+              label="Open to teams"
               compact
             />
             <span>Warn-only review; your team stays in control.</span>
@@ -253,6 +246,9 @@ function Hero() {
             preload="metadata"
             src="https://impact-gate-api.eastus.cloudapp.azure.com/media/commercial.mp4#t=0.1"
             aria-label="Impact Gate in one minute"
+            onPlay={() => trackEvent("video_play", { content_type: "commercial" })}
+            onTimeUpdate={(event) => trackVideoProgress(event.currentTarget, "commercial")}
+            onEnded={() => trackEvent("video_complete", { content_type: "commercial", percentage: 100 })}
           />
           <p className="video-caption">A short overview of how Impact Gate follows an API change into downstream code.</p>
         </div>
@@ -285,6 +281,9 @@ function UseCase() {
           preload="metadata"
           src="https://impact-gate-api.eastus.cloudapp.azure.com/media/demo.mp4#t=0.1"
           aria-label="Impact Gate demo walkthrough"
+          onPlay={() => trackEvent("video_play", { content_type: "demo" })}
+          onTimeUpdate={(event) => trackVideoProgress(event.currentTarget, "demo")}
+          onEnded={() => trackEvent("video_complete", { content_type: "demo", percentage: 100 })}
           style={{ width: "100%", height: "auto", display: "block", borderRadius: "12px", background: "#0b0f14", marginTop: "1.5rem" }}
         />
       </div>
@@ -359,11 +358,11 @@ function HowItWorks() {
 const states = [
   {
     label: "MEASURED",
-    title: "Runtime function entries",
-    copy: "Supported runtime instrumentation counted actual function entries in an observed window. The source, release, and telemetry quality remain visible.",
+    title: "Runtime usage",
+    copy: "Runtime telemetry shows API request counts and attributes observed function calls to each API. The source, release, and telemetry quality remain visible.",
     className: "verified",
     symbol: "✓",
-    footer: "RUNTIME INSTRUMENTATION",
+    footer: "RUNTIME DATA",
   },
   {
     label: "MAPPED",
@@ -457,7 +456,7 @@ function SupportedChanges() {
               compact
             />
             <span>
-              Current pilot scope: OpenAPI contract changes.
+              Supported today: OpenAPI contract changes.
             </span>
           </div>
         </div>
@@ -521,9 +520,9 @@ function Boundaries() {
           <p>
             Impact Gate reviews supported OpenAPI changes against connected,
             indexed consumer code. Every result is advisory and reflects only
-            the evidence available for review. Runtime telemetry is optional for
-            the first static map; measured function entries require supported
-            instrumentation.
+            the evidence available for review. Runtime data is optional for the
+            static map; Prometheus or Datadog adds API request counts and the
+            function calls attributable to each API.
           </p>
         </div>
         <div className="boundary-grid">
@@ -573,7 +572,7 @@ function Boundaries() {
   );
 }
 
-function PilotForm() {
+function ContactForm() {
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<{
     message: string;
@@ -607,7 +606,7 @@ function PilotForm() {
         trackEvent("generate_lead", { form_name: "pilot_request", lead_id: result.leadId });
       setStatus({
         message:
-          result.message || "Thanks. Your waitlist request was received.",
+          result.message || "Thanks. Your contact request was received.",
         state: "success",
       });
       form.reset();
@@ -626,16 +625,15 @@ function PilotForm() {
   }
 
   return (
-    <section className="section pilot" id="pilot" aria-labelledby="pilot-title">
-      <div className="container pilot-panel">
-        <div className="pilot-copy" data-reveal>
-          <span className="eyebrow">Private pilot · In preparation</span>
-          <h2 id="pilot-title">Bring a shared API question.</h2>
+    <section className="section contact-form" id="contact" aria-labelledby="contact-title">
+      <div className="container contact-form-panel">
+        <div className="contact-form-copy" data-reveal>
+          <span className="eyebrow">Get started</span>
+          <h2 id="contact-title">Bring a shared API question.</h2>
           <p>
-            {siteFacts.stage.copy} Join the waitlist to hear when teams can try
-            the review flow with their own connected services.
+            {siteFacts.stage.copy}
           </p>
-          <div className="pilot-status">
+          <div className="contact-form-status">
             <Fact
               status={siteFacts.warnOnly.status}
               label={siteFacts.warnOnly.label}
@@ -643,10 +641,10 @@ function PilotForm() {
             />
             <span>Non-blocking by default. No merge control.</span>
           </div>
-          <div className="pilot-details">
+          <div className="contact-form-details">
             <span>
               <i />
-              Private pilot updates
+              Product and onboarding support
             </span>
             <span>
               <i />
@@ -663,7 +661,7 @@ function PilotForm() {
           aria-busy={submitting}
         >
           <div className="form-heading">
-            <strong>Join the pilot waitlist</strong>
+            <strong>Contact the Impact Gate team</strong>
             <span>Fields marked * are required.</span>
           </div>
           <label htmlFor="email">
@@ -705,7 +703,7 @@ function PilotForm() {
             aria-hidden="true"
           />
           <button type="submit" disabled={submitting}>
-            {submitting ? "Sending request…" : "Join waitlist"}{" "}
+            {submitting ? "Sending request…" : "Send message"}{" "}
             <span aria-hidden="true">→</span>
           </button>
           <p
@@ -717,11 +715,11 @@ function PilotForm() {
             {status.message}
           </p>
           <p className="form-privacy">
-            Your request is saved and emailed to the Impact Gate team so they can follow
-            up about the pilot. <a href="/docs/permissions-and-data#website-analytics">Data and analytics details</a>.
+            Your request is saved and emailed to the Impact Gate team so they can
+            follow up. <a href="/docs/permissions-and-data#website-analytics">Data and analytics details</a>.
             {" "}Privacy questions? <a href={emailHref("privacy")}>{emails.privacy}</a>.
           </p>
-          <p className="form-email-alternative">Prefer to email us? <a href={emailHref("pilot", "Impact Gate pilot request")}>{emails.pilot}</a></p>
+          <p className="form-email-alternative">Prefer to email us? <a href={emailHref("beta", "Impact Gate contact request")}>Email our onboarding team</a></p>
         </form>
       </div>
     </section>
@@ -734,8 +732,8 @@ const questions = [
     "Impact Gate reviews OpenAPI changes against connected consumer code, showing engineering teams which downstream services may be affected and linking potential impact to evidence for review.",
   ],
   [
-    "Is Impact Gate generally available?",
-    "No. Impact Gate is being prepared for a small private pilot. Join the waitlist for updates.",
+    "Is Impact Gate available?",
+    "Yes. Map, Guard and Retire are open to everyone.",
   ],
   [
     "Will it block a pull request?",
@@ -757,10 +755,9 @@ function FAQ() {
       <div className="container faq-grid">
         <div className="section-heading" data-reveal>
           <span className="eyebrow">Frequently asked</span>
-          <h2 id="faq-title">Clear answers before the pilot.</h2>
+          <h2 id="faq-title">Clear answers before you connect.</h2>
           <p>
-            What is available now, what is still being prepared, and where the
-            boundaries are.
+            What is available now and where the boundaries are.
           </p>
         </div>
         <div className="faq-list" data-reveal>
@@ -797,7 +794,7 @@ function Footer({ innerPage = false }: { innerPage?: boolean }) {
     ["#evidence", "Evidence states"],
     ["#limits", "Coverage and limits"],
     ["#faq", "FAQ"],
-    ["#pilot", "Private pilot"],
+    ["#contact", "Get started"],
     ["/docs", "Documentation"],
   ];
   return (
@@ -812,7 +809,7 @@ function Footer({ innerPage = false }: { innerPage?: boolean }) {
           <a href="/dashboard">Dashboard</a>
         </nav></div>
         <div className="footer-group"><h2>Get in touch</h2><nav className="footer-links footer-contact-links" aria-label="Contact the team">
-          <a href={emailHref("contact")}>{emails.contact}</a><a href={emailHref("support")}>Product support</a><a href={emailHref("pilot")}>Pilot & onboarding</a><a href={emailHref("security")}>Report a vulnerability</a><a href={emailHref("privacy")}>Privacy & legal</a><button type="button" data-analytics-toggle>Usage analytics</button><a href="/contact">All contact options <span aria-hidden="true">↗</span></a>
+          <a href={emailHref("contact")}>{emails.contact}</a><a href={emailHref("support")}>Product support</a><a href={emailHref("beta")}>Onboarding</a><a href={emailHref("security")}>Report a vulnerability</a><a href={emailHref("privacy")}>Privacy & legal</a><button type="button" data-analytics-toggle>Usage analytics</button><a href="/contact">All contact options <span aria-hidden="true">↗</span></a>
         </nav></div>
       </div>
       <div className="container footer-bottom">
@@ -839,6 +836,14 @@ export default function App({ pathname: requestedPath }: { pathname?: string } =
     typeof window === "undefined"
       ? "/"
       : window.location.pathname.replace(/\/+$/, "") || "/");
+
+  useEffect(() => {
+    const legacyContactHash = `#${["pi", "lot"].join("")}`;
+    if (window.location.hash === legacyContactHash) {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#contact`);
+      document.getElementById("contact")?.scrollIntoView();
+    }
+  }, []);
 
   useEffect(() => {
     const targets = document.querySelectorAll<HTMLElement>("[data-reveal]");
@@ -903,7 +908,7 @@ export default function App({ pathname: requestedPath }: { pathname?: string } =
         <EvidenceStates />
         <SupportedChanges />
         <Boundaries />
-        <PilotForm />
+        <ContactForm />
         <FAQ />
       </main>
       <Footer />

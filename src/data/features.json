@@ -1,0 +1,30 @@
+[
+  {
+    "id": "map",
+    "label": "API Flows",
+    "stage": "ga",
+    "routes": ["/dashboard/api-usage", "/dashboard/dependency-graph", "/dashboard/function-usage"],
+    "apiPrefixes": ["/api/v1/workspaces/:workspaceId/discovery", "/api/v1/workspaces/:workspaceId/repositories", "/api/v1/workspaces/:workspaceId/code", "/api/v1/workspaces/:workspaceId/functions"]
+  },
+  {
+    "id": "guard",
+    "label": "PR Impact",
+    "stage": "ga",
+    "routes": ["/demo"],
+    "apiPrefixes": ["/api/v1/workspaces/:workspaceId/pr-impact", "/api/v1/github/webhook"]
+  },
+  {
+    "id": "retire",
+    "label": "Retirement Radar",
+    "stage": "ga",
+    "routes": ["/dashboard/deprecation-candidates"],
+    "apiPrefixes": ["/api/v1/workspaces/:workspaceId/retirement"]
+  },
+  {
+    "id": "runtime_data",
+    "label": "Runtime data",
+    "stage": "ga",
+    "routes": ["/dashboard/settings#runtime-connections"],
+    "apiPrefixes": ["/api/v1/workspaces/:workspaceId/runtime"]
+  }
+]

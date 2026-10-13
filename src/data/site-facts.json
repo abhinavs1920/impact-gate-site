@@ -1,8 +1,8 @@
 {
   "stage": {
-    "status": "in_testing",
-    "label": "Private pilot in preparation",
-    "copy": "Impact Gate is being prepared for a small private pilot."
+    "status": "available",
+    "label": "Open to teams",
+    "copy": "Impact Gate is open. Connect GitHub and review API changes today."
   },
   "warnOnly": {
     "status": "available",
@@ -43,9 +43,9 @@
     }
   },
   "analysis": {
-    "status": "in_testing",
+    "status": "available",
     "label": "API-to-code observability",
-    "copy": "Static analysis maps possible execution paths. Runtime instrumentation measures actual function entries when supported coverage is connected."
+    "copy": "Static analysis plus refinement maps API requests to possible function flows. Connect Prometheus or Datadog to see API request counts and the function calls attributable to each API."
   },
   "model": {
     "status": "planned",

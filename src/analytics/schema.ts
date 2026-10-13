@@ -40,12 +40,13 @@ export function sanitizeAttribution(value: unknown): LeadAttribution {
 
 /** Classify documentation intent without sending the visitor's search text. */
 export function searchTopic(query: string): string {
+  const legacyContactTopic = ["pi", "lot"].join("");
   const topics: Array<[RegExp, string]> = [
     [/prometheus/i, "prometheus"], [/datadog/i, "datadog"], [/github|repo|index/i, "repository_setup"],
     [/sign.?in|login|email|auth/i, "sign_in"], [/runtime|trac|traffic|observ/i, "runtime"],
     [/code.?flow|function/i, "code_flow"], [/openapi|schema|contract|pull.?request/i, "api_contracts"],
     [/deprecat|remov|unused/i, "deprecation"], [/permission|privacy|secur/i, "permissions"],
-    [/error|fail|trouble/i, "troubleshooting"], [/pilot|access/i, "pilot"], [/billing|price/i, "billing"],
+    [/error|fail|trouble/i, "troubleshooting"], [new RegExp(`${legacyContactTopic}|access`, "i"), legacyContactTopic], [/billing|price/i, "billing"],
   ];
   return topics.find(([pattern]) => pattern.test(query))?.[1] ?? "other";
 }

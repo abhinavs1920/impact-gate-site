@@ -86,7 +86,7 @@ export const docPages: DocPage[] = [
         title: "Before you begin",
         blocks: [
           { type: "bullets", items: ["Use a Google account or an email address you can access.", "Use a GitHub account that owns or administers the organization installation.", "Identify a provider repository with a committed OpenAPI 3 document and at least one supported consumer repository.", "Confirm that the Impact Gate GitHub App can access those repositories."] },
-          { type: "callout", tone: "note", title: "Pilot access", text: `Your organization must be enabled for the pilot. Email [${emails.pilot}](${emailHref("pilot")}) if your organization is unavailable during connection. Installing the App alone does not enable a workspace for an unapproved organization.` },
+          { type: "callout", tone: "note", title: "GitHub access", text: `Connect a GitHub account that owns or administers the intended organization installation. [Email our onboarding team](${emailHref("beta")}) if you need help.` },
         ],
       },
       {
@@ -197,7 +197,7 @@ export const docPages: DocPage[] = [
         id: "requirements",
         title: "Requirements",
         blocks: [
-          { type: "bullets", items: ["A signed-in Impact Gate account with a verified email.", "A GitHub account that owns or administers the intended organization installation.", "Approval to install the App and grant access to the intended repositories.", "An organization enabled for this pilot deployment."] },
+          { type: "bullets", items: ["A signed-in Impact Gate account with a verified email.", "A GitHub account that owns or administers the intended organization installation.", "Approval to install the App and grant access to the intended repositories."] },
           { type: "callout", tone: "note", title: "Two access decisions", text: "Installing the App grants repository permissions in GitHub. Connecting the installation verifies your GitHub identity and creates or links a workspace membership. The server checks both before exposing workspace data." },
         ],
       },
@@ -441,7 +441,7 @@ export const docPages: DocPage[] = [
         title: "Find an endpoint",
         blocks: [
           { type: "steps", items: [
-             { title: "Open APIs", text: "Go to [APIs](/dashboard/api-usage). The table lists method and path, provider service, code flow, static callers, runtime traffic, measured functions, and retirement state." },
+             { title: "Open APIs", text: "Go to [APIs](/dashboard/api-usage). The table lists method and path, provider service, code flow, static callers, API request counts, attributed function calls, and retirement state." },
             { title: "Search or filter", text: "Use **Search APIs and services** to find a method, path, or service. Select a service in the filter to narrow the table; choose **Clear** to reset it." },
             { title: "Select the endpoint", text: "Choose its path to open the endpoint detail panel below the table." },
           ] },
@@ -528,7 +528,7 @@ export const docPages: DocPage[] = [
         id: "review-boundary",
         title: "What a candidate means",
         blocks: [
-           { type: "paragraph", text: "[Retirement Radar](/dashboard/deprecation-candidates) collects APIs for evidence review. The evidence state and next action summarize what is known about static callers, runtime coverage, measured function entries, and external usage. An item is a starting point for investigation." },
+           { type: "paragraph", text: "[Retirement Radar](/dashboard/deprecation-candidates) collects APIs for evidence review. The evidence state and next action summarize what is known about static callers, runtime coverage, API request counts, attributed function calls, and external usage. An item is a starting point for investigation." },
            { type: "callout", tone: "warning", title: "Unknown usage is not zero usage", text: "Missing, stale, sampled, or unmapped runtime observations leave usage unknown. No static caller located means none was found in the selected repositories; it does not prove that an API is unused. A review acknowledgment does not approve a production removal." },
            { type: "paragraph", text: "Use **Needs runtime coverage**, **Static callers found**, **Measured usage observed**, and **Unknown external usage** to choose the next evidence step. Review state is independent and tied to the workspace snapshot." },
         ],
@@ -684,7 +684,7 @@ export const docPages: DocPage[] = [
   {
     slug: "permissions-and-data",
     title: "Permissions and data handling",
-    description: "Understand workspace roles, repository scope, usage analytics, pilot requests, and retention controls.",
+    description: "Understand workspace roles, repository scope, usage analytics, contact requests, and retention controls.",
     group: "Reference",
     readingTime: 5,
     sections: [
@@ -735,12 +735,12 @@ export const docPages: DocPage[] = [
       },
       {
         id: "website-analytics",
-        title: "Website usage analytics and pilot requests",
+        title: "Website usage analytics and contact requests",
         blocks: [
           { type: "paragraph", text: "Impact Gate uses Firebase Analytics, backed by Google Analytics, to understand visits, documentation topics, sign-in, setup, and product actions. Usage events include public page paths, action categories, aggregate counts, and campaign labels. Signed-in journeys use an opaque account identifier. Usage events exclude email addresses, names, repository and service names, source code, typed search text, form contents, authorization URLs, and credentials." },
-          { type: "paragraph", text: "Use the Usage analytics button in the website footer or workspace navigation to turn collection off in this browser. Impact Gate also honors Do Not Track and Global Privacy Control. Turning collection off leaves sign-in, the workspace, and the pilot form available; it does not delete events already received by Google." },
-          { type: "paragraph", text: "A submitted pilot request contains your work email, organization or repository, and any context you choose to provide. These details are saved separately in a private lead store for 90 days and emailed to the Impact Gate team for follow-up. With usage analytics enabled, the request also includes campaign labels, the public landing page, and the referring hostname. Analytics receives a random lead reference after the server accepts the request, rather than the request's contents. Email copies have separate mailbox retention." },
-          { type: "links", items: [{ label: "Join the pilot waitlist", href: "/#pilot" }, { label: "Privacy questions or removal requests", href: emailHref("privacy"), description: emails.privacy }] },
+          { type: "paragraph", text: "Use the Usage analytics button in the website footer or workspace navigation to turn collection off in this browser. Impact Gate also honors Do Not Track and Global Privacy Control. Turning collection off leaves sign-in, the workspace, and the contact form available; it does not delete events already received by Google." },
+          { type: "paragraph", text: "A submitted contact request contains your work email, organization or repository, and any context you choose to provide. These details are saved separately in a private lead store for 90 days and emailed to the Impact Gate team for follow-up. With usage analytics enabled, the request also includes campaign labels, the public landing page, and the referring hostname. Analytics receives a random lead reference after the server accepts the request, rather than the request's contents. Email copies have separate mailbox retention." },
+          { type: "links", items: [{ label: "Contact the Impact Gate team", href: "/#contact" }, { label: "Privacy questions or removal requests", href: emailHref("privacy"), description: emails.privacy }] },
         ],
       },
       {
@@ -788,7 +788,7 @@ export const docPages: DocPage[] = [
         blocks: [
           { type: "steps", items: [
             { title: "Check the GitHub account", text: "Authorize the personal GitHub account that owns or administers the organization installation. Verify which account is signed in on github.com." },
-            { title: "Check pilot access", text: "Ask your deployment owner whether this organization is enabled. An App installation for an unapproved organization is unavailable to this deployment." },
+            { title: "Check GitHub access", text: "Confirm that your account owns or administers the organization installation and that the App has access to the intended repositories." },
             { title: "Check installation permissions", text: "In the intended organization's installed GitHub Apps, confirm Impact Gate is installed, active, and granted the relevant repositories. Archived or disabled repositories are not offered for selection." },
             { title: "Reconnect", text: "Use **Manage GitHub connection** or **Manage connection** in Settings and refresh installations. Complete the flow in the same browser before it expires." },
             { title: "Refresh repository selection", text: "Open **Select repositories** again after access changes. Save the intended selection before expecting analysis." },
@@ -846,7 +846,7 @@ export const docPages: DocPage[] = [
         blocks: [
           { type: "bullets", items: ["The affected page URL and intended organization/workspace.", "The repository and PR URL, plus the current head SHA when relevant.", "The visible error, job phase/status, and approximate time with timezone.", "Coverage notes and the indexed commit if an endpoint or caller is missing.", "A cropped screenshot of the affected state when it helps explain the issue."] },
           { type: "paragraph", text: "Keep sign-in links, access tokens, App keys, webhook secrets, and private credentials out of diagnostics. Share private source or repository screenshots only with people who have the corresponding access." },
-          { type: "paragraph", text: `Send product and technical questions to [${emails.support}](${emailHref("support")}). Include the affected page, visible error, and approximate time. For pilot access and onboarding, contact [${emails.pilot}](${emailHref("pilot")}).` },
+          { type: "paragraph", text: `Send product and technical questions to [${emails.support}](${emailHref("support")}). Include the affected page, visible error, and approximate time. For onboarding help, [email our onboarding team](${emailHref("beta")}).` },
         ],
       },
     ],

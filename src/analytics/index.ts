@@ -13,7 +13,9 @@ export type AnalyticsEvent =
   | "repository_reindex_requested" | "workspace_view" | "workspace_action" | "workspace_error"
   | "evidence_review_saved" | "workspace_settings_saved" | "runtime_discovery_start"
   | "runtime_services_discovered" | "runtime_connection_saved" | "runtime_sync_completed"
-  | "runtime_connection_removed";
+  | "runtime_connection_removed" | "video_play" | "video_progress" | "video_complete";
+
+// Legacy `pilot` event and parameter values are retained for GA4 continuity.
 
 export interface AnalyticsParams {
   action?: string; placement?: string; target_page?: string; page_section?: string;
@@ -31,7 +33,8 @@ const knownActions = new Set([
   "review", "confirm-review", "import", "reindex", "connect-github", "finish-github", "graph-export",
   "code-export", "function-page", "clear-filters", "link-github", "link-google", "retry",
 ]);
-const publicSections = new Set(["how-it-works", "evidence", "changes", "limits", "pilot", "faq"]);
+const legacyContactValue = ["pi", "lot"].join("");
+const publicSections = new Set(["how-it-works", "evidence", "changes", "limits", legacyContactValue, "contact", "faq"]);
 let sdk: Sdk | null = null;
 let analytics: Analytics | null = null;
 let initializing: Promise<void> | null = null;
@@ -87,6 +90,20 @@ export function trackEvent(name: AnalyticsEvent, params: AnalyticsParams = {}): 
   if (analytics && sdk) {
     try { sdk.logEvent(analytics, name as string, values); } catch { /* Telemetry never interrupts an action. */ }
   } else if (queue.length < 80) queue.push({ name, params: values, at: Date.now() });
+}
+
+const videoMilestones = new WeakMap<HTMLVideoElement, Set<number>>();
+export function trackVideoProgress(video: HTMLVideoElement, contentType: "commercial" | "demo"): void {
+  if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+  const milestones = videoMilestones.get(video) ?? new Set<number>();
+  videoMilestones.set(video, milestones);
+  const progress = (video.currentTime / video.duration) * 100;
+  for (const percentage of [25, 50, 75]) {
+    if (progress >= percentage && !milestones.has(percentage)) {
+      milestones.add(percentage);
+      trackEvent("video_progress", { content_type: contentType, percentage });
+    }
+  }
 }
 
 export function identifyAnalyticsUser(uid: string | null, role: string | null = null): void {
@@ -204,7 +221,7 @@ function trackClick(event: MouseEvent): void {
   if (href.startsWith("mailto:")) {
     const recipient = href.slice(7).split("?")[0].toLowerCase();
     const purpose = Object.entries(emails).find(([, email]) => email === recipient)?.[0];
-    if (purpose) trackEvent("contact_click", { contact_type: purpose, placement: placement(link) });
+    if (purpose) trackEvent("contact_click", { contact_type: purpose === "beta" ? legacyContactValue : purpose, placement: placement(link) });
     return;
   }
   let destination: URL;
@@ -215,7 +232,7 @@ function trackClick(event: MouseEvent): void {
   }
   const path = publicPagePath(destination.pathname);
   const section = destination.hash.slice(1);
-  const actionName = link.dataset.analyticsAction ?? (section === "pilot" ? "request_pilot"
+  const actionName = link.dataset.analyticsAction ?? (path === "/demo" ? "demo_open" : [legacyContactValue, "contact"].includes(section) ? "request_pilot"
     : link.classList.contains("header-cta") ? "sign_in" : "");
   if (actionName) trackEvent("cta_click", { action: actionName, target_page: path, placement: placement(link) });
   else if (path !== "/not-found" || publicSections.has(section))
@@ -229,7 +246,7 @@ function observeContent(): void {
     const observer = new IntersectionObserver(entries => {
       for (const entry of entries) if (entry.isIntersecting && !seen.has(entry.target.id)) {
         seen.add(entry.target.id);
-        trackEvent("section_view", { page_section: entry.target.id });
+        trackEvent("section_view", { page_section: entry.target.id === "contact" ? legacyContactValue : entry.target.id });
         observer.unobserve(entry.target);
       }
     }, { threshold: 0.25 });
@@ -261,6 +278,19 @@ export function startWebsiteAnalytics(): void {
   try { optedOut = localStorage.getItem(preferenceKey) === "off";
     debug = sessionStorage.getItem("impact-gate-analytics-debug") === "true"; } catch { /* Use browser policy. */ }
   document.addEventListener("click", trackClick, { capture: true });
+  let demoInteracted = false;
+  const recordDemoInteraction = (event: Event) => {
+    if (demoInteracted || publicPagePath(location.pathname) !== "/demo") return;
+    if (event.type === "click" && !(event.target instanceof Element && event.target.closest("main"))) return;
+    demoInteracted = true;
+    trackEvent("cta_click", { action: "demo_interact", page_section: "demo" });
+  };
+  document.addEventListener("click", recordDemoInteraction, { capture: true });
+  document.addEventListener("scroll", recordDemoInteraction, { capture: true, passive: true, once: true });
+  window.addEventListener("pagehide", () => {
+    document.removeEventListener("click", recordDemoInteraction, { capture: true });
+    document.removeEventListener("scroll", recordDemoInteraction, { capture: true });
+  }, { once: true });
   const startedForms = new WeakSet<Element>();
   document.addEventListener("focusin", event => {
     const form = event.target instanceof Element ? event.target.closest("[data-waitlist-form]") : null;

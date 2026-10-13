@@ -32,7 +32,7 @@ Use the captured terminal and Markdown comment as locked assets. Do not ask an i
 
 **GENERATE**
 
-Atmospheric close shot of a dark laptop on a quiet engineering desk, screen turned away or fully blank, with a soft blue accent reflection and a faint ripple-shaped light on the desk surface. Use background `#0d1117`, desk and shadow tones derived from `#161b22`, edge highlights in `#30363d`, and a restrained accent reflection in `#58a6ff`. Lens language: intimate medium shot, 50mm feel, low contrast, slow cinematic falloff, no visible face. Leave a clean negative area for editor-added waitlist copy. No legible on-screen text, no logos of other companies, no visible human faces if a person appears, no invented company names on any screen.
+Atmospheric close shot of a dark laptop on a quiet engineering desk, screen turned away or fully blank, with a soft blue accent reflection and a faint ripple-shaped light on the desk surface. Use background `#0d1117`, desk and shadow tones derived from `#161b22`, edge highlights in `#30363d`, and a restrained accent reflection in `#58a6ff`. Lens language: intimate medium shot, 50mm feel, low contrast, slow cinematic falloff, no visible face. Leave a clean negative area for an editor-added Connect GitHub CTA. No legible on-screen text, no logos of other companies, no visible human faces if a person appears, no invented company names on any screen.
 
 ## Shot six — 0:58–1:00
 

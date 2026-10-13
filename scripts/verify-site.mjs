@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { parseHTML } from "linkedom";
 
 const required = [
   "vite.config.ts",
@@ -44,9 +45,14 @@ const graph = JSON.parse(structuredData[1])["@graph"];
 const faq = graph.find((entry) => entry["@type"] === "FAQPage");
 if (!faq || faq.mainEntity.length !== 5)
   throw new Error("Structured FAQ data does not match the visible FAQ.");
-for (const question of faq.mainEntity) {
-  if (!html.includes(question.name) || !html.includes(question.acceptedAnswer.text))
-    throw new Error(`Structured FAQ is not visible on the page: ${question.name}`);
+const visibleFaqItems = [...parseHTML(html).document.querySelectorAll("details.faq-item")];
+if (visibleFaqItems.length !== faq.mainEntity.length)
+  throw new Error("Visible and structured FAQ counts differ.");
+for (const [index, question] of faq.mainEntity.entries()) {
+  const visibleQuestion = visibleFaqItems[index].querySelector("summary").textContent.replace(/[−+]/g, "").trim();
+  const visibleAnswer = visibleFaqItems[index].querySelector("p").textContent.trim();
+  if (visibleQuestion !== question.name || visibleAnswer !== question.acceptedAnswer.text)
+    throw new Error(`Visible and structured FAQ differ: ${question.name}`);
 }
 const robots = readFileSync("dist/robots.txt", "utf8");
 if (!robots.includes("Allow: /") || !robots.includes("Disallow: /api/"))
@@ -73,7 +79,7 @@ for (const id of [
   "evidence",
   "changes",
   "limits",
-  "pilot",
+  "contact",
   "faq",
 ]) {
   if (!html.includes(`id="${id}"`))
@@ -94,6 +100,40 @@ if (!existsSync(cssPath))
   throw new Error(`Rendered stylesheet not found: ${cssPath}`);
 const css = readFileSync(cssPath, "utf8");
 const assets = readdirSync("dist/assets");
+const htmlFiles = [];
+function collectHtml(directory) {
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) collectHtml(path);
+    else if (path.endsWith(".html")) htmlFiles.push(path);
+  }
+}
+collectHtml("dist");
+for (const path of htmlFiles) {
+  const rendered = readFileSync(path, "utf8");
+  if (/private\s+pilot|shadow\s+pilot|join\s+pilot|in preparation|\bnot\s+(?:production[-\s]+ready|ready\s+for\s+production)\b|\bbeta\b(?!@impactgate\.in)/i.test(rendered))
+    throw new Error(`Restricted launch wording appears in rendered HTML: ${path}`);
+  const document = parseHTML(rendered).document;
+  for (const script of document.querySelectorAll('script[type="application/ld+json"]')) script.remove();
+  const accessibleCopy = [
+    document.body?.textContent ?? "",
+    ...[...document.querySelectorAll("[aria-label], [alt], [title]")]
+      .flatMap((element) => [element.getAttribute("aria-label"), element.getAttribute("alt"), element.getAttribute("title")])
+      .filter(Boolean),
+  ].join(" ");
+  if (/\bbeta\b|\bnot\s+(?:production[-\s]+ready|ready\s+for\s+production)\b/i.test(accessibleCopy))
+    throw new Error(`Restricted launch wording appears in rendered text or accessible labels: ${path}`);
+}
+for (const path of [...htmlFiles, ...assets.map((name) => join("dist/assets", name)).filter((name) => name.endsWith(".js"))]) {
+  const rendered = readFileSync(path, "utf8");
+  for (const match of rendered.matchAll(/pilot/gi)) {
+    const context = rendered.slice(Math.max(0, match.index - 20), match.index + 25);
+    if (!/request_pilot|pilot_request/.test(context))
+      throw new Error(`Unapproved legacy wording appears in built output: ${path}`);
+  }
+}
+if (!html.includes("open to engineering teams"))
+  throw new Error("Open availability metadata is missing from the homepage.");
 const script = html.match(/src="([^"]+\.js)"/)?.[1];
 if (!script) throw new Error("Rendered React bundle is missing.");
 const scriptPath = join("dist", script.replace(/^\/+/, ""));
@@ -106,7 +146,7 @@ for (const id of [
   "evidence",
   "changes",
   "limits",
-  "pilot",
+  "contact",
   "faq",
 ]) {
   if (!js.includes(id))
@@ -115,7 +155,7 @@ for (const id of [
     );
 }
 if (!js.includes("data-waitlist-form"))
-  throw new Error("Waitlist form is missing.");
+  throw new Error("Contact form is missing.");
 if (!css.includes("prefers-reduced-motion"))
   throw new Error("Reduced-motion support is missing.");
 if (!css.includes("max-width:54rem") || !css.includes("max-width:34rem"))

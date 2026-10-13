@@ -30,7 +30,7 @@ export const guidePages: DocPage[] = [
       ] },
       { id: "where-impact-gate-fits", title: "Where Impact Gate fits", blocks: [
         p("Impact Gate compares supported OpenAPI 3 contracts on a pull request, inspects the consumer repositories you selected, and posts an advisory report with source references and coverage notes. It recognizes supported HTTP client patterns in JavaScript, TypeScript, and Java. It does not block merges, and it reports when it cannot reach a conclusion."),
-        note("Private pilot", "Impact Gate is in preparation for a private pilot. Questions: support@impactgate.in."),
+        note("Get started", "Impact Gate is open to teams. Connect GitHub to review API changes. Questions: support@impactgate.in."),
       ] },
     ],
   },
@@ -75,7 +75,7 @@ export const guidePages: DocPage[] = [
         ]),
       ] },
       { id: "where-impact-gate-fits", title: "Where Impact Gate fits", blocks: [
-         p("Retirement Radar combines static callers, imported Prometheus or Datadog evidence, measured function entries when available, and coverage gaps. An owner can record an evidence review for a specific snapshot; a review does not approve a production removal."),
+         p("Retirement Radar combines static callers, Prometheus or Datadog API request counts and attributed function calls, and coverage gaps. An owner can record an evidence review for a specific snapshot; a review does not approve a production removal."),
         note("Unknown usage is not zero usage", "No static caller located means none was found in the selected repositories. Check traffic and outside consumers before you remove anything."),
       ] },
       { id: "faq", title: "Common questions", blocks: [

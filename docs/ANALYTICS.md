@@ -32,9 +32,9 @@ All explicit events include a fixed public page path and `site_area` (`marketing
 | `page_view` | Entry and navigation between documents; `page_path`, `site_area`. |
 | `navigation_click`, `cta_click` | Navigation and calls to action; `action`, `placement`, `target_page`, optional public `page_section`. |
 | `section_view`, `scroll_depth` | Interest in homepage sections and 25/50/75/90% scroll milestones. |
-| `contact_click` | Contact purpose, such as pilot or support; no email address. |
-| `form_start`, `form_submit`, `form_error` | Pilot form engagement, submission attempts, and client validation/network/server failures. Native validation can emit an error for each invalid field. |
-| `generate_lead` | Server accepted a pilot request after saving it or successfully notifying the team; `form_name`, random `lead_id`. Honeypot submissions do not generate leads. |
+| `contact_click` | Contact purpose, such as product or support; no email address. |
+| `form_start`, `form_submit`, `form_error` | Contact form engagement, submission attempts, and client validation/network/server failures. Native validation can emit an error for each invalid field. |
+| `generate_lead` | Server accepted a contact request after saving it or successfully notifying the team; `form_name`, random `lead_id`. Honeypot submissions do not generate leads. |
 | `docs_search`, `docs_search_result`, `docs_code_copy` | Search intent category, query length/result count, chosen guide, and copied code language; no typed search text. |
 | `sign_in_start`, `email_link_requested`, `login`, `sign_up`, `auth_error`, `sign_out` | Authentication steps and outcomes; provider/method and a sanitized error code. `sign_up` requires Firebase to identify a new account. |
 | `setup_started`, `github_connection_start`, `github_connected` | Onboarding and GitHub authorization steps; success follows the authenticated API response. |
@@ -43,28 +43,32 @@ All explicit events include a fixed public page path and `site_area` (`marketing
 | `evidence_review_saved`, `workspace_settings_saved` | Successful review or settings save; reviewed/needs-review category only. |
 | `runtime_discovery_start`, `runtime_services_discovered` | Provider discovery and total/matched/unmatched service counts. |
 | `runtime_connection_saved`, `runtime_sync_completed`, `runtime_connection_removed` | Successful Prometheus/Datadog connection operations; provider and mapped service count. |
+| `video_play`, `video_progress`, `video_complete` | Commercial and product walkthrough video playback; `content_type` and 25/50/75/100 `percentage` milestones. |
+| `cta_click` with `action=demo_open` or `action=demo_interact` | Opening `/demo` or the first click/scroll interaction within the demo page. |
+
+Event names keep legacy 'pilot' wording on purpose, for GA4 continuity. In particular, `pilot_request`, `request_pilot`, and the `pilot` contact/form/section values remain unchanged while the visible labels say Contact or Get started.
 
 `generate_lead`, `login`, and `sign_up` use [Google's recommended event names](https://developers.google.com/analytics/devguides/collection/ga4/reference/events). Workspace success events are emitted after API success. Button attempts are separate `workspace_action` events.
 
-An anonymous visitor is represented by Analytics' pseudonymous browser identity. Signed-in events use the opaque Firebase UID, with `account_state` and an allowed workspace role. This helps understand return visits and setup progression; Analytics does not tell you an anonymous person's name or email address. Contact details come from an actual pilot request.
+An anonymous visitor is represented by Analytics' pseudonymous browser identity. Signed-in events use the opaque Firebase UID, with `account_state` and an allowed workspace role. This helps understand return visits and setup progression; Analytics does not tell you an anonymous person's name or email address. Contact details come from an actual contact request.
 
 Usage events exclude names, email addresses, repository/service names, source code, endpoint paths, free-text notes, raw searches, credentials, authorization URLs, and backend responses. The private lead store contains the contact details needed for follow-up. Do not introduce these fields into future event parameters.
 
-## Campaign attribution and pilot leads
+## Campaign attribution and contact leads
 
 Use public campaign links, for example:
 
 ```text
-https://impactgate.in/?utm_source=linkedin&utm_medium=social&utm_campaign=private_pilot&utm_content=launch_post
+https://impactgate.in/?utm_source=linkedin&utm_medium=social&utm_campaign=open_access&utm_content=launch_post
 ```
 
 Only `utm_source`, `utm_medium`, `utm_campaign`, and `utm_content` labels containing letters, digits, underscores, or hyphens (up to 64 characters) are retained, lowercased. Do not put personal details in campaign labels. Attribution stays in session storage across page navigation. A new labeled campaign replaces the current campaign; the public landing path and referring hostname are saved with an accepted request. The same labels configure Analytics' campaign fields.
 
-The pilot form remains at `/#pilot`; contact details go to `/api/waitlist`. The Worker saves a private receipt before attempting the email notification. A successful response returns a random UUID `leadId`, and the browser sends that reference with `generate_lead`. The reference can connect a conversion event with a lead without sending its email to Analytics.
+The contact form appears on the homepage; contact details go to `/api/waitlist`. The Worker saves a private receipt before attempting the email notification. A successful response returns a random UUID `leadId`, and the browser sends that reference with `generate_lead`. The reference can connect a conversion event with a lead without sending its email to Analytics.
 
 Each `waitlist:<leadId>` record contains the lead ID, UTC receipt time, work email, repository/organization, optional notes, sanitized attribution, and initial notification status. The record expires after 90 days. If a receipt starts as `pending`, its `notificationKey` points to `waitlist-notification:<leadId>`, containing the final `sent` or `failed` status and update time. Separate keys avoid Cloudflare KV's [one-write-per-second limit per key](https://developers.cloudflare.com/kv/platform/limits/). An `unavailable` receipt means no email binding was configured. A missing notification result means delivery was not confirmed by this invocation; the receipt still preserves the lead.
 
-Email notifications continue to `abxh1920@gmail.com` from `pilot@impactgate.in`, with the applicant as reply-to. Notifications include campaign labels and the lead reference. If email delivery fails but the lead was saved, the visitor still receives an accepted response. If both storage and notification fail, the form shows an error. Mailbox copies follow separate mailbox retention.
+Email notifications go to `abxh1920@gmail.com` from `beta@impactgate.in`, with the applicant as reply-to. Notifications include campaign labels and the lead reference. If email delivery fails but the lead was saved, the visitor still receives an accepted response. If both storage and notification fail, the form shows an error. Mailbox copies follow separate mailbox retention.
 
 Retrieve records through Cloudflare's KV dashboard or the signed-in Wrangler CLI:
 
@@ -74,24 +78,25 @@ node node_modules/wrangler/bin/wrangler.js kv key get 'waitlist:<leadId>' --bind
 node node_modules/wrangler/bin/wrangler.js kv key get 'waitlist-notification:<leadId>' --binding WAITLIST --remote --text
 ```
 
-Run these from the site repository. They print private lead details; keep exports within the team handling pilot requests. There is no public lead-list endpoint. KV is eventually consistent, so a newly accepted receipt may take time to appear in another region. KV expiration does not delete email copies or already collected Analytics events.
+Run these from the site repository. They print private lead details; keep exports within the team handling contact requests. There is no public lead-list endpoint. KV is eventually consistent, so a newly accepted receipt may take time to appear in another region. KV expiration does not delete email copies or already collected Analytics events.
 
 ## Configure useful reports once
 
 These account-level report settings require Analytics Editor access. The existing Firebase CLI refresh token lacks the `analytics.edit` OAuth scope, and Analytics Admin API requests return `ACCESS_TOKEN_SCOPE_INSUFFICIENT`. Website collection works without these report settings; they must be set in the Analytics console or with a separately authorized Analytics Admin token.
 
 1. Select property `impact-gate-prod` / `557166280`.
-2. Under **Admin → Data display → Events**, mark `generate_lead` as a key event. Consider `sign_up`, `github_connected`, and `runtime_connection_saved` for activation. Key events count measured visitors; the private lead store is the source for actual submissions, including visitors who opted out.
-3. Under **Admin → Data display → Custom definitions**, add event-scoped dimensions for `site_area`, `action`, `placement`, `page_section`, `provider`, `method`, `error_type`, `search_topic`, and `doc_slug`. Add user-scoped dimensions for `account_state` and `workspace_role`. Optional event-scoped metrics include `repository_count`, `service_count`, `matched_count`, and `unmatched_count` with the Standard unit. Avoid registering the unique `lead_id` or Firebase UID as a custom dimension; they create high cardinality.
+2. Under **Admin → Data display → Events**, mark `generate_lead`, `sign_up`, and `github_connected` as key events. Key events count measured visitors; the private lead store is the source for actual submissions, including visitors who opted out.
+3. Under **Admin → Data display → Custom definitions**, add event-scoped dimensions for `site_area`, `action`, `placement`, `target_page`, `page_section`, `contact_type`, `form_name`, `provider`, `method`, `error_type`, `search_topic`, `doc_slug`, and `content_type`. Add user-scoped dimensions for `account_state` and `workspace_role`. Optional event-scoped metrics include `repository_count`, `service_count`, `matched_count`, and `unmatched_count` with the Standard unit. Avoid registering the unique `lead_id` or Firebase UID as a custom dimension; they create high cardinality.
 4. Under **Explore → Funnel exploration**, create these sequences. Use an open funnel where visitors can enter partway through:
 
 | Funnel | Steps |
 | --- | --- |
-| Pilot interest | `page_view` → `cta_click` with `action=request_pilot` → `form_start` → `form_submit` → `generate_lead`. |
+| Contact interest | `page_view` → `cta_click` with `action=request_pilot` → `form_start` → `form_submit` → `generate_lead`. |
+| Demo engagement | `page_view` on `/demo` → `cta_click` with `action=demo_interact` → video events by `content_type`. |
 | Product activation | `sign_in_start` → `login` or `sign_up` → `setup_started` → `github_connected` → `repository_selection_saved` → `runtime_connection_saved`. |
 | Runtime setup | `runtime_discovery_start` → `runtime_services_discovered` → `runtime_connection_saved` → `runtime_sync_completed`, split by `provider`. |
 
-Compare channels, pages, and device types before changing the site. A large CTA-to-form drop suggests unclear pilot expectations; form errors suggest submission friction; failed authentication or repository setup highlights onboarding problems; unmatched discovery counts indicate naming/mapping friction. Use cohorts and repeated patterns instead of treating a single visitor as evidence.
+Compare channels, pages, and device types before changing the site. A large CTA-to-form drop suggests unclear expectations; form errors suggest submission friction; failed authentication or repository setup highlights onboarding problems; unmatched discovery counts indicate naming/mapping friction. Use cohorts and repeated patterns instead of treating a single visitor as evidence.
 
 ### Keep collection settings aligned with the code
 
@@ -103,7 +108,7 @@ The code disables the default SDK page view, Google signals, enhanced conversion
 
 ## Visitor controls and development
 
-The **Usage analytics: on/off** button appears in the marketing/docs/auth/setup footer and workspace navigation. Its choice persists in local storage for that browser. Global Privacy Control and Do Not Track override the site preference and keep collection off. With collection off, Analytics is not initialized and the Google tag is not requested on a fresh visit, no usage events are queued, and attribution is omitted from pilot submissions. The form and authenticated application still work.
+The **Usage analytics: on/off** button appears in the marketing/docs/auth/setup footer and workspace navigation. Its choice persists in local storage for that browser. Global Privacy Control and Do Not Track override the site preference and keep collection off. With collection off, Analytics is not initialized and the Google tag is not requested on a fresh visit, no usage events are queued, and attribution is omitted from contact submissions. The form and authenticated application still work.
 
 Browsers with unsupported storage or blocked Google scripts skip collection without blocking product actions. Analytics cookies use a 90-day expiry; this is separate from property report retention. Turning collection off does not erase prior reports. Visitor-facing details are in [Permissions and data handling](https://impactgate.in/docs/permissions-and-data#website-analytics).
 
@@ -134,5 +139,5 @@ Build with `pnpm build` and type-check with `pnpm typecheck`. Deploy the built s
 - Build, TypeScript check, and Wrangler deployment dry run completed successfully. The deployment retained the API origin and email binding and added `WAITLIST` KV.
 - Read-only inspection received HTTP 200 for the homepage, privacy guide, sign-in, onboarding, Settings, both published JavaScript bundles, and `/api/v1/config`. The public config still points to `impact-gate-prod`; both bundles contain `G-PDKMBG4FD8`.
 - Firebase Management returned the linked GA4 property `557166280`, stream `15967481167`, and measurement ID `G-PDKMBG4FD8`.
-- No fabricated Analytics events, pilot requests, or email notifications were submitted. Actual visitor-event receipt in Realtime and authenticated conversions have not been exercised during this release. Account-level key-event flags and custom definitions remain the console setup described above.
+- No fabricated Analytics events, contact requests, or email notifications were submitted. Actual visitor-event receipt in Realtime and authenticated conversions have not been exercised during this release. Account-level key-event flags and custom definitions remain the console setup described above.
 - Previous Worker version for rollback: `a6b3620f-48d6-45f6-a942-b7681165fc06`. The Firebase property and KV namespace remain separate resources if the website release is rolled back.

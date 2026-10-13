@@ -10,7 +10,7 @@ Impact Gate is designed to read the contract diff, trace callers in the service 
 
 When the evidence is incomplete, it says so. It does not turn uncertainty into a clean result.
 
-A private pilot is being prepared. Join the waitlist to try it on your own services.
+Impact Gate is open to teams. Connect GitHub and review API changes with evidence and uncertainty visible.
 
 ## Direction
 

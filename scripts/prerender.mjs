@@ -107,7 +107,7 @@ try {
     slugs.add(page.slug);
     routes.push({ pathname: `/docs/${page.slug}`, title: page.title, description: page.description, page });
   }
-  routes.push({ pathname: "/contact", title: "Contact the team", description: "Contact Impact Gate for pilot access, product support, business inquiries, billing, privacy requests, and security disclosures.", contact: true });
+  routes.push({ pathname: "/contact", title: "Contact the team", description: "Contact Impact Gate for product support, onboarding, business inquiries, billing, privacy requests, and security disclosures.", contact: true });
   for (const route of routes) {
     const output = `dist${route.pathname}.html`;
     mkdirSync(dirname(output), { recursive: true });

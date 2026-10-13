@@ -20,7 +20,7 @@ These clips are assembled with real captures where marked. Veo must treat screen
 
 ## Clip five — 0:48–0:58
 
-**Duration:** ten seconds. **Source:** generated text-free desk shot. Use a slow lateral move past the blank laptop and a soft blue ripple reflection. Keep the screen empty so the editor can composite the waitlist CTA exactly. Transition with a clean luminance fade into the gate motif. **Audio:** low room tone only, leaving the CTA clear.
+**Duration:** ten seconds. **Source:** generated text-free desk shot. Use a slow lateral move past the blank laptop and a soft blue ripple reflection. Keep the screen empty so the editor can composite the Connect GitHub CTA exactly. Transition with a clean luminance fade into the gate motif. **Audio:** low room tone only, leaving the CTA clear.
 
 ## Clip six — 0:58–1:00
 
