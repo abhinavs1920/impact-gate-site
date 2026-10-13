@@ -230,6 +230,59 @@ export const runtimeObservabilityDoc: DocPage = {
       ],
     },
     {
+      id: "kubernetes-identity",
+      title: "Connect Kubernetes deployment identity",
+      blocks: [
+        {
+          type: "paragraph",
+          text: "Impact Gate links a GitHub repository to a running workload through build provenance or an explicit reviewed association. Repository, Deployment, Service, Prometheus, and Datadog names can all differ; name similarity alone never confirms identity.",
+        },
+        {
+          type: "steps",
+          items: [
+            {
+              title: "Create namespace-scoped read access",
+              text: "Use a dedicated service account and a RoleBinding only in namespaces you want to inventory. The connector reads Deployment, StatefulSet, DaemonSet, ReplicaSet, Pod owner/image status, and Service metadata. It does not read Secrets, logs, or execute in containers.",
+            },
+            {
+              title: "Connect the cluster in Settings",
+              text: "Choose Connect cluster in the deployment identity panel. Enter an HTTPS API server origin, an environment, up to ten namespaces, and the read-only bearer token. Private API origins must be reachable from the backend and listed exactly in the operator's RUNTIME_ALLOWED_ORIGINS setting.",
+            },
+            {
+              title: "Provide build provenance or review a link",
+              text: "Add the GitHub repository ID, full source commit SHA, and immutable sha256 image digest for a build, or choose Associate repository on a workload. The exact digest join reflects the submitted record; Impact Gate does not verify operator-submitted provenance against signed CI. A running Pod imageID is joined to its Deployment through Kubernetes owner references; tag-only workload images are not treated as immutable digests.",
+            },
+            {
+              title: "Review telemetry names separately",
+              text: "Continue to map Prometheus and Datadog service names to indexed API services in each source connection. Kubernetes Service names and telemetry service names are not automatically treated as equivalent.",
+            },
+          ],
+        },
+        {
+          type: "code",
+          language: "yaml",
+          value: `apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: impact-gate-inventory
+  namespace: payments
+rules:
+  - apiGroups: [apps]
+    resources: [deployments, statefulsets, daemonsets, replicasets]
+    verbs: [get, list]
+  - apiGroups: [""]
+    resources: [pods, services]
+    verbs: [get, list]`,
+        },
+        {
+          type: "callout",
+          tone: "warning",
+          title: "Evidence and freshness",
+          text: "Workload inventory refreshes every 15 minutes. A failed refresh leaves previous workload records marked stale. Conflicting artifact and operator evidence is shown as ambiguous. Runtime route traffic is service-level evidence and does not prove that a particular source call site executed.",
+        },
+      ],
+    },
+    {
       id: "troubleshoot-runtime",
       title: "Resolve connection and coverage problems",
       blocks: [

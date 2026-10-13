@@ -4,7 +4,7 @@ import { WorkspaceApi, WorkspaceApiError } from "./api";
 import { mountCodeFlow, renderCodeFlow, renderFunctionInventory } from "./code-flow";
 import { emailHref } from "../ui/contact";
 import { providerIcon, uiIcon } from "../ui/icons";
-import { runtimeConnectionsPanel, runtimeConnectionForm, runtimeConnectionBody, runtimeEndpointDetails, runtimeServiceReview, runtimeConnectionChanged, updateRuntimeConnectButton } from "./runtime";
+import { runtimeConnectionsPanel, runtimeConnectionForm, runtimeConnectionBody, runtimeEndpointDetails, runtimeServiceReview, runtimeConnectionChanged, updateRuntimeConnectButton, kubernetesConnectionForm, artifactProvenanceForm, workloadLinkForm } from "./runtime";
 import type { RuntimeServiceDiscovery } from "../types/runtime";
 import type { InstallationRepository, SessionResponse, SourceReference, WorkspaceEndpoint, WorkspaceJob, WorkspaceMembership, WorkspaceSettings, WorkspaceSnapshot, WorkspaceOnboardingStatus } from "../types/workspace";
 import cytoscape from "cytoscape";
@@ -302,7 +302,7 @@ function renderEndpointDetailScreen(endpoint: WorkspaceEndpoint): string {
       : evidenceState(candidate, endpoint)
     : { label: "Needs review", tone: "unknown", action: "Review evidence" };
   let content: string;
-  if (endpointTab === "consumers") content = edges.length ? table(["Consumer", "Evidence", "Confidence", "Source evidence"], edges.map(edge => [escape(s.services.find(svc => svc.id === edge.callerServiceId)?.name ?? edge.callerServiceId), badge(edge.evidence), badge(edge.confidence), evidence(edge.references)])) : empty("No known callers", "Static analysis has not identified a caller for this endpoint. This does not prove it is unused.");
+  if (endpointTab === "consumers") content = edges.length ? table(["Consumer", "Evidence", "Confidence", "Runtime correlation", "Source evidence"], edges.map(edge => [escape(s.services.find(svc => svc.id === edge.callerServiceId)?.name ?? edge.callerServiceId), badge(edge.evidence), badge(edge.confidence), edge.runtimeCorrelation === "service_route" ? "Aggregate service/route; not proof of this call site" : edge.evidence === "static" ? "No runtime observation" : "Not recorded", evidence(edge.references)])) : empty("No known callers", "Static analysis has not identified a caller for this endpoint. This does not prove it is unused.");
   else if (endpointTab === "flow") content = renderCodeFlow(s, endpoint);
   else if (endpointTab === "changes") content = findings.length ? findings.map(f => `<div class="ig-card"><strong>${escape(f.changeKind)} · ${escape(f.verdict)}</strong><p>${escape(f.explanation)}</p><a href="${escape(url(f.pullRequestUrl))}" target="_blank" rel="noopener noreferrer">PR #${f.pullRequestNumber} ↗</a>${evidence(f.evidence)}</div>`).join("") : '<p class="ig-note">No analyzed contract changes have been recorded for this endpoint.</p>';
   else if (endpointTab === "retirement") {
@@ -455,7 +455,7 @@ function renderGraph(): string {
   const noServices = s.repositories.length
     ? empty("No services indexed yet", "Check repository indexing and coverage to see what Impact Gate could map.", '<a class="ig-button ig-button-secondary" href="/dashboard/repositories">Check repository coverage</a>')
     : empty("Connect repositories to map your services", "Choose API-owning repositories and the applications that call them to build your dependency view.", '<a class="ig-button" href="/onboarding">Connect repositories</a>');
-  return heading("Dependency graph", "Service relationships are derived from the current workspace evidence.") + `<section class="ig-card">${filters("Search services", [["static", "Static evidence"], ["runtime", "Runtime evidence"], ["both", "Static and runtime evidence"]])}<div class="ig-actions ig-graph-toolbar">${button("graph-fit", "Fit view", "", true)}${button("graph-export", "Export snapshot", "", true)}</div>${s.services.length ? '<div class="ig-connected-graph" role="group" aria-label="Service dependency graph"></div><div class="ig-graph-inspector" data-graph-inspector><p class="ig-note">Select a service to inspect its endpoints and callers. The table below provides keyboard accessible relationship details.</p></div>' : noServices}<p class="ig-note">${s.services.length} services · ${s.edges.length} endpoint relationships</p>${s.edges.length ? table(["Caller", "Target service", "Endpoint", "Evidence", "Confidence"], s.edges.filter(edge => !filter || edge.evidence === filter).map(edge => { const endpoint = s.endpoints.find(e => e.id === edge.endpointId); return [escape(s.services.find(service => service.id === edge.callerServiceId)?.name), escape(s.services.find(service => service.id === endpoint?.serviceId)?.name), `<button data-action="endpoint-dialog" data-id="${escape(edge.endpointId)}"><code>${escape(endpoint?.method)} ${escape(endpoint?.path)}</code></button>`, badge(edge.evidence), badge(edge.confidence)]; })) : '<p class="ig-note">No cross-service callers were found in the current snapshot.</p>'}</section>`;
+  return heading("Dependency graph", "Service relationships combine static code evidence with observed service/route traffic.") + `<section class="ig-card">${filters("Search services", [["static", "Static evidence"], ["runtime", "Runtime evidence"], ["both", "Static and runtime evidence"]])}<div class="ig-actions ig-graph-toolbar">${button("graph-fit", "Fit view", "", true)}${button("graph-export", "Export snapshot", "", true)}</div>${s.services.length ? '<div class="ig-connected-graph" role="group" aria-label="Service dependency graph"></div><div class="ig-graph-inspector" data-graph-inspector><p class="ig-note">Select a service to inspect its endpoints and callers. The table below provides keyboard accessible relationship details.</p></div>' : noServices}<p class="ig-note">${s.services.length} services · ${s.edges.length} endpoint relationships</p>${s.edges.length ? table(["Caller", "Target service", "Endpoint", "Evidence", "Confidence", "Runtime correlation"], s.edges.filter(edge => !filter || edge.evidence === filter).map(edge => { const endpoint = s.endpoints.find(e => e.id === edge.endpointId); return [escape(s.services.find(service => service.id === edge.callerServiceId)?.name), escape(s.services.find(service => service.id === endpoint?.serviceId)?.name), `<button data-action="endpoint-dialog" data-id="${escape(edge.endpointId)}"><code>${escape(endpoint?.method)} ${escape(endpoint?.path)}</code></button>`, badge(edge.evidence), badge(edge.confidence), edge.runtimeCorrelation === "service_route" ? "Aggregate service/route; not proof of this call site" : edge.evidence === "static" ? "No runtime observation" : "Not recorded"]; })) : '<p class="ig-note">No cross-service callers were found in the current snapshot.</p>'}</section>`;
 }
 function graphServiceKind(service: WorkspaceSnapshot["services"][number]): "gateway" | "proxy" | "third-party" | "service" {
   const value = `${service.name} ${service.rootPath}`.toLowerCase();
@@ -930,6 +930,47 @@ document.addEventListener("change", event => {
 });
 document.addEventListener("submit", event => {
   const form = event.target; if (!(form instanceof HTMLFormElement)) return;
+  if (form.matches("[data-artifact-form]")) {
+    event.preventDefault(); if (!form.reportValidity() || !workspace || !canWrite()) return;
+    const fields = new FormData(form);
+    const repositoryId = String(fields.get("repositoryId"));
+    const selected = [...form.querySelectorAll<HTMLOptionElement>("option")].find((option) => option.value === repositoryId);
+    const githubRepositoryId = Number(selected?.dataset.githubId);
+    void mutate(async () => {
+      await api.request(`${route(workspace!.id)}/deployment-identity/artifacts`, { method: "POST", body: {
+        repositoryId, githubRepositoryId, commitSha: fields.get("commitSha"), imageDigest: fields.get("imageDigest"),
+        componentPath: fields.get("componentPath") || null, artifactReference: fields.get("artifactReference") || null,
+      } });
+      $<HTMLDialogElement>(".ig-dialog")?.close(); await refresh(); toast("Build provenance saved.");
+    }); return;
+  }
+  if (form.matches("[data-workload-link-form]")) {
+    event.preventDefault(); if (!form.reportValidity() || !workspace || !canWrite()) return;
+    const fields = new FormData(form);
+    void mutate(async () => {
+      await api.request(`${route(workspace!.id)}/deployment-identity/links`, { method: "POST", body: {
+        repositoryId: fields.get("repositoryId"), clusterId: form.dataset.cluster, namespace: form.dataset.namespace,
+        workloadKind: form.dataset.kind, workloadName: form.dataset.workload, componentPath: fields.get("componentPath") || null,
+        evidence: ["reviewed_operator_association"],
+      } });
+      $<HTMLDialogElement>(".ig-dialog")?.close(); await refresh(); toast("Repository association saved.");
+    }); return;
+  }
+  if (form.matches("[data-kubernetes-form]")) {
+    event.preventDefault(); if (!form.reportValidity() || !workspace || !canWrite()) return;
+    const fields = new FormData(form);
+    const namespaces = String(fields.get("namespaces") ?? "").split(",").map(value => value.trim()).filter(Boolean);
+    const bearerToken = String(fields.get("bearerToken") ?? "");
+    void mutate(async () => {
+      await api.request(`${route(workspace!.id)}/deployment-identity/kubernetes`, { method: "POST", body: {
+        clusterId: fields.get("clusterId"), displayName: fields.get("displayName"), apiServerUrl: fields.get("apiServerUrl"),
+        environment: fields.get("environment"), namespaces, bearerToken,
+      } });
+      form.querySelector<HTMLInputElement>("[name=bearerToken]")!.value = "";
+      $<HTMLDialogElement>(".ig-dialog")?.close(); await refresh(); toast("Kubernetes inventory imported.");
+    });
+    return;
+  }
   if (form.matches("[data-runtime-form]")) {
     event.preventDefault(); if (!form.reportValidity() || !workspace || !canWrite()) return;
     void mutate(async () => {
@@ -989,6 +1030,26 @@ document.addEventListener("click", event => {
   }
   const trigger = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-action]") : null; if (!trigger || trigger instanceof HTMLButtonElement && trigger.disabled) return;
   const action = trigger.dataset.action; const id = trigger.dataset.id;
+  if (action === "kubernetes-connect" && workspace && canWrite()) { modal("Connect Kubernetes", kubernetesConnectionForm()); return; }
+  if (action === "artifact-provenance" && snapshot && canWrite()) { modal("Add build provenance", artifactProvenanceForm(snapshot)); return; }
+  if (action === "workload-associate" && workspace && snapshot && canWrite()) {
+    modal("Associate workload with repository", workloadLinkForm(snapshot, {
+      clusterId: trigger.dataset.cluster ?? "", namespace: trigger.dataset.namespace ?? "",
+      kind: trigger.dataset.kind ?? "", name: trigger.dataset.workload ?? "",
+    })); return;
+  }
+  if (action === "kubernetes-sync" && workspace && canWrite()) {
+    const cluster = trigger.dataset.cluster; if (!cluster) return;
+    void mutate(async () => { await api.request(`${route(workspace!.id)}/deployment-identity/kubernetes/${encodeURIComponent(cluster)}/sync`, { method: "POST" }); await refresh(); }, "Kubernetes inventory refreshed."); return;
+  }
+  if (action === "kubernetes-disconnect" && workspace && canWrite()) {
+    const cluster = trigger.dataset.cluster; if (!cluster) return;
+    modal("Disconnect Kubernetes cluster", `<p>Remove the saved cluster credentials and workload inventory for ${escape(cluster)}?</p>${button("confirm-kubernetes-disconnect", "Disconnect", `data-cluster="${escape(cluster)}"`)}<p data-save-status role="status"></p>`); return;
+  }
+  if (action === "confirm-kubernetes-disconnect" && workspace && canWrite()) {
+    const cluster = trigger.dataset.cluster; if (!cluster) return;
+    void mutate(async () => { await api.request(`${route(workspace!.id)}/deployment-identity/kubernetes/${encodeURIComponent(cluster)}`, { method: "DELETE" }); $<HTMLDialogElement>(".ig-dialog")?.close(); await refresh(); }, "Kubernetes cluster disconnected."); return;
+  }
   if (action === "runtime-apply-suggestions" || action === "runtime-fill-names") {
     const form = trigger.closest<HTMLFormElement>("[data-runtime-form]");
     if (!form || !canWrite() || busy) return;
@@ -1243,7 +1304,7 @@ document.addEventListener("keydown", event => {
   if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
 });
 $(".ig-dialog")?.addEventListener("close", () => {
-  for (const input of document.querySelectorAll<HTMLInputElement>("[data-runtime-form] input[type=password]")) input.value = "";
+  for (const input of document.querySelectorAll<HTMLInputElement>(".ig-dialog input[type=password]")) input.value = "";
   overlayFocus?.focus(); overlayFocus = null;
 });
 

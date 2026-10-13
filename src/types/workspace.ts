@@ -113,6 +113,26 @@ export interface WorkspaceEdge {
   references: SourceReference[];
   callsInWindow: number | null;
   lastObservedAt: string | null;
+  runtimeCorrelation?: "service_route" | "call_site";
+}
+
+export interface KubernetesClusterConfig {
+  clusterId: string; displayName: string; environment: string; namespaces: string[];
+  status?: "connected" | "error"; lastInventoryAt?: string | null; lastError?: string | null;
+}
+export interface KubernetesWorkloadIdentity {
+  clusterId: string; clusterName: string; environment: string; namespace: string;
+  kind: "Deployment" | "StatefulSet" | "DaemonSet"; name: string; uid: string; observedAt: string;
+  images: Array<{name:string; image:string; digest:string|null}>;
+  labels: Record<string,string>; annotations: Record<string,string>; serviceNames: string[];
+  confidence: "confirmed" | "probable" | "ambiguous" | "unmapped"; evidence: string[]; stale: boolean;
+}
+export interface WorkspaceDeploymentIdentity {
+  clusters: KubernetesClusterConfig[]; workloads: KubernetesWorkloadIdentity[];
+  artifacts: Array<{id:string;repositoryId:string;githubRepositoryId:number;commitSha:string;imageDigest:string;componentPath:string|null;artifactReference:string|null;evidenceSource:"operator"|"oci_annotations"|"ci_attestation";observedAt:string;confidence:"confirmed"|"probable"}>;
+  links: Array<{repositoryId:string;clusterId:string;namespace:string;workloadKind:KubernetesWorkloadIdentity["kind"];workloadName:string;componentPath:string|null;confidence:"confirmed"|"probable"|"ambiguous";evidence:string[];updatedAt:string}>;
+  matches: Array<{workloadKey:string;repositoryIds:string[];confidence:"confirmed"|"probable"|"ambiguous"|"unmapped";evidence:string[]}>;
+  telemetryMatches: Array<{provider:"prometheus"|"datadog";telemetryService:string;serviceId:string;repositoryId:string;workloadKey:string;confidence:"confirmed"|"probable"|"ambiguous"|"stale";evidence:string[]}>;
 }
 export interface WorkspaceFinding {
   id: string;
@@ -186,6 +206,7 @@ export interface WorkspaceSnapshot {
   settings: WorkspaceSettings;
   code?: WorkspaceCodeSnapshot;
   runtimeConnections?: RuntimeConnection[];
+  deploymentIdentity?: WorkspaceDeploymentIdentity;
   indexCoverage?: { missingCodeRepositoryIds: string[]; missingCallSiteRepositoryIds: string[] };
 }
 

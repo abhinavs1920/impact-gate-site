@@ -4,6 +4,14 @@
 @media(max-width:900px){.ig-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.ig-detail-grid{grid-template-columns:1fr}.ig-live-heading{flex-wrap:wrap}.ig-workspace-picker{max-width:130px}.ig-connected-graph{height:400px}}
 @media(max-width:640px){.ig-card{padding:16px}.ig-kpi{padding:14px}.ig-kpi strong{font-size:26px}.ig-live-table{display:block}.ig-live-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}.ig-live-table tbody{display:block}.ig-live-table tr{display:block;border-bottom:1px solid var(--ig-border);padding:10px}.ig-live-table td{display:grid;grid-template-columns:100px 1fr;gap:8px;border:0;padding:6px}.ig-live-table td:before{content:attr(data-label);color:var(--ig-secondary);font-size:11px}.ig-workspace-picker{display:none}.ig-mini-bars>div{grid-template-columns:100px 1fr 30px}.ig-repo-option{align-items:flex-start}.ig-choice{gap:12px;flex-wrap:wrap}}
 .ig-runtime-providers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 20px; margin-top: 20px; }
+.ig-deployment-identity { margin: 20px 0; padding: 16px; border: 1px solid var(--ig-border); border-radius: 9px; }
+.ig-deployment-identity > header { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.ig-deployment-identity h3 { margin: 0; font-size: 15px; }
+.ig-deployment-identity header p, .ig-deployment-cluster small, .ig-workload-list small { display: block; margin: 5px 0; color: var(--ig-secondary); font-size: 12px; overflow-wrap: anywhere; }
+.ig-deployment-cluster, .ig-workload-list article { padding: 12px 0; border-top: 1px solid var(--ig-border); }
+.ig-deployment-cluster .ig-actions { margin-top: 8px; }
+.ig-workload-list { max-height: 320px; overflow: auto; }
+.ig-kubernetes-form { display: grid; gap: 14px; }
 .ig-runtime-provider { border: 1px solid var(--ig-border, #dce2ea); border-radius: 10px; padding: 18px; }
 .ig-runtime-provider h3 { margin-top: 0; }
 .ig-form fieldset { border: 1px solid var(--ig-border, #dce2ea); border-radius: 8px; padding: 16px; }

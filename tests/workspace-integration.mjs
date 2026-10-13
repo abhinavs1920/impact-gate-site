@@ -115,7 +115,11 @@ try {
     if (screen === 'home-empty') {
       for (const key of ['repositories','services','endpoints','edges','findings','candidates']) serverSnapshot[key] = [];
     }
+    if (screen === 'settings') serverSnapshot.deploymentIdentity = { clusters: [], workloads: [], artifacts: [], links: [], matches: [], telemetryMatches: [] };
     const runtimeWrites = [];
+    const kubernetesWrites = [];
+    const artifactWrites = [];
+    const workloadLinkWrites = [];
     let rejectRuntimeSave = true;
     const dialog = document.querySelector('.ig-dialog');
     Object.defineProperty(dialog, 'open', {get: () => dialog.hasAttribute('open')});
@@ -126,7 +130,7 @@ try {
     const repoSaves = [];
     const context = { window, document, navigator: { userAgent: 'Node', doNotTrack: null }, MutationObserver: class { observe() {} disconnect() {} takeRecords() { return []; } }, location: { href: `https://impactgate.in/${screen === 'onboarding' ? screen : 'dashboard'}`, origin: 'https://impactgate.in', pathname: '/dashboard', search: '', assign: () => {}, replace: () => {} }, history: { replaceState: () => {} }, sessionStorage: { getItem: () => null, setItem: () => {} }, localStorage: { setItem: () => {} }, URL, URLSearchParams, Blob, Response, Request, Headers, AbortController, DOMException, HTMLInputElement: window.HTMLInputElement, HTMLSelectElement: window.HTMLSelectElement, HTMLFormElement: DOMForm, HTMLButtonElement: window.HTMLButtonElement, HTMLElement: window.HTMLElement, Element: window.Element, FormData: DOMFormData, console,
       setTimeout: (fn, ms) => { const id = setTimeout(fn, ms); timerIds.add(id); return id; }, clearTimeout,
-      fetch: async (endpoint, request = {}) => { requested.push(endpoint); if (endpoint === '/api/v1/config') return Response.json({ firebase: {}, github: { configured: true } }); assert.equal(request.headers.Authorization, 'Bearer mock-token'); if (endpoint === '/api/v1/session') return Response.json({ version: 1, user: { uid: 'u1', email: 'user@example.com', emailVerified: true }, workspaces: [{ id: 'w1', name: 'Customer workspace', role: 'owner', accountLogin: 'impact-gate', installationStatus: 'active' }], capabilities: { externalModels: false, runtimeTelemetry: true } }); if (endpoint.endsWith('/repositories/available')) return Response.json({ repositories: screen === 'onboarding' ? [ { githubRepositoryId: 101, fullName: 'impact-gate/customer-api', defaultBranch: 'main', private: false, language: 'TypeScript', htmlUrl: 'https://github.com/impact-gate/customer-api', selected: true }, { githubRepositoryId: 102, fullName: 'impact-gate/order-service', defaultBranch: 'main', private: false, language: 'Java', htmlUrl: 'https://github.com/impact-gate/order-service', selected: false }, { githubRepositoryId: 103, fullName: 'impact-gate/payment-gateway', defaultBranch: 'main', private: true, language: 'Go', htmlUrl: 'https://github.com/impact-gate/payment-gateway', selected: false } ] : [] }); if (endpoint.endsWith('/repositories') && request.method === 'PUT') { repoSaves.push(JSON.parse(request.body)); return Response.json(serverSnapshot); } if (endpoint.endsWith('/settings') && request.method === 'PATCH') { const change = JSON.parse(request.body); saves.push(change); return rejectSave ? Response.json({ error: { code: 'conflict', message: 'Settings changed. Refresh before saving.' } }, { status: 409 }) : Response.json({ ...source.settings, ...change, version: 2 }); } if (endpoint.includes('/runtime/')) {
+      fetch: async (endpoint, request = {}) => { requested.push(endpoint); if (endpoint === '/api/v1/config') return Response.json({ firebase: {}, github: { configured: true } }); assert.equal(request.headers.Authorization, 'Bearer mock-token'); if (endpoint === '/api/v1/session') return Response.json({ version: 1, user: { uid: 'u1', email: 'user@example.com', emailVerified: true }, workspaces: [{ id: 'w1', name: 'Customer workspace', role: 'owner', accountLogin: 'impact-gate', installationStatus: 'active' }], capabilities: { externalModels: false, runtimeTelemetry: true } }); if (endpoint.endsWith('/repositories/available')) return Response.json({ repositories: screen === 'onboarding' ? [ { githubRepositoryId: 101, fullName: 'impact-gate/customer-api', defaultBranch: 'main', private: false, language: 'TypeScript', htmlUrl: 'https://github.com/impact-gate/customer-api', selected: true }, { githubRepositoryId: 102, fullName: 'impact-gate/order-service', defaultBranch: 'main', private: false, language: 'Java', htmlUrl: 'https://github.com/impact-gate/order-service', selected: false }, { githubRepositoryId: 103, fullName: 'impact-gate/payment-gateway', defaultBranch: 'main', private: true, language: 'Go', htmlUrl: 'https://github.com/impact-gate/payment-gateway', selected: false } ] : [] }); if (endpoint.endsWith('/repositories') && request.method === 'PUT') { repoSaves.push(JSON.parse(request.body)); return Response.json(serverSnapshot); } if (endpoint.endsWith('/settings') && request.method === 'PATCH') { const change = JSON.parse(request.body); saves.push(change); return rejectSave ? Response.json({ error: { code: 'conflict', message: 'Settings changed. Refresh before saving.' } }, { status: 409 }) : Response.json({ ...source.settings, ...change, version: 2 }); } if (endpoint.endsWith('/deployment-identity/kubernetes') && request.method === 'POST') { const body=JSON.parse(request.body);kubernetesWrites.push(body);serverSnapshot.deploymentIdentity.clusters=[{clusterId:body.clusterId,displayName:body.displayName,environment:body.environment,namespaces:body.namespaces,status:'connected',lastInventoryAt:new Date().toISOString(),lastError:null}];serverSnapshot.deploymentIdentity.workloads=[{clusterId:body.clusterId,clusterName:body.displayName,environment:body.environment,namespace:'payments',kind:'Deployment',name:'payments-v2',uid:'workload-1',observedAt:new Date().toISOString(),images:[{name:'api',image:'registry/payments:stable',digest:null}],labels:{},annotations:{},serviceNames:['payment-api'],confidence:'unmapped',evidence:[],stale:false}];serverSnapshot.deploymentIdentity.matches=[{workloadKey:'prod-east/payments/Deployment/payments-v2',repositoryIds:[],confidence:'unmapped',evidence:[]}];return Response.json({workloadCount:1}); } if (endpoint.endsWith('/deployment-identity/artifacts') && request.method === 'POST') { artifactWrites.push(JSON.parse(request.body)); return Response.json({accepted:true}); } if (endpoint.endsWith('/deployment-identity/links') && request.method === 'POST') { workloadLinkWrites.push(JSON.parse(request.body));serverSnapshot.deploymentIdentity.links=[workloadLinkWrites.at(-1)];return Response.json({accepted:true}); } if (endpoint.includes('/runtime/')) {
           if (request.method === 'POST' && endpoint.endsWith('/test')) return Response.json({observationCount:1,matchedEndpointCount:1,unmatchedObservationCount:0,warnings:[]});
           if (request.method === 'POST' && endpoint.endsWith('/discover')) return Response.json({provider:'prometheus',services:[{sourceService:'customer-prod',roles:['provider'],routeCount:1,suggestedServiceId:'s1',confidence:'high',reason:'Matched API routes.',candidates:[{serviceId:'s1',matchedRouteCount:1}]}],observationCount:1,autoMatchedCount:1,suggestedCount:0,unmatchedCount:0,windowStart:source.generatedAt,windowEnd:source.generatedAt,partial:false,warnings:[]});
           if (request.method === 'PUT') {
@@ -143,6 +147,10 @@ try {
     vm.runInNewContext(script, context); await delay(); await delay();
     const content = document.querySelector('main').textContent;
     assert.ok(requested.includes('/api/v1/workspaces/w1/snapshot'), `${screen} loads actual workspace snapshot`);
+    if (screen === 'settings') {
+      assert.match(content, /Kubernetes deployment identity/);
+      assert.match(content, /Connect cluster/);
+    }
     assert.doesNotMatch(content, /Demo workspace|sample records|billing-service|mobile-bff/);
     if (screen.startsWith('home')) {
       assert.equal(document.querySelector('h1').textContent, 'Overview');
@@ -283,6 +291,38 @@ try {
       click(document.querySelector('[data-action=confirm-runtime-disconnect]'));await delay();await delay();
       assert.match(document.querySelector('main').textContent,/Not connected/);
       assert.equal(serverSnapshot.runtimeConnections.length,0);
+
+      click(document.querySelector('[data-action=kubernetes-connect]'));
+      const clusterForm=document.querySelector('[data-kubernetes-form]');clusterForm.reportValidity=()=>true;
+      clusterForm.querySelector('[name=clusterId]').value='prod-east';
+      clusterForm.querySelector('[name=displayName]').value='Production East';
+      clusterForm.querySelector('[name=apiServerUrl]').value='https://kube.example';
+      clusterForm.querySelector('[name=environment]').value='production';
+      clusterForm.querySelector('[name=namespaces]').value='payments,checkout';
+      clusterForm.querySelector('[name=bearerToken]').value='browser-kubernetes-token';
+      clusterForm.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await delay();await delay();
+      assert.deepEqual(kubernetesWrites[0].namespaces,['payments','checkout']);
+      assert.equal(kubernetesWrites[0].bearerToken,'browser-kubernetes-token');
+      assert.equal(clusterForm.querySelector('[name=bearerToken]').value,'','the bearer token is cleared when the connection dialog closes');
+      assert.equal(dialog.open,false);
+      assert.match(document.querySelector('main').textContent,/payments-v2/);
+
+      click(document.querySelector('[data-action=workload-associate]'));
+      const linkForm=document.querySelector('[data-workload-link-form]');linkForm.reportValidity=()=>true;
+      Object.defineProperty(linkForm.querySelector('[name=repositoryId]'),'value',{value:'r1',configurable:true});
+      linkForm.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await delay();await delay();
+      assert.equal(workloadLinkWrites[0].repositoryId,'r1');
+      assert.equal(workloadLinkWrites[0].workloadName,'payments-v2');
+
+      click(document.querySelector('[data-action=artifact-provenance]'));
+      const artifactForm=document.querySelector('[data-artifact-form]');artifactForm.reportValidity=()=>true;
+      Object.defineProperty(artifactForm.querySelector('[name=repositoryId]'),'value',{value:'r1',configurable:true});
+      artifactForm.querySelector('[name=commitSha]').value='a'.repeat(40);
+      artifactForm.querySelector('[name=imageDigest]').value='sha256:'+'b'.repeat(64);
+      artifactForm.dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await delay();await delay();
+      assert.equal(artifactWrites[0].repositoryId,'r1');
+      assert.equal(artifactWrites[0].githubRepositoryId,1);
+      assert.equal(artifactWrites[0].imageDigest,'sha256:'+'b'.repeat(64));
     }
     if (screen === 'onboarding') {
       assert.match(content, /Which API should we map first/);
@@ -322,5 +362,5 @@ try {
     }
     window.dispatchEvent(new window.Event('pagehide')); timerIds.forEach(clearTimeout);
   }
-  console.log('Workspace API refresh/cancellation, proxy boundaries, authenticated screens, settings saves, and runtime test/connect/edit/sync/disconnect flow passed.');
+  console.log('Workspace API and proxy boundaries, authenticated screens, settings, runtime sources, and Kubernetes inventory/provenance/link workflows passed.');
 } finally { globalThis.fetch = originalFetch; await rm(directory, { recursive: true, force: true }); }
