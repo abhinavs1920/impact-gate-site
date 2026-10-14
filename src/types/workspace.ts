@@ -103,6 +103,9 @@ export interface WorkspaceEndpoint {
   source: SourceReference;
   requestSchema: unknown | null;
   responseSchema: unknown | null;
+  serverOrigins?: string[];
+  definitionSource?: "contract" | "code" | "both";
+  implementationSources?: SourceReference[];
 }
 export interface WorkspaceEdge {
   id: string;
@@ -145,6 +148,7 @@ export interface WorkspaceFinding {
   endpoint: string;
   consumerServiceId: string | null;
   consumerName: string;
+  consumerEndpointIds?: string[];
   changeKind: string;
   verdict: string;
   risk: "high" | "medium" | "low" | "none";

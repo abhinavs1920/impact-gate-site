@@ -287,7 +287,7 @@ export const docPages: DocPage[] = [
             ["Partial", "A usable snapshot was saved with coverage limitations.", "Open Coverage and assess missing contracts, unsupported code, or file limits."],
             ["Failed", "Indexing could not finish.", "Read the error, restore access or resolve the cause, then choose Re-index."],
           ] },
-          { type: "paragraph", text: "A consumer repository with no OpenAPI document can be marked partial while still contributing static caller references. A completed background job means the attempt finished; the repository's **Coverage** explains whether its resulting snapshot is partial." },
+          { type: "paragraph", text: "A repository can provide caller evidence and supported implemented routes without OpenAPI. Missing OpenAPI alone does not make an otherwise complete code index partial. A completed background job means the attempt finished; the repository's **Coverage** explains actual extraction gaps." },
         ],
       },
       {
@@ -463,6 +463,19 @@ export const docPages: DocPage[] = [
         ],
       },
       {
+        id: "static-api-dependencies",
+        title: "Follow static API dependencies",
+        blocks: [
+          {type:"steps",items:[
+            {title:"Reindex the selected repositories",text:"Use Re-index in Repositories to pick up additional implemented routes and supported configured HTTP clients. Source indexing does not require Kubernetes, Prometheus or Datadog."},
+            {title:"Open the provider's Code flow",text:"Consumer APIs and call sites lists which consumer APIs can reach the HTTP caller. Follow a consumer API to inspect its helper calls and downstream APIs. Shared functions can belong to multiple API flows."},
+            {title:"Inspect source and conditions",text:"Source references include the indexed commit and call position. Static conditions and input origins shows supported branch predicates and symbolic handler parameter paths. It does not record actual request values or branch executions."},
+            {title:"Review unresolved callers",text:"Static HTTP dependencies below the function inventory includes ambiguous providers and callers with no discovered enclosing API. An empty API list does not establish that the caller is unused or a background task."},
+          ]},
+          {type:"paragraph",text:"Endpoint Overview distinguishes contract definitions, implemented routes, and routes supported by both. Implemented routes missing from OpenAPI remain visible with no inferred schemas. Explicit client URL origins and OpenAPI server origins can disambiguate providers; route-only matches remain possible and require identity review."},
+        ],
+      },
+      {
         id: "interpret-usage",
         title: "Interpret usage and confidence",
         blocks: [
@@ -623,6 +636,7 @@ export const docPages: DocPage[] = [
           { type: "table", headers: ["Input", "Current connected support", "Important boundary"], rows: [
             ["Provider API contracts", "OpenAPI 3 documents in YAML or JSON", "Documents need valid paths and resolvable local references; unsupported constructs leave gaps."],
             ["JavaScript / TypeScript consumers", "Supported HTTP client patterns such as fetch and axios", "Highly dynamic URLs, indirect runtime configuration, or unresolved wrappers may not be mapped."],
+            ["Static API flows", "Supported JS/TS and Java route handlers, function calls, consumer API reachability and downstream HTTP dependencies", "Runtime traffic is optional. Unsupported languages, unresolved dispatch and incomplete source coverage remain explicit gaps."],
             ["Java consumers", "Supported HTTP client patterns, including supported Spring clients", "Framework support depends on recognizable source patterns; arbitrary reflection is not established."],
             ["Service identity", "Repository roots and supported package / Spring / deployment manifests", "Discovery may need review in monorepos or unusual layouts."],
             ["Runtime observations", "Prometheus request counters and Datadog indexed APM spans", "Requires an existing instrumented source, explicit service mapping, and fresh successful imports; missing data leaves usage unknown."],

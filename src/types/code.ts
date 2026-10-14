@@ -100,6 +100,15 @@ export interface WorkspaceOutboundCall {
   path: string;
   source: SourceReference;
   resolution: "matched" | "unresolved" | "ambiguous";
+  functionCallId?: string | null;
+  targetOrigin?: string;
+  matchBasis?: "server_origin" | "route_only";
+  confidence?: "high" | "medium" | "low";
+  consumerEndpointIds?: string[];
+}
+export interface WorkspaceStaticApiDependency extends WorkspaceOutboundCall {
+  id: string;
+  callerServiceId: string;
 }
 
 export interface ApiExecutionTreeNode {
@@ -122,9 +131,23 @@ export interface WorkspaceApiFlow {
   functionIds: string[];
   callIds: string[];
   outboundCalls: WorkspaceOutboundCall[];
+  inboundCalls?: WorkspaceStaticApiDependency[];
   status: "indexed" | "partial" | "entrypoint_not_found";
   notes: string[];
   executionTree?: ApiExecutionTreeNode | null;
+  pathAnalysis?: WorkspaceConditionalAnalysis;
+}
+export interface WorkspaceFlowInputOrigin {
+  entryFunctionId: string;
+  parameterIndex: number;
+  accessPath: string[];
+}
+export interface WorkspaceConditionalAnalysis {
+  version: 1;
+  status: "indexed" | "partial" | "unavailable";
+  notes: string[];
+  callConditions: Array<{callId:string;source:SourceReference;conditions:Array<{predicateId:string;predicate:string;polarity:"true"|"false"|"nullish"|"non_nullish";source:SourceReference;inputOrigins:WorkspaceFlowInputOrigin[]}>}>;
+  valuePaths: Array<{callId:string;argumentIndex:number;source:SourceReference;inputOrigins:WorkspaceFlowInputOrigin[]}>;
 }
 
 export interface WorkspaceCodeSnapshot {
@@ -132,6 +155,7 @@ export interface WorkspaceCodeSnapshot {
   functions: WorkspaceCodeFunction[];
   calls: IndexedFunctionCall[];
   flows: WorkspaceApiFlow[];
+  apiDependencies?: WorkspaceStaticApiDependency[];
   /** Older repository snapshots must be reindexed to populate code evidence. */
   missingRepositoryIds: string[];
   partial: boolean;
