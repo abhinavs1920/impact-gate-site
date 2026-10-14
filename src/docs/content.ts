@@ -441,7 +441,7 @@ export const docPages: DocPage[] = [
         title: "Find an endpoint",
         blocks: [
           { type: "steps", items: [
-             { title: "Open APIs", text: "Go to [APIs](/dashboard/api-usage). The table lists method and path, provider service, code flow, static callers, API request counts, attributed function calls, and retirement state." },
+             { title: "Open APIs", text: "Go to [APIs](/dashboard/api-usage). The table lists method and path, service, inferred route type, handler and source location, static callers, API request counts, attributed function calls, and retirement state." },
             { title: "Search or filter", text: "Use **Search APIs and services** to find a method, path, or service. Select a service in the filter to narrow the table; choose **Clear** to reset it." },
             { title: "Select the endpoint", text: "Choose its path to open the endpoint detail panel below the table." },
           ] },
@@ -459,6 +459,7 @@ export const docPages: DocPage[] = [
              ["Retirement evidence", "Static callers, runtime status, measured function usage, review state, and next action.", "Keep missing data explicit while planning a removal."],
           ] },
           { type: "paragraph", text: "A source reference includes a file, line, and commit SHA. GitHub opens the recorded commit rather than the latest branch, so the evidence remains tied to the snapshot or analysis that produced it." },
+          { type: "paragraph", text: "Route types such as UI/demo, system, and webhook are inferred from source paths and route patterns. They help separate likely interface and operational routes from application routes; they do not prove deployment or production use. Choose a handler to open its reachable function flow and call sites." },
           { type: "paragraph", text: "The displayed request and response schemas are extracted from supported documents. Complex or unsupported schema constructs can leave analysis incomplete. Review the repository's Coverage notes when an expected schema or endpoint is missing." },
         ],
       },
@@ -503,7 +504,7 @@ export const docPages: DocPage[] = [
         title: "Read the graph",
         blocks: [
           { type: "paragraph", text: "Open [Dependency graph](/dashboard/dependency-graph). Each node represents a discovered service. A directed arrow goes from a caller service toward the provider service for a detected endpoint relationship." },
-          { type: "paragraph", text: "The graph reflects the current workspace snapshot. Multiple endpoint relationships can connect the same pair of services. The service and relationship totals describe recorded evidence, not the complete deployed topology." },
+          { type: "paragraph", text: "The graph reflects the current workspace snapshot. One arrow represents each caller/provider service pair and shows how many API relationships connect them. Select that arrow to zoom in and expand it into one arrow per API relationship. Select an API arrow to inspect its evidence or open that endpoint's code flow; choose **Back to service view** to collapse it again." },
           { type: "callout", tone: "note", title: "Static relationships need context", text: "The current deployment derives relationships from supported code references and unique endpoint paths. Host association is unverified, so inspect the reference before treating a graph edge as an established production dependency." },
         ],
       },
@@ -513,6 +514,7 @@ export const docPages: DocPage[] = [
         blocks: [
           { type: "steps", items: [
             { title: "Find a service", text: "Use **Search services** to narrow the graph. The evidence filter offers static, runtime, or combined evidence; runtime filters can be empty on this deployment." },
+            { title: "Expand a service arrow", text: "Select an arrow between services to zoom in and show its API-level arrows. Select an API arrow to see its source evidence and open the API flow. Choose **Back to service view** to collapse the relationship." },
             { title: "Select a node", text: "Select a service to inspect its root path, criticality, endpoints, and static caller counts. Select an endpoint in the inspector to open its source evidence." },
             { title: "Read the relationships table", text: "Use the table below the graph for caller, target service, endpoint, evidence type, and confidence. It also provides keyboard-accessible relationship details." },
             { title: "Reset the view", text: "Choose **Fit view** to bring graph nodes into view. Use **Clear** to reset search and evidence filters." },

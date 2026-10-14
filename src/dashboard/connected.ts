@@ -57,6 +57,7 @@ const reindexErrors = new Map<string, string>();
 const initialTab = new URL(location.href).searchParams.get("tab");
 let endpointTab = ["overview", "flow", "consumers", "changes", "retirement"].includes(initialTab ?? "") ? initialTab! : "overview";
 let graph: cytoscape.Core | null = null;
+let expandedServicePair: string | null = null;
 let codeGraph: cytoscape.Core | null = null;
 let poll: ReturnType<typeof setTimeout> | undefined;
 let busy = false;
@@ -375,14 +376,19 @@ function renderEndpoints(): string {
     filters("Search APIs and services", s.services.map(service => [service.id, service.name])) +
     (endpoints.length
       ? table(
-          ["Method / path", "Service", "Code flow", "Static callers", "API requests", "Attributed function calls", "Open findings", "Retirement state"],
+          ["Method / path", "Service", "Route type", "Handler / flow", "Static callers", "API requests", "Attributed function calls", "Open findings", "Retirement state"],
           endpoints.map(e => {
             const candidate = s.candidates.find(item => item.endpointId === e.id);
             const state = candidate ? evidenceState(candidate, e) : { label: "Needs review", tone: "unknown" };
+            const routeType = endpointRouteType(e);
+            const implementation = e.implementationSources?.[0] ?? (e.definitionSource === "code" ? e.source : null);
             return [
               `<button type="button" class="ig-endpoint-btn" data-action="endpoint" data-id="${escape(e.id)}"><code><span class="ig-method-badge ig-method-${e.method.toLowerCase()}">${escape(e.method)}</span> ${escape(e.path)}</code></button>`,
               escape(s.services.find(service => service.id === e.serviceId)?.name),
-              `<button type="button" class="ig-endpoint-btn" data-action="endpoint" data-id="${escape(e.id)}" data-tab="flow">${e.source.functionName ? escape(e.source.functionName) : "Mapped flow"}</button>`,
+              `${productBadge(routeType.label, routeType.tone)}<p class="ig-note">${escape(routeType.reason)}</p>`,
+              implementation
+                ? `<button type="button" class="ig-endpoint-btn" data-action="endpoint" data-id="${escape(e.id)}" data-tab="flow"><strong>${escape(implementation.functionName ?? "Open code flow")}</strong></button><p class="ig-note">${escape(implementation.filePath)}:${implementation.line}</p>`
+                : `<span class="ig-note">${e.definitionSource === "contract" ? "No implementation matched" : "Handler not mapped"}</span>`,
               String(e.staticCallerCount),
               escape(coverage(e)),
               e.measuredFunctionEntriesInWindow == null ? productBadge("Unknown", "unknown") : productBadge(e.measuredFunctionEntriesInWindow.toLocaleString(), "measured"),
@@ -392,7 +398,20 @@ function renderEndpoints(): string {
           })
         )
       : noResults) +
+    `<p class="ig-note">Route type is inferred from source and route metadata. It does not confirm that the route is deployed or currently used.</p>` +
     `</section>`;
+}
+
+function endpointRouteType(endpoint: WorkspaceEndpoint): { label: string; tone: "mapped" | "possible" | "unknown"; reason: string } {
+  const file = (endpoint.implementationSources?.[0]?.filePath ?? endpoint.source.filePath).replaceAll("\\", "/").toLowerCase();
+  const route = endpoint.path.toLowerCase();
+  if (/(^|\/)(?:scripts\/)?ui(?:\.[^/]+)?$/.test(file) || /(^|\/)(?:frontend|ui|demo)(\/|[-_.])/.test(file))
+    return { label: "UI / demo", tone: "possible", reason: "Route is defined in a UI or demo source file." };
+  if (/^\/(?:api\/)?(?:healthz|readyz|health|livez|metrics)(?:\/|$)/.test(route))
+    return { label: "System", tone: "unknown", reason: "Health or operational route." };
+  if (/^\/webhooks?(?:\/|$)/.test(route))
+    return { label: "Webhook", tone: "unknown", reason: "Inbound integration route." };
+  return { label: "API route", tone: "mapped", reason: "Application route; inspect the handler flow for behavior." };
 }
 function renderCandidates(): string {
   const s = snapshot!;
@@ -452,10 +471,14 @@ function renderSettings(): string {
 }
 function renderGraph(): string {
   const s = snapshot!;
+  const servicePairCount = new Set(s.edges.flatMap(edge => {
+    const target = s.endpoints.find(endpoint => endpoint.id === edge.endpointId)?.serviceId;
+    return target && target !== edge.callerServiceId ? [`${edge.callerServiceId}:${target}`] : [];
+  })).size;
   const noServices = s.repositories.length
     ? empty("No services indexed yet", "Check repository indexing and coverage to see what Impact Gate could map.", '<a class="ig-button ig-button-secondary" href="/dashboard/repositories">Check repository coverage</a>')
     : empty("Connect repositories to map your services", "Choose API-owning repositories and the applications that call them to build your dependency view.", '<a class="ig-button" href="/onboarding">Connect repositories</a>');
-  return heading("Dependency graph", "Service relationships combine static code evidence with observed service/route traffic.") + `<section class="ig-card">${filters("Search services", [["static", "Static evidence"], ["runtime", "Runtime evidence"], ["both", "Static and runtime evidence"]])}<div class="ig-actions ig-graph-toolbar">${button("graph-fit", "Fit view", "", true)}${button("graph-export", "Export snapshot", "", true)}</div>${s.services.length ? '<div class="ig-connected-graph" role="group" aria-label="Service dependency graph"></div><div class="ig-graph-inspector" data-graph-inspector><p class="ig-note">Select a service to inspect its endpoints and callers. The table below provides keyboard accessible relationship details.</p></div>' : noServices}<p class="ig-note">${s.services.length} services · ${s.edges.length} endpoint relationships</p>${s.edges.length ? table(["Caller", "Target service", "Endpoint", "Evidence", "Confidence", "Runtime correlation"], s.edges.filter(edge => !filter || edge.evidence === filter).map(edge => { const endpoint = s.endpoints.find(e => e.id === edge.endpointId); return [escape(s.services.find(service => service.id === edge.callerServiceId)?.name), escape(s.services.find(service => service.id === endpoint?.serviceId)?.name), `<button data-action="endpoint-dialog" data-id="${escape(edge.endpointId)}"><code>${escape(endpoint?.method)} ${escape(endpoint?.path)}</code></button>`, badge(edge.evidence), badge(edge.confidence), edge.runtimeCorrelation === "service_route" ? "Aggregate service/route; not proof of this call site" : edge.evidence === "static" ? "No runtime observation" : "Not recorded"]; })) : '<p class="ig-note">No cross-service callers were found in the current snapshot.</p>'}</section>`;
+  return heading("Dependency graph", "Each arrow starts as a service dependency. Select it to expand the API relationships and zoom in.") + `<section class="ig-card">${filters("Search services", [["static", "Static evidence"], ["runtime", "Runtime evidence"], ["both", "Static and runtime evidence"]])}<div class="ig-actions ig-graph-toolbar">${button("graph-fit", "Fit view", "", true)}${button("graph-export", "Export snapshot", "", true)}</div>${s.services.length ? '<div class="ig-connected-graph" role="group" aria-label="Service dependency graph"></div><div class="ig-graph-inspector" data-graph-inspector><p class="ig-note">Click a service arrow to expand it into API-level arrows. The table below provides keyboard accessible relationship details.</p></div>' : noServices}<p class="ig-note">${s.services.length} services · ${servicePairCount} service dependencies · ${s.edges.length} API relationships</p>${s.edges.length ? table(["Caller", "Target service", "Endpoint", "Evidence", "Confidence", "Runtime correlation"], s.edges.filter(edge => !filter || edge.evidence === filter).map(edge => { const endpoint = s.endpoints.find(e => e.id === edge.endpointId); return [escape(s.services.find(service => service.id === edge.callerServiceId)?.name), escape(s.services.find(service => service.id === endpoint?.serviceId)?.name), `<button data-action="endpoint-dialog" data-id="${escape(edge.endpointId)}"><code>${escape(endpoint?.method)} ${escape(endpoint?.path)}</code></button>`, badge(edge.evidence), badge(edge.confidence), edge.runtimeCorrelation === "service_route" ? "Aggregate service/route; not proof of this call site" : edge.evidence === "static" ? "No runtime observation" : "Not recorded"]; })) : '<p class="ig-note">No cross-service callers were found in the current snapshot.</p>'}</section>`;
 }
 function graphServiceKind(service: WorkspaceSnapshot["services"][number]): "gateway" | "proxy" | "third-party" | "service" {
   const value = `${service.name} ${service.rootPath}`.toLowerCase();
@@ -470,16 +493,42 @@ function renderFunctionUsage(): string {
 function mountGraph(): void {
   const container = $(".ig-connected-graph"); if (!container || !snapshot) return;
   const s = snapshot;
+  expandedServicePair = null;
   const services = s.services.filter(service => service.name.toLowerCase().includes(query.toLowerCase()));
   const ids = new Set(services.map(service => service.id));
   container.insertAdjacentHTML("beforebegin", '<div class="ig-graph-legend" aria-label="Dependency graph legend"><span><i class="ig-graph-mark ig-graph-mark-gateway">⬢</i>Gateway</span><span><i class="ig-graph-mark ig-graph-mark-proxy">◇</i>Proxy</span><span><i class="ig-graph-mark ig-graph-mark-third-party">●</i>Third-party</span><span><i class="ig-graph-mark ig-graph-mark-service">◆</i>Service</span></div>');
   const theme = document.documentElement.dataset.theme === "dark";
-  const elements = [
+  type GraphApiRelation = { edge: WorkspaceSnapshot["edges"][number]; endpoint: WorkspaceEndpoint };
+  type GraphServicePair = { key: string; source: string; target: string; relations: GraphApiRelation[] };
+  const pairMap = new Map<string, GraphServicePair>();
+  for (const edge of s.edges) {
+    const endpoint = s.endpoints.find(item => item.id === edge.endpointId);
+    const target = endpoint?.serviceId;
+    if (!endpoint || !target || target === edge.callerServiceId || !ids.has(target) || !ids.has(edge.callerServiceId) || (filter && edge.evidence !== filter)) continue;
+    const key = `${edge.callerServiceId}\u0000${target}`;
+    const pair = pairMap.get(key) ?? { key, source: edge.callerServiceId, target, relations: [] };
+    pair.relations.push({ edge, endpoint });
+    pairMap.set(key, pair);
+  }
+  const pairs = [...pairMap.values()];
+  const graphEdges = (expandedKey: string | null): cytoscape.ElementDefinition[] => pairs.flatMap<cytoscape.ElementDefinition>(pair => {
+    if (pair.key === expandedKey) return pair.relations.map(({ edge, endpoint }) => ({ data: {
+      id: `api:${edge.id}`, kind: "api", source: pair.source, target: pair.target,
+      endpointId: endpoint.id, relationshipId: edge.id, label: `${endpoint.method} ${endpoint.path}`,
+      evidence: edge.evidence, confidence: edge.confidence,
+    } }));
+    const evidenceTypes = [...new Set(pair.relations.map(relation => relation.edge.evidence))];
+    const evidenceType = evidenceTypes.length === 1 ? evidenceTypes[0]! : "mixed";
+    return [{ data: {
+      id: `service:${pair.source}:${pair.target}`, kind: "service-dependency", pairKey: pair.key,
+      source: pair.source, target: pair.target,
+      label: `${pair.relations.length} ${pair.relations.length === 1 ? "API" : "APIs"}`,
+      evidence: evidenceType, apiCount: pair.relations.length,
+    } }];
+  });
+  const elements: cytoscape.ElementDefinition[] = [
     ...services.map(service => { const kind = graphServiceKind(service); const mark = kind === "gateway" ? "⬢" : kind === "proxy" ? "◇" : kind === "third-party" ? "●" : "◆"; return { data: { id: service.id, label: `${mark} ${service.name}`, kind } }; }),
-    ...s.edges.filter(edge => {
-      const target = s.endpoints.find(e => e.id === edge.endpointId)?.serviceId;
-      return target && target !== edge.callerServiceId && ids.has(target) && ids.has(edge.callerServiceId) && (!filter || edge.evidence === filter);
-    }).map(edge => ({ data: { id: edge.id, source: edge.callerServiceId, target: s.endpoints.find(e => e.id === edge.endpointId)!.serviceId, label: edge.evidence, evidence: edge.evidence } })),
+    ...graphEdges(null),
   ];
   graph = cytoscape({ container, elements, layout: { name: "cose", animate: false, fit: true, padding: 48, nodeRepulsion: 7000, idealEdgeLength: 150, componentSpacing: 120, nodeOverlap: 24 }, minZoom: 0.2, maxZoom: 2.5,
     style: [
@@ -487,11 +536,43 @@ function mountGraph(): void {
       { selector: 'node[kind = "gateway"]', style: { "background-color": theme ? "#193b4a" : "#d9f4f1", "border-color": theme ? "#58c7c0" : "#238a84", shape: "hexagon" } },
       { selector: 'node[kind = "proxy"]', style: { "background-color": theme ? "#302b4c" : "#eee8ff", "border-color": theme ? "#b89cf4" : "#7654b8", shape: "diamond" } },
       { selector: 'node[kind = "third-party"]', style: { "background-color": theme ? "#49351d" : "#fff1cf", "border-color": theme ? "#efc66f" : "#c88b19", shape: "ellipse" } },
-      { selector: "edge", style: { width: 2, "line-color": theme ? "#64748b" : "#8896a6", "target-arrow-color": theme ? "#64748b" : "#8896a6", "target-arrow-shape": "triangle", "curve-style": "bezier", "control-point-step-size": 55, "arrow-scale": 1.1 } },
+      { selector: "edge", style: { width: 2, "line-color": theme ? "#64748b" : "#8896a6", "target-arrow-color": theme ? "#64748b" : "#8896a6", "target-arrow-shape": "triangle", "curve-style": "bezier", "control-point-step-size": 55, "arrow-scale": 1.1, label: "data(label)", "font-size": 10, "font-family": "Hanken Grotesk", color: theme ? "#e8edf4" : "#191c1e", "text-background-color": theme ? "#171a2b" : "#ffffff", "text-background-opacity": 0.92, "text-background-padding": "3px", "text-wrap": "wrap", "text-max-width": "150px", "overlay-opacity": 0 } },
+      { selector: 'edge[kind = "service-dependency"]', style: { width: 3, "font-size": 11, "font-weight": 700, "arrow-scale": 1.35 } },
+      { selector: 'edge[kind = "api"]', style: { width: 2, "text-rotation": "autorotate", "control-point-step-size": 40 } },
       { selector: 'edge[evidence = "both"]', style: { "line-color": theme ? "#70c99a" : "#26825d", "target-arrow-color": theme ? "#70c99a" : "#26825d" } },
       { selector: 'edge[evidence = "runtime"]', style: { "line-color": theme ? "#efc66f" : "#c88b19", "target-arrow-color": theme ? "#efc66f" : "#c88b19", "line-style": "dashed" } },
+      { selector: 'edge[evidence = "mixed"]', style: { "line-color": theme ? "#a6adba" : "#596579", "target-arrow-color": theme ? "#a6adba" : "#596579" } },
     ] });
-  graph.on("tap", "node", event => { const service = s.services.find(item => item.id === event.target.id()); const inspector = $("[data-graph-inspector]"); if (!service || !inspector) return; inspector.innerHTML = `<h2>${escape(service.name)}</h2><p class="ig-note">${escape(service.rootPath)} · ${escape(service.criticality)} criticality</p>${table(["Method", "Endpoint", "Static callers"], s.endpoints.filter(e => e.serviceId === service.id).map(e => [escape(e.method), `<button data-action="endpoint-dialog" data-id="${escape(e.id)}">${escape(e.path)}</button>`, String(e.staticCallerCount)]))}`; });
+  const inspector = $("[data-graph-inspector]");
+  const showServicePair = (pair: GraphServicePair) => {
+    if (!graph || !inspector) return;
+    expandedServicePair = pair.key;
+    graph.batch(() => { graph!.edges().remove(); graph!.add(graphEdges(expandedServicePair)); });
+    const focus = graph.nodes().filter(node => node.id() === pair.source || node.id() === pair.target);
+    graph.center(focus);
+    graph.zoom({ level: Math.min(graph.maxZoom(), Math.max(1.25, graph.zoom() * 1.5)), renderedPosition: { x: graph.width() / 2, y: graph.height() / 2 } });
+    const caller = s.services.find(item => item.id === pair.source);
+    const target = s.services.find(item => item.id === pair.target);
+    inspector.innerHTML = `<div class="ig-graph-inspector-heading"><div><h2>${escape(caller?.name ?? "Unknown service")} → ${escape(target?.name ?? "Unknown service")}</h2><p class="ig-note">Expanded to ${pair.relations.length} API relationship${pair.relations.length === 1 ? "" : "s"}. Each arrow is a separate endpoint relationship.</p></div>${button("graph-collapse", "Back to service view", "", true)}</div>${table(["API", "Evidence", "Confidence"], pair.relations.map(({ edge, endpoint }) => [`<button data-action="endpoint" data-id="${escape(endpoint.id)}" data-tab="flow"><code>${escape(endpoint.method)} ${escape(endpoint.path)}</code></button>`, badge(edge.evidence), badge(edge.confidence)]))}`;
+  };
+  graph.on("tap", "edge", event => {
+    if (!graph || !inspector) return;
+    const data = event.target.data();
+    if (data.kind === "service-dependency") {
+      const pair = pairs.find(item => item.key === data.pairKey);
+      if (pair) showServicePair(pair);
+      return;
+    }
+    if (data.kind === "api") {
+      const relation = s.edges.find(item => item.id === data.relationshipId);
+      const endpoint = s.endpoints.find(item => item.id === data.endpointId);
+      const caller = s.services.find(item => item.id === data.source);
+      const target = endpoint && s.services.find(item => item.id === endpoint.serviceId);
+      if (!relation || !endpoint) return;
+      inspector.innerHTML = `<div class="ig-graph-inspector-heading"><div><h2>${escape(endpoint.method)} ${escape(endpoint.path)}</h2><p class="ig-note">${escape(caller?.name ?? "Unknown caller")} → ${escape(target?.name ?? "Unknown service")} · ${escape(relation.evidence)} evidence · ${escape(relation.confidence)} confidence</p></div>${button("graph-collapse", "Back to service view", "", true)}</div>${evidence(relation.references)}<button type="button" class="ig-button ig-button-secondary" data-action="endpoint" data-id="${escape(endpoint.id)}" data-tab="flow">Open API flow</button>`;
+    }
+  });
+  graph.on("tap", "node", event => { const service = s.services.find(item => item.id === event.target.id()); if (!service || !inspector) return; inspector.innerHTML = `<h2>${escape(service.name)}</h2><p class="ig-note">${escape(service.rootPath)} · ${escape(service.criticality)} criticality</p>${table(["Method", "Endpoint", "Static callers"], s.endpoints.filter(e => e.serviceId === service.id).map(e => [escape(e.method), `<button data-action="endpoint-dialog" data-id="${escape(e.id)}">${escape(e.path)}</button>`, String(e.staticCallerCount)]))}`; });
 }
 function focusEndpointScreen(): void {
   try {
@@ -1262,6 +1343,7 @@ document.addEventListener("click", event => {
     return;
   }
   if (action === "endpoint-dialog" && id) { const endpoint = snapshot?.endpoints.find(e => e.id === id); if (endpoint) modal(`${endpoint.method} ${endpoint.path}`, evidence([endpoint.source,...(endpoint.implementationSources ?? [])]) + `<p>${endpoint.staticCallerCount} static callers · ${escape(coverage(endpoint))}</p><button type="button" class="ig-button ig-button-secondary" data-action="endpoint" data-id="${escape(endpoint.id)}">Inspect API and code flow</button>`); return; }
+  if (action === "graph-collapse" && page === "dependency-graph") { expandedServicePair = null; render(); return; }
   if (action === "finding" && id) { const finding = snapshot?.findings.find(f => f.id === id); if (finding) modal(finding.endpoint, `<p>${badge(finding.risk, "risk")} ${escape(finding.verdict)}</p><p>${escape(finding.explanation)}</p><p><a href="${escape(url(finding.pullRequestUrl))}" target="_blank" rel="noopener noreferrer">Open pull request #${finding.pullRequestNumber} ↗</a></p>${finding.consumerEndpointIds ? `<h3>Possible affected consumer APIs</h3>${renderConsumerApiLinks(snapshot!,finding.consumerEndpointIds)}` : ""}${evidence(finding.evidence)}`); return; }
   if (action === "repository" && id) { const repository = snapshot?.repositories.find(r => r.id === id); if (repository) modal(repository.fullName, `<p>${badge(repository.status)} · ${escape(repository.defaultBranch)}</p><p>${repository.coverage.supportedFiles} supported files · ${repository.coverage.skippedFiles} skipped files · ${repository.coverage.openApiDocuments} OpenAPI documents</p><ul>${repository.coverage.notes.map(note => `<li>${escape(note)}</li>`).join("")}</ul>${repository.error ? `<p>${escape(repository.error)}</p>` : ""}<p class="ig-note">Indexed commit ${escape(repository.indexedSha ?? "not indexed")}</p>`); return; }
   if (action === "candidate" && id) { const candidate = snapshot?.candidates.find(c => c.endpointId === id); const endpoint = snapshot?.endpoints.find(e => e.id === id); if (candidate && endpoint) modal(`${endpoint.method} ${endpoint.path}`, `<p>${escape(candidate.reason)}</p><p>${candidate.staticCallerCount} static callers · ${escape(coverage(endpoint))}</p><p class="ig-note">Reviewing records your evidence review for this snapshot. Plan removals with your team and check unobserved consumers.</p>${evidence([endpoint.source, ...snapshot!.edges.filter(e => e.endpointId === id).flatMap(e => e.references)])}${button("confirm-review", candidate.reviewedAt && candidate.reviewedSnapshotId === snapshot?.snapshotId ? "Mark needs review" : "Mark reviewed for this snapshot", `data-id="${escape(id)}" data-reviewed="${!(candidate.reviewedAt && candidate.reviewedSnapshotId === snapshot?.snapshotId)}" ${writeDisabled()}`)}<p data-save-status role="status"></p>`); return; }

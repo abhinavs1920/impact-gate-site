@@ -70,7 +70,7 @@ try {
   assert.equal(response.status, 403);
 
   const mockAuth = `export class ImpactGateAuthClient { config; currentUser={uid:'u1',email:'user@example.com',providerData:[]}; ready=Promise.resolve(this.currentUser); constructor(config){this.config=config} subscribe(fn){fn({status:'signed-in',user:this.currentUser});return ()=>{}} getIdToken(){return Promise.resolve('mock-token')} isEnabled(){return true} dispose(){} signOut(){this.currentUser=null;return Promise.resolve()} } export const parseAuthConfig=x=>x; export const mountAuthPage=()=>()=>{}; export const safeReturnPath=x=>x||'/dashboard'; export const signInDestination=x=>'/sign-in?next='+encodeURIComponent(x);`;
-  const result = await build({ entryPoints: ['src/dashboard/connected.ts'], bundle: true, platform: 'browser', format: 'iife', write: false, outfile: 'connected.js', plugins: [{ name: 'browser-auth-fixture', setup(b) { b.onResolve({ filter: /^\.\.\/auth$/ }, () => ({ path: 'auth', namespace: 'fixture' })); b.onResolve({ filter: /^cytoscape$/ }, () => ({ path: 'graph', namespace: 'fixture' })); b.onLoad({ filter: /.*/, namespace: 'fixture' }, args => ({ contents: args.path === 'auth' ? mockAuth : 'export default options => { globalThis.graphFixture = options; return {on(){},destroy(){},fit(){}} }' })); } }] });
+  const result = await build({ entryPoints: ['src/dashboard/connected.ts'], bundle: true, platform: 'browser', format: 'iife', write: false, outfile: 'connected.js', plugins: [{ name: 'browser-auth-fixture', setup(b) { b.onResolve({ filter: /^\.\.\/auth$/ }, () => ({ path: 'auth', namespace: 'fixture' })); b.onResolve({ filter: /^cytoscape$/ }, () => ({ path: 'graph', namespace: 'fixture' })); b.onLoad({ filter: /.*/, namespace: 'fixture' }, args => ({ contents: args.path === 'auth' ? mockAuth : 'export default options => { globalThis.graphFixture=options; const state={elements:[...options.elements],handlers:[],zoomLevel:1}; globalThis.graphState=state; const graph={on(event,selector,handler){state.handlers.push({event,selector,handler});return this},batch(fn){fn();return this},edges(){return {remove(){state.elements=state.elements.filter(item=>!item.data.source)}}},add(elements){state.elements.push(...elements);return this},nodes(){return {filter(predicate){return state.elements.filter(item=>!item.data.source).map(item=>({id:()=>item.data.id})).filter(predicate)}}},center(elements){state.centered=elements;return this},zoom(value){if(value){state.zoomLevel=value.level;return this}return state.zoomLevel},maxZoom(){return 2.5},width(){return 800},height(){return 600},fit(){state.fitCalled=true;return this},destroy(){state.destroyed=true}};globalThis.graphInstance=graph;return graph}' })); } }] });
   const script = result.outputFiles.find(file => file.path.endsWith('.js')).text;
   const source = JSON.parse(await readFile('tests/fixtures/workspace.json', 'utf8'));
   class DOMFormData {
@@ -86,6 +86,19 @@ try {
     const timerIds = new Set();
     const requested = [];
     const serverSnapshot = structuredClone(source);
+    if (screen === 'dependency-graph') {
+      const caller = { id:'s2',repositoryId:'r2',name:'checkout-service',rootPath:'/',criticality:'medium',nameSource:'package' };
+      serverSnapshot.services.push(caller);
+      serverSnapshot.endpoints.push({...serverSnapshot.endpoints[0],id:'e2',method:'POST',path:'/customer/v1/orders',source:{...serverSnapshot.endpoints[0].source,filePath:'src/checkout.ts',functionName:'createOrder'}});
+      serverSnapshot.edges = [
+        {id:'d1',callerServiceId:caller.id,endpointId:'e1',evidence:'static',confidence:'high',references:[source.endpoints[0].source],callsInWindow:null,lastObservedAt:null},
+        {id:'d2',callerServiceId:caller.id,endpointId:'e2',evidence:'runtime',confidence:'medium',references:[],callsInWindow:7,lastObservedAt:source.generatedAt,runtimeCorrelation:'service_route'},
+      ];
+    }
+    if (screen === 'api-usage') {
+      const uiSource = {...serverSnapshot.endpoints[0].source,filePath:'scripts/ui.ts',line:45,functionName:'healthRoute',url:'https://github.com/impact-gate/customer-api/blob/abc123/scripts/ui.ts#L45'};
+      serverSnapshot.endpoints.push({...serverSnapshot.endpoints[0],id:'ui-route',path:'/api/healthz',source:uiSource,definitionSource:'code',implementationSources:[uiSource]});
+    }
     if (screen === 'api-usage' || screen === 'dependency-graph') {
       const endpoint = serverSnapshot.endpoints[0];
       const fn = id => ({ id, serviceId:endpoint.serviceId, name:id, qualifiedName:id, kind:'function', source:endpoint.source, attributedRequestsInWindow:120, countsPartial:false, attributions:[{endpointId:endpoint.id,requestsInWindow:120,source:'prometheus',windowStart:'2026-10-01T00:00:00Z',windowEnd:'2026-10-02T00:00:00Z'}] });
@@ -199,6 +212,9 @@ try {
     }
     if (screen === 'api-usage') {
       assert.match(content, /\/customer\/v1\/orders/);
+      assert.match(content, /UI \/ demo/);
+      assert.match(content, /healthRoute/);
+      assert.match(content, /scripts\/ui\.ts:45/);
       assert.equal(document.querySelector('[data-endpoint-detail-screen]'), null, 'detail screen is not shown before clicking an endpoint');
       document.querySelector('[data-action="endpoint"]').click(); await delay();
       assert.ok(document.querySelector('[data-endpoint-detail-screen]'), 'detail screen opened after clicking endpoint');
@@ -245,7 +261,22 @@ try {
       assert.equal(document.querySelector('[data-action=reindex]').disabled, true, 'queued repository cannot be reindexed again until processing finishes');
     }
     if (screen === 'settings') assert.match(content, /Save preferences/);
-    if (screen === 'dependency-graph') assert.equal(context.graphFixture.elements[0].data.label, '◆ customer-service');
+    if (screen === 'dependency-graph') {
+      assert.equal(context.graphFixture.elements[0].data.label, '◆ customer-service');
+      const serviceEdges = context.graphFixture.elements.filter(element => element.data.kind === 'service-dependency');
+      assert.equal(serviceEdges.length, 1, 'multiple API relationships collapse into one service arrow');
+      assert.equal(serviceEdges[0].data.label, '2 APIs');
+      const tapEdge = context.graphState.handlers.find(handler => handler.event === 'tap' && handler.selector === 'edge').handler;
+      tapEdge({target:{data:() => serviceEdges[0].data}});
+      assert.equal(JSON.stringify(context.graphState.elements.filter(element => element.data.kind === 'api').map(element => element.data.label).sort()), JSON.stringify(['GET /customer/v1/orders','POST /customer/v1/orders']));
+      assert.ok(context.graphState.zoomLevel > 1, 'expanding a service arrow zooms into its API arrows');
+      assert.match(document.querySelector('[data-graph-inspector]').textContent, /Expanded to 2 API relationships/);
+      const apiEdge = context.graphState.elements.find(element => element.data.kind === 'api');
+      tapEdge({target:{data:() => apiEdge.data}});
+      assert.match(document.querySelector('[data-graph-inspector]').textContent, /Open API flow/);
+      document.querySelector('[data-action=graph-collapse]').click();
+      assert.equal(context.graphFixture.elements.filter(element => element.data.kind === 'service-dependency').length, 1, 'back to service view restores the aggregate arrow');
+    }
     if (screen === 'function-usage') assert.match(content, /Function usage/);
     if (screen === 'settings') {
       const form = document.querySelector('[data-settings-form]'); form.reportValidity = () => true;
