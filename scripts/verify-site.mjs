@@ -43,7 +43,7 @@ const structuredData = html.match(
 if (!structuredData) throw new Error("Structured SEO data is missing.");
 const graph = JSON.parse(structuredData[1])["@graph"];
 const faq = graph.find((entry) => entry["@type"] === "FAQPage");
-if (!faq || faq.mainEntity.length !== 5)
+if (!faq || faq.mainEntity.length !== 6)
   throw new Error("Structured FAQ data does not match the visible FAQ.");
 const visibleFaqItems = [...parseHTML(html).document.querySelectorAll("details.faq-item")];
 if (visibleFaqItems.length !== faq.mainEntity.length)
@@ -69,6 +69,14 @@ for (const crawler of [
 const sitemap = readFileSync("dist/sitemap.xml", "utf8");
 if (!sitemap.includes("<loc>https://impactgate.in/</loc>"))
   throw new Error("The sitemap must include the canonical homepage URL.");
+for (const route of [
+  "/docs/cross-repo-api-impact-analysis",
+  "/docs/oasdiff-vs-api-consumer-impact-analysis",
+  "/docs/api-usage-observability-prometheus-datadog",
+]) {
+  if (!sitemap.includes(`<loc>https://impactgate.in${route}</loc>`))
+    throw new Error(`The sitemap must include the published guide URL: ${route}`);
+}
 if (!readFileSync("dist/og-image.svg", "utf8").includes('width="1200" height="630"'))
   throw new Error("The social sharing image must use the expected dimensions.");
 if (!html.includes('id="root"'))
@@ -134,6 +142,14 @@ for (const path of [...htmlFiles, ...assets.map((name) => join("dist/assets", na
 }
 if (!html.includes("open to engineering teams"))
   throw new Error("Open availability metadata is missing from the homepage.");
+for (const link of [
+  "/docs/find-who-consumes-your-api-before-you-change-it",
+  "/docs/detect-breaking-api-changes-in-pull-requests",
+  "/docs/api-deprecation-impact-analysis-checklist",
+]) {
+  if (!html.includes(`href="${link}"`))
+    throw new Error(`Homepage discovery link is missing: ${link}`);
+}
 const script = html.match(/src="([^"]+\.js)"/)?.[1];
 if (!script) throw new Error("Rendered React bundle is missing.");
 const scriptPath = join("dist", script.replace(/^\/+/, ""));
@@ -156,6 +172,13 @@ for (const id of [
 }
 if (!js.includes("data-waitlist-form"))
   throw new Error("Contact form is missing.");
+for (const link of [
+  "/docs/pull-request-reports",
+  "/docs/detect-breaking-api-changes-in-pull-requests",
+]) {
+  if (!js.includes(link))
+    throw new Error(`PR Impact documentation link is missing: ${link}`);
+}
 if (!css.includes("prefers-reduced-motion"))
   throw new Error("Reduced-motion support is missing.");
 if (!css.includes("max-width:54rem") || !css.includes("max-width:34rem"))
