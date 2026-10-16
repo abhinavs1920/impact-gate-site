@@ -10,7 +10,7 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*", "/sandbox", "/sandbox/*"]
+    "run_worker_first": ["/api/*", "/sandbox", "/sandbox/*", "/.well-known/*", "/oauth/*", "/mcp", "/mcp/*", "/healthz"]
   },
   "send_email": [
     {
@@ -29,7 +29,9 @@
   ],
   "routes": [
     { "pattern": "impactgate.in", "custom_domain": true },
-    { "pattern": "www.impactgate.in", "custom_domain": true }
+    { "pattern": "www.impactgate.in", "custom_domain": true },
+    { "pattern": "mcp.impactgate.in", "custom_domain": true }
   ],
   "main": "./src/worker.ts"
 }
+
