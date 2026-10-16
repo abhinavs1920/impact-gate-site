@@ -459,9 +459,11 @@ function renderSettings(): string {
       <form class="ig-form" data-settings-form>
         <label>Analysis mode<select name="analysisMode" disabled><option>Deterministic static analysis</option></select></label>
         <label class="ig-checkbox"><input type="checkbox" name="syncDefaultBranch" ${s.syncDefaultBranch ? "checked" : ""} ${writeDisabled()}> Sync default branch when code changes</label>
-        <label class="ig-checkbox"><input type="checkbox" name="prCommentsEnabled" ${s.prCommentsEnabled ? "checked" : ""} ${writeDisabled()}> Publish findings as pull request comments</label>
-        <label class="ig-checkbox"><input type="checkbox" name="externalModelsEnabled" ${s.externalModelsEnabled ? "checked" : ""} ${!session?.capabilities.externalModels ? "disabled" : writeDisabled()}> Allow external model analysis</label>
-        ${!session?.capabilities.externalModels ? `${button("external-model-info", "Why is this unavailable?", "", true)}<p class="ig-note">External model analysis is unavailable on this deployment; deterministic analysis remains active.</p>` : ""}
+         <label class="ig-checkbox"><input type="checkbox" name="prCommentsEnabled" ${s.prCommentsEnabled ? "checked" : ""} ${writeDisabled()}> Publish findings as pull request comments</label>
+         <label class="ig-checkbox"><input type="checkbox" name="externalModelsEnabled" ${s.externalModelsEnabled ? "checked" : ""} ${!session?.capabilities.externalModels ? "disabled" : writeDisabled()}> Allow external model analysis</label>
+         <label class="ig-checkbox"><input type="checkbox" name="aiSummaryEnabled" ${s.aiSummaryEnabled ? "checked" : ""} ${!session?.capabilities.externalModels ? "disabled" : writeDisabled()}> Add optional model summary to PR comments</label>
+         ${!session?.capabilities.externalModels ? `${button("external-model-info", "Why is this unavailable?", "", true)}<p class="ig-note">External model analysis is unavailable on this deployment; deterministic analysis remains active.</p>` : ""}
+         ${session?.capabilities.externalModels ? '<p class="ig-note">Optional model summaries explain the deterministic report only. They cannot change the tier, findings, or evidence.</p>' : ""}
         <label>History retention in days<input type="number" name="retentionDays" min="7" max="365" required value="${s.retentionDays}" ${writeDisabled()}></label>
         <p class="ig-note">Applies to job and pull request history and reviews. Current repository snapshots remain while selected.</p>
         <button class="ig-button" type="submit" ${writeDisabled()}>Save preferences</button><p data-save-status role="status" aria-live="polite"></p>
@@ -1080,7 +1082,7 @@ document.addEventListener("submit", event => {
   }
   if (form.matches("[data-settings-form]")) {
     event.preventDefault(); if (!form.reportValidity() || !workspace || !snapshot || !canWrite()) return;
-    const fields = new FormData(form); const body = { version: snapshot.settings.version, syncDefaultBranch: fields.has("syncDefaultBranch"), prCommentsEnabled: fields.has("prCommentsEnabled"), externalModelsEnabled: session?.capabilities.externalModels ? fields.has("externalModelsEnabled") : snapshot.settings.externalModelsEnabled, retentionDays: Number(fields.get("retentionDays")) };
+    const fields = new FormData(form); const body = { version: snapshot.settings.version, syncDefaultBranch: fields.has("syncDefaultBranch"), prCommentsEnabled: fields.has("prCommentsEnabled"), externalModelsEnabled: session?.capabilities.externalModels ? fields.has("externalModelsEnabled") : snapshot.settings.externalModelsEnabled, aiSummaryEnabled: session?.capabilities.externalModels ? fields.has("aiSummaryEnabled") : snapshot.settings.aiSummaryEnabled, retentionDays: Number(fields.get("retentionDays")) };
     void mutate(async () => { const saved = await api.request<WorkspaceSettings>(`${route(workspace!.id)}/settings`, { method: "PATCH", body }); snapshot!.settings = saved; trackEvent("workspace_settings_saved"); render(); }, "Workspace preferences saved.");
   }
   if (form.matches("[data-repositories-form]")) {

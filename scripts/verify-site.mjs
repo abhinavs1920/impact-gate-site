@@ -43,7 +43,7 @@ const structuredData = html.match(
 if (!structuredData) throw new Error("Structured SEO data is missing.");
 const graph = JSON.parse(structuredData[1])["@graph"];
 const faq = graph.find((entry) => entry["@type"] === "FAQPage");
-if (!faq || faq.mainEntity.length !== 6)
+if (!faq || faq.mainEntity.length !== 7)
   throw new Error("Structured FAQ data does not match the visible FAQ.");
 const visibleFaqItems = [...parseHTML(html).document.querySelectorAll("details.faq-item")];
 if (visibleFaqItems.length !== faq.mainEntity.length)
@@ -142,6 +142,10 @@ for (const path of [...htmlFiles, ...assets.map((name) => join("dist/assets", na
 }
 if (!html.includes("open to engineering teams"))
   throw new Error("Open availability metadata is missing from the homepage.");
+if (!html.includes("Optional model assistance is planned"))
+  throw new Error("Honest optional-model roadmap copy is missing.");
+if (/\b(?:AI-powered|AI-driven|AI analysis is available|model-assisted analysis is available)\b/i.test(html))
+  throw new Error("Unsupported live AI claim found in rendered HTML.");
 for (const link of [
   "/docs/find-who-consumes-your-api-before-you-change-it",
   "/docs/detect-breaking-api-changes-in-pull-requests",

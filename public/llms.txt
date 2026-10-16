@@ -28,11 +28,13 @@ Impact Gate (impactgate.in) is an independent API change impact analysis product
 - Output: a pull request report with evidence, inferred paths, coverage gaps and "no observed use"
 - Consumer discovery: deterministic static analysis of selected, indexed repositories; supported patterns only
 - Runtime evidence: optional Prometheus request counters or Datadog indexed APM spans can add observed usage evidence
+- Optional model assistance: planned, not enabled; current analysis is deterministic and does not require a model provider
 - Posture: warn-only, merge decisions stay with the team
 - Status: open to teams; MAP, GUARD, RETIRE available
 
 ## FAQ
 - **Do I need an AI code reviewer to find API consumers?** No. Impact Gate uses deterministic static analysis of connected, indexed repositories to trace supported API call paths and show source evidence. Optional Prometheus or Datadog runtime data can add observed request and function-call evidence, but it is not required for the first map. Coverage is limited to selected repositories and supported patterns, so external or dynamic consumers may still be unknown.
+- **Does Impact Gate use AI or external model analysis?** Optional model assistance is planned, but it is not enabled or available on the current deployment. Current analysis is deterministic and does not require a model provider.
 
 ## Official profiles
 - LinkedIn: https://www.linkedin.com/company/impactgate-in

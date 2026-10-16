@@ -44,7 +44,7 @@ export const docPages: DocPage[] = [
         blocks: [
           { type: "paragraph", text: "Impact Gate connects selected GitHub repositories into an engineering workspace. It discovers API endpoints from OpenAPI documents, finds supported HTTP client references in consumer code, and publishes an advisory report when a pull request changes a contract." },
           { type: "bullets", items: ["Explore API Flows from contracts to handlers and reachable functions.", "Review PR Impact alongside consumer code and commit-specific evidence.", "Follow analysis progress in GitHub and the connected workspace.", "Use Retirement Radar to record evidence reviews against a particular workspace snapshot."] },
-          { type: "callout", tone: "note", title: "Current release", text: "The connected application uses deterministic static analysis. Google and passwordless email sign-in are enabled. Connect existing Prometheus or Datadog accounts to import runtime evidence. External model availability is shown in Settings." },
+          { type: "callout", tone: "note", title: "Current release", text: "The connected application uses deterministic static analysis. Google and passwordless email sign-in are enabled. Connect existing Prometheus or Datadog accounts to import runtime evidence. Optional model assistance is planned but unavailable on this deployment; its capability status is shown in Settings." },
         ],
       },
       {
@@ -601,7 +601,8 @@ export const docPages: DocPage[] = [
             ["Analysis mode", "Deterministic static analysis", "The mode used by this deployment; the selector is read-only."],
             ["Sync default branch when code changes", "Enabled", "Default-branch pushes queue repository index refreshes."],
             ["Publish findings as pull request comments", "Enabled", "The App publishes and updates report comments. Disabling it does not disable analysis or checks."],
-            ["Allow external model analysis", "Unavailable", "External model processing cannot be enabled on this deployment."],
+             ["Allow external model analysis", "Unavailable", "External model processing cannot be enabled on this deployment."],
+             ["Add optional model summary to PR comments", "Unavailable", "When enabled on a capable deployment, model prose explains the deterministic report only; it cannot change the tier, findings, or evidence."],
             ["History retention in days", "90 by default; 7–365 days", "Controls retained job and PR analysis history and evidence review records."],
           ] },
           { type: "paragraph", text: "Retention cleanup runs periodically. Current repository snapshots remain while their repositories are selected. GitHub comments are hosted in GitHub and are not removed by workspace history cleanup. Encrypted backups have a separate retention schedule." },
@@ -645,7 +646,7 @@ export const docPages: DocPage[] = [
             ["Java consumers", "Supported HTTP client patterns, including supported Spring clients", "Framework support depends on recognizable source patterns; arbitrary reflection is not established."],
             ["Service identity", "Repository roots and supported package / Spring / deployment manifests", "Discovery may need review in monorepos or unusual layouts."],
             ["Runtime observations", "Prometheus request counters and Datadog indexed APM spans", "Requires an existing instrumented source, explicit service mapping, and fresh successful imports; missing data leaves usage unknown."],
-            ["External models", "Not enabled", "The connected worker performs deterministic analysis."],
+             ["Optional model assistance", "Planned; not enabled", "The connected worker currently performs deterministic analysis. No external model provider is connected, and model assistance is not required for the core analysis."],
           ] },
           { type: "paragraph", text: "Source-language support describes extraction capabilities, not complete support for every library or code pattern. Check repository Coverage and individual report notes for the actual result in your codebase." },
         ],
@@ -734,7 +735,7 @@ export const docPages: DocPage[] = [
         title: "What the workspace records",
         blocks: [
           { type: "bullets", items: ["Your authenticated identity and workspace membership needed for access decisions.", "Connected installation metadata and protected authorization material needed for GitHub access.", "Selected repository metadata, index status, commit SHAs, and parser coverage notes.", "Discovered service and endpoint records, extracted schemas, and source references.", "Analysis jobs, PR findings, explanations, settings, and snapshot-specific evidence reviews.", "Verified webhook delivery records needed for processing and deduplication."] },
-          { type: "paragraph", text: "GitHub App keys and authorization tokens are managed on the server. The website receives workspace data for the signed-in membership. Current production analysis is deterministic and does not send consumer slices to an external model provider." },
+           { type: "paragraph", text: "GitHub App keys and authorization tokens are managed on the server. The website receives workspace data for the signed-in membership. Current production analysis is deterministic and does not send consumer slices to an external model provider. Optional model summaries, when explicitly enabled on a capable deployment, explain the deterministic result and cannot change its tier, findings, or evidence." },
           { type: "paragraph", text: "Source links open in GitHub under your GitHub permissions. Dashboard exports and screenshots can contain private repository names or paths; share them with the same care as the corresponding engineering documents." },
         ],
       },
@@ -926,7 +927,7 @@ export const docPages: DocPage[] = [
         title: "Versioned writes",
         blocks: [
           { type: "paragraph", text: "Settings changes include the current settings `version` to prevent overwriting concurrent changes. Read the latest snapshot, send only the intended editable fields, and handle a conflict by refreshing before saving again." },
-          { type: "code", language: "json", filename: "Settings patch body — illustrative version", value: '{\n  "version": 3,\n  "syncDefaultBranch": true,\n  "prCommentsEnabled": true,\n  "externalModelsEnabled": false,\n  "retentionDays": 90\n}' },
+          { type: "code", language: "json", filename: "Settings patch body — illustrative version", value: '{\n  "version": 3,\n  "syncDefaultBranch": true,\n  "prCommentsEnabled": true,\n  "externalModelsEnabled": false,\n  "aiSummaryEnabled": false,\n  "retentionDays": 90\n}' },
           { type: "paragraph", text: "Only deterministic analysis is available. Retention must be an integer from 7 to 365. Unsupported fields or attempts to enable an unavailable capability are rejected." },
           { type: "code", language: "json", filename: "Candidate review body — illustrative snapshot", value: '{\n  "snapshotId": "<current-snapshot-id>",\n  "reviewed": true\n}' },
           { type: "paragraph", text: "The review endpoint validates the supplied snapshot against the current evidence. Refresh after a snapshot conflict before recording a new review." },

@@ -751,6 +751,10 @@ const questions = [
     "Do I need an AI code reviewer to find API consumers?",
     "No. Impact Gate uses deterministic static analysis of connected, indexed repositories to trace supported API call paths and show source evidence. Optional Prometheus or Datadog runtime data can add observed request and function-call evidence, but it is not required for the first map. Coverage is limited to selected repositories and supported patterns, so external or dynamic consumers may still be unknown.",
   ],
+  [
+    "Does Impact Gate use AI or external model analysis?",
+    siteFacts.model.copy,
+  ],
 ];
 
 function FAQ() {
