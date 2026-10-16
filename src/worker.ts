@@ -196,7 +196,16 @@ export default {
       return route.onRequestPost({ request, env: env as WaitlistEnv });
     }
     if (env.ASSETS && typeof (env.ASSETS as AssetFetcher).fetch === "function") {
-      return (env.ASSETS as AssetFetcher).fetch(request);
+      const assets = env.ASSETS as AssetFetcher;
+      if ((pathname === "/demo" || pathname === "/demo/") && (request.method === "GET" || request.method === "HEAD")) {
+        // /demo is a client-routed screen with no static HTML file; serve the app shell
+        // with a 200 so unknown paths can keep returning real 404s.
+        const shellUrl = new URL(request.url);
+        shellUrl.pathname = "/";
+        shellUrl.search = "";
+        return assets.fetch(new Request(shellUrl.href, request));
+      }
+      return assets.fetch(request);
     }
     return new Response("Not found", { status: 404 });
   }
