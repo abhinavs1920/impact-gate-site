@@ -68,7 +68,7 @@ The contact form appears on the homepage; contact details go to `/api/waitlist`.
 
 Each `waitlist:<leadId>` record contains the lead ID, UTC receipt time, work email, repository/organization, optional notes, sanitized attribution, and initial notification status. The record expires after 90 days. If a receipt starts as `pending`, its `notificationKey` points to `waitlist-notification:<leadId>`, containing the final `sent` or `failed` status and update time. Separate keys avoid Cloudflare KV's [one-write-per-second limit per key](https://developers.cloudflare.com/kv/platform/limits/). An `unavailable` receipt means no email binding was configured. A missing notification result means delivery was not confirmed by this invocation; the receipt still preserves the lead.
 
-Email notifications go to `abxh1920@gmail.com` from `beta@impactgate.in`, with the applicant as reply-to. Notifications include campaign labels and the lead reference. If email delivery fails but the lead was saved, the visitor still receives an accepted response. If both storage and notification fail, the form shows an error. Mailbox copies follow separate mailbox retention.
+Email notifications go to `hello@impactgate.in` from `beta@impactgate.in`, with the applicant as reply-to. Notifications include campaign labels and the lead reference. If email delivery fails but the lead was saved, the visitor still receives an accepted response. If both storage and notification fail, the form shows an error. Mailbox copies follow separate mailbox retention.
 
 Retrieve records through Cloudflare's KV dashboard or the signed-in Wrangler CLI:
 
