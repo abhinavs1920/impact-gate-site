@@ -951,6 +951,286 @@ export const docPages: DocPage[] = [
     ],
   },
   {
+    slug: "mcp-server",
+    title: "Impact Gate MCP server",
+    description: "The hosted MCP endpoint that gives AI coding assistants read-only, workspace-scoped API impact evidence, with OAuth sign-in and no API keys.",
+    group: "Reference",
+    readingTime: 7,
+    sections: [
+      {
+        id: "overview",
+        title: "What the MCP server is",
+        blocks: [
+          { type: "paragraph", text: "The Impact Gate MCP server is a hosted Model Context Protocol endpoint. It lets an AI coding assistant - Claude, Claude Code, Cursor, VS Code, or ChatGPT - read API change impact evidence from your Impact Gate workspace while you work: which consumers call an API, what a contract change affects, and whether a proposed fix clears persisted findings." },
+          { type: "code", language: "text", filename: "MCP endpoint", value: "https://mcp.impactgate.in/" },
+          { type: "paragraph", text: "The server speaks the MCP streamable HTTP transport at this URL. The older path https://mcp.impactgate.in/mcp continues to work as an alias, so existing client configurations keep working unchanged." },
+          { type: "bullets", items: [
+            "Six read-only tools. Every tool is annotated readOnlyHint: true and destructiveHint: false; the server never writes to your repositories, your workspace, or the client.",
+            "One OAuth scope: impact:read. There are no API keys to create, store, or rotate.",
+            "Workspace-scoped answers. Every response is computed from a workspace your Google account is authorized for, and carries the indexed commit and freshness it was computed from.",
+            "Deterministic evidence. Results state indexed commit, freshness, coverage, and uncertainty. What the index cannot see is reported as unknown, never as safe.",
+          ] },
+        ],
+      },
+      {
+        id: "how-sign-in-works",
+        title: "How sign-in works",
+        blocks: [
+          { type: "paragraph", text: "You never create a credential for the MCP server. Sign-in uses standard OAuth 2.0 with PKCE, and a compliant MCP client performs the whole flow itself after you paste the endpoint URL. This is what happens, in order:" },
+          { type: "steps", items: [
+            { title: "The client discovers the server metadata", text: "The client fetches the published OAuth discovery documents and learns the issuer, the authorization, token, and registration endpoints, and the single scope impact:read. No configuration is copied by hand." },
+            { title: "The client registers itself", text: "Using dynamic client registration (RFC 7591), the client calls the registration endpoint once and receives a client_id. There is no app to create in a console and no client secret to store." },
+            { title: "Your browser opens the consent page", text: "The client opens the authorization endpoint with a PKCE S256 code challenge. The hosted Connect Impact Gate page asks you to continue with Google - the same Google sign-in used by the Impact Gate website." },
+            { title: "The server returns an authorization code", text: "After you sign in, the server redirects back to the client's registered redirect URI with a one-time authorization code and the original state value, which the client verifies." },
+            { title: "The client exchanges the code for a token", text: "The client posts the code and its PKCE verifier to the token endpoint and receives an access token. An invalid or reused code is rejected with invalid_grant." },
+            { title: "Tools run read-only and workspace-scoped", text: "The client sends the token as a Bearer credential on MCP requests. Each tool call returns evidence only for workspaces your Google account is authorized for. Nothing is ever written back." },
+          ] },
+          { type: "code", language: "json", filename: "https://mcp.impactgate.in/.well-known/oauth-authorization-server", value: "{\n  \"issuer\": \"https://mcp.impactgate.in\",\n  \"authorization_endpoint\": \"https://mcp.impactgate.in/oauth/authorize\",\n  \"token_endpoint\": \"https://mcp.impactgate.in/oauth/token\",\n  \"registration_endpoint\": \"https://mcp.impactgate.in/oauth/register\",\n  \"response_types_supported\": [\"code\"],\n  \"grant_types_supported\": [\"authorization_code\"],\n  \"code_challenge_methods_supported\": [\"S256\"],\n  \"scopes_supported\": [\"impact:read\"]\n}" },
+          { type: "paragraph", text: "The resource metadata document at https://mcp.impactgate.in/.well-known/oauth-protected-resource identifies the protected resource and its authorization server, so clients that check it before sending a token see a consistent picture." },
+          { type: "callout", tone: "note", title: "When a token expires", text: "An expired or revoked token is refused with HTTP 401 and a WWW-Authenticate: Bearer realm=\"impact-gate\", scope=\"impact:read\" header. The client repeats the sign-in flow in your browser; you do not need to remove and re-add the connector." },
+        ],
+      },
+      {
+        id: "scoping",
+        title: "Workspace scoping",
+        blocks: [
+          { type: "paragraph", text: "Tools never guess a workspace. A call that needs a workspace selection and does not have one returns an error listing exactly the workspaces your account is authorized for:" },
+          { type: "code", language: "json", filename: "workspace selection error", value: "{\n  \"code\": -32003,\n  \"message\": \"Select a workspace before continuing.\",\n  \"data\": [\n    { \"workspaceId\": \"3fb27312-fc17-42c2-a71c-52b31af510fd\", \"name\": \"impact-gate\" },\n    { \"workspaceId\": \"dfd57ca3-1548-461b-bedb-bef0af96b3a8\", \"name\": \"abhinavs1920\" }\n  ]\n}" },
+          { type: "paragraph", text: "Requests for data outside the authorized set are refused outright: asking for an API or repository the selected workspace does not contain returns \"No authorized workspace contains this data.\" Each successful response carries the workspace id, snapshot id, and the exact indexed commits it was computed from, so you can tell at a glance how fresh the evidence is." },
+        ],
+      },
+      {
+        id: "errors",
+        title: "Common errors",
+        blocks: [
+          { type: "table", headers: ["Error", "Meaning", "What to do"], rows: [
+            ["HTTP 401", "Missing, expired, or revoked access token.", "Let the client repeat the browser sign-in flow."],
+            ["invalid_grant", "The authorization code was invalid, expired, or already used.", "Restart the sign-in flow from the client."],
+            ["-32003 Select a workspace", "The call did not identify a workspace.", "Pass a workspaceId from the error's data list, or name the repository."],
+            ["No authorized workspace contains this data", "The requested API, repository, or finding is outside your authorized workspaces.", "Check the workspace and identifiers; connect the repository in Impact Gate first."],
+          ] },
+          { type: "paragraph", text: "Tool results themselves state coverage and uncertainty explicitly. A successful call with gaps reports those gaps; it does not fill them with guesses." },
+        ],
+      },
+      {
+        id: "security",
+        title: "Security properties",
+        blocks: [
+          { type: "bullets", items: [
+            "Transport is HTTPS only; the server is served from mcp.impactgate.in.",
+            "Authorization code flow with PKCE S256 is the only grant; implicit and password flows are not offered.",
+            "A single scope, impact:read, is the entire permission surface.",
+            "All six tools are read-only; the server cannot modify repositories, workspaces, settings, or the client.",
+            "Access tokens are Bearer credentials. Keep them inside your client and never paste one into chat, tickets, or source control.",
+            "Sign-in uses your Google account, the same identity as the Impact Gate website, and workspace authorization follows your existing membership.",
+          ] },
+          { type: "links", items: [
+            { label: "Connect an AI client", href: "/docs/connect-mcp-clients", description: "Copy-paste setup for Claude, Claude Code, Cursor, VS Code, and ChatGPT." },
+            { label: "MCP tools reference", href: "/docs/mcp-tools", description: "Parameters and examples for the six tools." },
+            { label: "Permissions and data", href: "/docs/permissions-and-data", description: "What access Impact Gate needs and how data is handled." },
+            { label: "Terms of Service", href: "/docs/terms-of-service", description: "The terms that govern the Service, including the MCP server." },
+          ] },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "connect-mcp-clients",
+    title: "Connect an AI client to Impact Gate",
+    description: "Copy-paste setup for connecting Claude, Claude Code, Cursor, VS Code, or ChatGPT to the hosted Impact Gate MCP server.",
+    group: "Connect & index",
+    readingTime: 5,
+    sections: [
+      {
+        id: "before-you-begin",
+        title: "Before you begin",
+        blocks: [
+          { type: "paragraph", text: "You need an Impact Gate account with at least one connected, indexed workspace - set that up first with the [quickstart](/docs/quickstart). Connecting a client then takes about a minute: you paste one URL, the client discovers everything else, and you sign in with Google when the browser page opens. There are no API keys." },
+          { type: "code", language: "text", filename: "The only value you need", value: "https://mcp.impactgate.in/" },
+          { type: "callout", tone: "tip", title: "No paid plan needed on most clients", text: "Claude (web and desktop), Claude Code, Cursor, and VS Code all support custom remote MCP servers on their free tiers. ChatGPT is the exception: OpenAI limits custom MCP connectors to Business, Enterprise, and Edu workspaces." },
+        ],
+      },
+      {
+        id: "claude",
+        title: "Claude (web and desktop)",
+        blocks: [
+          { type: "steps", items: [
+            { title: "Open connector settings", text: "In Claude, go to **Settings**, then **Connectors**, and choose **Add custom connector**." },
+            { title: "Add Impact Gate", text: "Name the connector Impact Gate, paste https://mcp.impactgate.in/ as the remote MCP server URL, and confirm." },
+            { title: "Connect and sign in", text: "Choose **Connect** on the new connector. Your browser opens the Impact Gate consent page; continue with Google to authorize the impact:read scope." },
+            { title: "Use it", text: "The Impact Gate tools are now available in conversations. Try asking: what is the status of my Impact Gate workspace?" },
+          ] },
+          { type: "paragraph", text: "Custom connectors added by URL work on Claude's Free plan as well as Pro, Max, Team, and Enterprise. Adding a connector by URL is different from the paid directory listing; both reach the same server." },
+        ],
+      },
+      {
+        id: "claude-code",
+        title: "Claude Code",
+        blocks: [
+          { type: "code", language: "bash", filename: "Add the server", value: "claude mcp add --transport http impact-gate https://mcp.impactgate.in/" },
+          { type: "steps", items: [
+            { title: "Register the server", text: "Run the command above in your terminal. It stores the server under the name impact-gate." },
+            { title: "Authenticate", text: "Start claude, run /mcp, select impact-gate, and choose Authenticate. Your browser opens the consent page for Google sign-in." },
+            { title: "Ask for evidence", text: "The six Impact Gate tools appear in the session. For example: use Impact Gate to find consumers of the catalog API before I change it." },
+          ] },
+        ],
+      },
+      {
+        id: "cursor",
+        title: "Cursor",
+        blocks: [
+          { type: "paragraph", text: "Add the server in Cursor's MCP settings, or create .cursor/mcp.json in your project (or ~/.cursor/mcp.json globally):" },
+          { type: "code", language: "json", filename: "mcp.json", value: "{\n  \"mcpServers\": {\n    \"impact-gate\": {\n      \"url\": \"https://mcp.impactgate.in/\"\n    }\n  }\n}" },
+          { type: "paragraph", text: "Enable the server in the MCP list. Cursor detects that authorization is required and opens your browser for the Google consent page; after sign-in the tools become available to the agent." },
+        ],
+      },
+      {
+        id: "vs-code",
+        title: "VS Code",
+        blocks: [
+          { type: "paragraph", text: "Create .vscode/mcp.json in your workspace, or use the **MCP: Add Server** command and choose HTTP:" },
+          { type: "code", language: "json", filename: ".vscode/mcp.json", value: "{\n  \"servers\": {\n    \"impact-gate\": {\n      \"type\": \"http\",\n      \"url\": \"https://mcp.impactgate.in/\"\n    }\n  }\n}" },
+          { type: "paragraph", text: "Start the server from the MCP view. VS Code runs the OAuth flow in your browser; after the Google sign-in, Impact Gate tools are available in VS Code chat agent mode." },
+        ],
+      },
+      {
+        id: "chatgpt",
+        title: "ChatGPT",
+        blocks: [
+          { type: "callout", tone: "warning", title: "Plan requirement", text: "OpenAI currently allows custom MCP server connections only for ChatGPT Business, Enterprise, and Edu workspaces on the web. Personal plans (Free and Plus) cannot add a custom MCP connector - this is a ChatGPT platform limit, not an Impact Gate restriction. On a personal plan, use Claude, Claude Code, Cursor, or VS Code instead." },
+          { type: "steps", items: [
+            { title: "Enable developer mode", text: "In a Business, Enterprise, or Edu workspace on chatgpt.com, open **Settings**, then **Apps & Connectors**, and enable **Developer mode**." },
+            { title: "Create the connector", text: "Choose **Create**, name it Impact Gate, and paste https://mcp.impactgate.in/ as the MCP server URL." },
+            { title: "Sign in", text: "Complete the OAuth flow in the browser with your Google account." },
+          ] },
+        ],
+      },
+      {
+        id: "after-connecting",
+        title: "After connecting",
+        blocks: [
+          { type: "paragraph", text: "A quick way to confirm everything works is to ask the assistant for your workspace status. The answer should name your workspace, list indexed repositories with their exact commits, and state when the index was generated. If the client instead reports an authorization error, re-run its connect or authenticate command to repeat the browser sign-in." },
+          { type: "links", items: [
+            { label: "Impact Gate MCP server", href: "/docs/mcp-server", description: "How sign-in works, scoping, errors, and security." },
+            { label: "MCP tools reference", href: "/docs/mcp-tools", description: "Parameters and examples for the six tools." },
+          ] },
+        ],
+      },
+    ],
+  },
+  {
+    slug: "mcp-tools",
+    title: "MCP tools reference",
+    description: "Parameters and examples for the six read-only tools exposed by the Impact Gate MCP server.",
+    group: "Reference",
+    readingTime: 6,
+    sections: [
+      {
+        id: "conventions",
+        title: "Conventions",
+        blocks: [
+          { type: "paragraph", text: "All six tools are read-only (readOnlyHint: true, destructiveHint: false) and return tenant-scoped evidence. Identifiers such as workspaceId, apiId, functionId, and findingId come from earlier tool results or from your Impact Gate dashboard; repositoryFullName is the GitHub form owner/repository." },
+          { type: "paragraph", text: "Every result carries an evidence envelope: a requestId, a generatedAt timestamp, and a source object with the workspaceId, snapshotId, indexedAt time, and the indexed repositories with their exact commits. Use these to judge freshness before acting on an answer." },
+          { type: "code", language: "json", filename: "Result envelope (excerpt)", value: "{\n  \"schemaVersion\": 1,\n  \"requestId\": \"req_8acbcfb7-1b7b-4ac1-8032-0bdc03b98094\",\n  \"generatedAt\": \"2026-10-16T20:09:46.425Z\",\n  \"source\": {\n    \"workspaceId\": \"3fb27312-fc17-42c2-a71c-52b31af510fd\",\n    \"snapshotId\": \"3fb27312-fc17-42c2-a71c-52b31af510fd:689\",\n    \"indexedAt\": \"2026-10-15T05:57:24.206Z\",\n    \"indexedRepositories\": [\n      { \"fullName\": \"impact-gate/ig-lab-catalog-api\", \"sha\": \"ad3dfeb7e6ced1f70164a09c8fac927593aec793\", \"status\": \"indexed\" }\n    ]\n  }\n}" },
+          { type: "callout", tone: "note", title: "Coverage is stated, not assumed", text: "Results include coverage and limitation notes. When the index cannot see a consumer or a path, the tool says so; an empty result is evidence about coverage, not proof that no usage exists." },
+        ],
+      },
+      {
+        id: "workspace-status",
+        title: "impactgate_workspace_status",
+        blocks: [
+          { type: "paragraph", text: "Returns the authorized workspace and indexed repository status. A good first call after connecting, and the way to get workspaceId values for the other tools." },
+          { type: "table", headers: ["Parameter", "Type", "Notes"], rows: [
+            ["workspaceId", "string", "Optional. Selects the workspace directly."],
+            ["repositoryFullName", "string", "Optional. Selects the workspace by an indexed repository, e.g. acme/catalog-api."],
+            ["remoteUrl", "string (uri)", "Optional. Selects the workspace by a repository remote URL."],
+          ] },
+          { type: "code", language: "json", filename: "Example arguments", value: "{\n  \"workspaceId\": \"3fb27312-fc17-42c2-a71c-52b31af510fd\"\n}" },
+          { type: "paragraph", text: "With no arguments and exactly one authorized workspace, the server uses it. With several, it returns the workspace selection error listing the choices." },
+        ],
+      },
+      {
+        id: "analyze-change",
+        title: "impactgate_analyze_change",
+        blocks: [
+          { type: "paragraph", text: "Returns persisted deterministic impact findings for a bounded change: what a contract change in one repository does to the indexed consumers that call it." },
+          { type: "table", headers: ["Parameter", "Type", "Notes"], rows: [
+            ["repositoryFullName", "string", "Required. The API provider repository, owner/name."],
+            ["workspaceId", "string", "Optional when the repository selects the workspace."],
+            ["baseSha / headSha", "string", "The commits to compare, e.g. from a pull request."],
+            ["pullRequestNumber", "integer", "Optional PR reference for the change."],
+            ["changedFiles", "array", "Optional paths that bound the change."],
+            ["diff", "string (max 256 KB)", "Optional unified diff of the contract change."],
+            ["baseSpec / headSpec", "object", "Optional OpenAPI documents at the two commits."],
+            ["focus", "string", "Optional narrowing hint, such as one endpoint or field."],
+          ] },
+          { type: "code", language: "json", filename: "Example arguments", value: "{\n  \"repositoryFullName\": \"impact-gate/ig-lab-catalog-api\",\n  \"baseSha\": \"ad3dfeb7e6ced1f70164a09c8fac927593aec793\",\n  \"headSha\": \"9f3c1a2b4d5e6f708192a3b4c5d6e7f8091a2b3c\",\n  \"focus\": \"GET /products/{id}\"\n}" },
+        ],
+      },
+      {
+        id: "find-consumers",
+        title: "impactgate_find_consumers",
+        blocks: [
+          { type: "paragraph", text: "Finds authorized static and runtime consumers of an API operation - which indexed applications call an endpoint or read a field, with source evidence." },
+          { type: "table", headers: ["Parameter", "Type", "Notes"], rows: [
+            ["apiId", "string", "Identifies the API, e.g. from workspace status or an earlier result."],
+            ["endpoint", "object", "Optional operation selector such as method and path."],
+            ["fieldPath", "string", "Optional field within the operation's contract."],
+            ["repositoryFullName / workspaceId", "string", "Optional scoping to one repository or workspace."],
+            ["includeUnresolved", "boolean", "Include candidate consumers that could not be fully resolved."],
+          ] },
+          { type: "code", language: "json", filename: "Example arguments", value: "{\n  \"workspaceId\": \"3fb27312-fc17-42c2-a71c-52b31af510fd\",\n  \"endpoint\": { \"method\": \"GET\", \"path\": \"/products/{id}\" },\n  \"includeUnresolved\": true\n}" },
+        ],
+      },
+      {
+        id: "get-api-flow",
+        title: "impactgate_get_api_flow",
+        blocks: [
+          { type: "paragraph", text: "Returns the persisted provider flow for one API: the handler and function chain, partial boundaries, and the source evidence behind each step." },
+          { type: "table", headers: ["Parameter", "Type", "Notes"], rows: [
+            ["apiId", "string", "Required. Identifies the API."],
+            ["workspaceId", "string", "Optional scoping."],
+            ["includeExecutionTree", "boolean", "Include the execution tree detail."],
+            ["includePathAnalysis", "boolean", "Include per-path analysis."],
+          ] },
+        ],
+      },
+      {
+        id: "get-function-usage",
+        title: "impactgate_get_function_usage",
+        blocks: [
+          { type: "paragraph", text: "Returns static API-attributed and measured function-entry usage separately - which functions participate in serving API traffic and who calls them." },
+          { type: "table", headers: ["Parameter", "Type", "Notes"], rows: [
+            ["functionId", "string", "Identifies the function, e.g. from an API flow result."],
+            ["filePath / line", "string / integer", "Alternative locator inside an indexed repository."],
+            ["repositoryFullName / workspaceId", "string", "Optional scoping."],
+            ["includeCallers / includeCallees", "boolean", "Expand the result in either direction."],
+          ] },
+        ],
+      },
+      {
+        id: "verify-fix",
+        title: "impactgate_verify_fix",
+        blocks: [
+          { type: "paragraph", text: "Compares current persisted findings with a bounded proposed fix, without mutating anything - whether the change you are about to make clears the findings it is meant to address." },
+          { type: "table", headers: ["Parameter", "Type", "Notes"], rows: [
+            ["repositoryFullName", "string", "Required. The repository the fix applies to."],
+            ["findingId", "string", "The persisted finding to check, from an earlier analysis."],
+            ["workspaceId", "string", "Optional scoping."],
+            ["baseSha / headSha", "string", "Commits bounding the proposed fix."],
+            ["changedFiles / diff", "array / string (max 256 KB)", "The proposed change content."],
+            ["baseSpec / headSpec", "object", "Optional OpenAPI documents before and after."],
+          ] },
+          { type: "links", items: [
+            { label: "Impact Gate MCP server", href: "/docs/mcp-server", description: "Endpoint, sign-in, scoping, errors, and security." },
+            { label: "Connect an AI client", href: "/docs/connect-mcp-clients", description: "Setup for Claude, Claude Code, Cursor, VS Code, and ChatGPT." },
+            { label: "Coverage and limitations", href: "/docs/coverage-and-limitations", description: "What the underlying analysis can and cannot conclude." },
+          ] },
+        ],
+      },
+    ],
+  },
+  {
     slug: "agent-plugin-review",
     title: "Agent plugin review walkthrough",
     description: "A recorded end-to-end walkthrough of the Impact Gate agent plugin for marketplace reviewers: installation, OAuth authorization, MCP connection, read-only tools, tenant scoping, and representative output.",
@@ -970,7 +1250,7 @@ export const docPages: DocPage[] = [
         title: "1. Install and configure",
         blocks: [
           { type: "paragraph", text: "The plugin ships in the Impact Gate repository under plugins/impact-gate-agent. Configuration points the host at the production MCP endpoint; no API keys are created or stored by the user, because authorization uses OAuth with dynamic client registration." },
-          { type: "code", language: "text", filename: "MCP endpoint", value: "https://mcp.impactgate.in/mcp" },
+          { type: "code", language: "text", filename: "MCP endpoint", value: "https://mcp.impactgate.in/" },
           { type: "code", language: "text", filename: "OAuth discovery document", value: "https://mcp.impactgate.in/.well-known/oauth-authorization-server" },
           { type: "paragraph", text: "The discovery document advertises the issuer, authorization endpoint, token endpoint, and dynamic registration endpoint, so a compliant host configures itself. The only scope is impact:read." },
         ],
