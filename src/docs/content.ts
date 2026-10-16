@@ -970,8 +970,8 @@ export const docPages: DocPage[] = [
         title: "1. Install and configure",
         blocks: [
           { type: "paragraph", text: "The plugin ships in the Impact Gate repository under plugins/impact-gate-agent. Configuration points the host at the production MCP endpoint; no API keys are created or stored by the user, because authorization uses OAuth with dynamic client registration." },
-          { type: "code", language: "text", filename: "MCP endpoint", value: "https://impact-gate-api.centralindia.cloudapp.azure.com/mcp" },
-          { type: "code", language: "text", filename: "OAuth discovery document", value: "https://impact-gate-api.centralindia.cloudapp.azure.com/.well-known/oauth-authorization-server" },
+          { type: "code", language: "text", filename: "MCP endpoint", value: "https://mcp.impactgate.in/mcp" },
+          { type: "code", language: "text", filename: "OAuth discovery document", value: "https://mcp.impactgate.in/.well-known/oauth-authorization-server" },
           { type: "paragraph", text: "The discovery document advertises the issuer, authorization endpoint, token endpoint, and dynamic registration endpoint, so a compliant host configures itself. The only scope is impact:read." },
         ],
       },
