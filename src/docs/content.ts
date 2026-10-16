@@ -995,7 +995,7 @@ export const docPages: DocPage[] = [
         title: "Workspace scoping",
         blocks: [
           { type: "paragraph", text: "Tools never guess a workspace. A call that needs a workspace selection and does not have one returns an error listing exactly the workspaces your account is authorized for:" },
-          { type: "code", language: "json", filename: "workspace selection error", value: "{\n  \"code\": -32003,\n  \"message\": \"Select a workspace before continuing.\",\n  \"data\": [\n    { \"workspaceId\": \"3fb27312-fc17-42c2-a71c-52b31af510fd\", \"name\": \"impact-gate\" },\n    { \"workspaceId\": \"dfd57ca3-1548-461b-bedb-bef0af96b3a8\", \"name\": \"abhinavs1920\" }\n  ]\n}" },
+          { type: "code", language: "json", filename: "workspace selection error", value: "{\n  \"code\": -32003,\n  \"message\": \"Select a workspace before continuing.\",\n  \"data\": [\n    { \"workspaceId\": \"3fb27312-fc17-42c2-a71c-52b31af510fd\", \"name\": \"impact-gate\" }\n  ]\n}" },
           { type: "paragraph", text: "Requests for data outside the authorized set are refused outright: asking for an API or repository the selected workspace does not contain returns \"No authorized workspace contains this data.\" Each successful response carries the workspace id, snapshot id, and the exact indexed commits it was computed from, so you can tell at a glance how fresh the evidence is." },
         ],
       },
@@ -1286,7 +1286,7 @@ export const docPages: DocPage[] = [
         title: "4. Tenant and workspace scoping",
         blocks: [
           { type: "paragraph", text: "Calls without a workspace selection do not guess. The server answered with an error that lists only the workspaces this account is authorized for:" },
-          { type: "code", language: "json", filename: "workspace required", value: "{\n  \"code\": -32003,\n  \"message\": \"Select a workspace before continuing.\",\n  \"data\": [\n    { \"workspaceId\": \"3fb27312-fc17-42c2-a71c-52b31af510fd\", \"name\": \"impact-gate\" },\n    { \"workspaceId\": \"dfd57ca3-1548-461b-bedb-bef0af96b3a8\", \"name\": \"abhinavs1920\" }\n  ]\n}" },
+          { type: "code", language: "json", filename: "workspace required", value: "{\n  \"code\": -32003,\n  \"message\": \"Select a workspace before continuing.\",\n  \"data\": [\n    { \"workspaceId\": \"3fb27312-fc17-42c2-a71c-52b31af510fd\", \"name\": \"impact-gate\" }\n  ]\n}" },
           { type: "paragraph", text: "Requests for data outside the authorized set are refused: asking for an endpoint the selected workspace does not contain returned \"No authorized workspace contains this data.\" Each response carries the workspace id, snapshot id, and the indexed commit it was computed from." },
         ],
       },
