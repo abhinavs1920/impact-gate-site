@@ -587,6 +587,8 @@ function ContactForm() {
     const form = event.currentTarget;
     const payload = { ...Object.fromEntries(new FormData(form).entries()), attribution: leadAttribution() };
     trackEvent("form_submit", { form_name: "pilot_request" });
+    if (new FormData(form).get("marketing_opt_in") === "yes")
+      trackEvent("marketing_opt_in", { form_name: "pilot_request" });
     let failureType = "network";
     try {
       const response = await fetch(form.action, {
@@ -702,6 +704,19 @@ function ContactForm() {
             autoComplete="off"
             aria-hidden="true"
           />
+          <label className="form-consent" htmlFor="marketing_opt_in">
+            <input
+              id="marketing_opt_in"
+              name="marketing_opt_in"
+              type="checkbox"
+              value="yes"
+            />
+            <span>
+              Yes, email me product updates and promotions. Optional - every
+              email has an unsubscribe link, and you can opt out any time by
+              replying "stop".
+            </span>
+          </label>
           <button type="submit" disabled={submitting}>
             {submitting ? "Sending request…" : "Send message"}{" "}
             <span aria-hidden="true">→</span>
@@ -817,7 +832,7 @@ function Footer({ innerPage = false }: { innerPage?: boolean }) {
           <a href="/dashboard">Dashboard</a>
         </nav></div>
         <div className="footer-group"><h2>Get in touch</h2><nav className="footer-links footer-contact-links" aria-label="Contact the team">
-          <a href={emailHref("contact")}>{emails.contact}</a><a href={emailHref("support")}>Product support</a><a href={emailHref("beta")}>Onboarding</a><a href={emailHref("security")}>Report a vulnerability</a><a href={emailHref("privacy")}>Privacy & legal</a><button type="button" data-analytics-toggle>Usage analytics</button><a href="/contact">All contact options <span aria-hidden="true">↗</span></a>
+          <a href={emailHref("contact")}>{emails.contact}</a><a href={emailHref("support")}>Product support</a><a href={emailHref("beta")}>Onboarding</a><a href={emailHref("security")}>Report a vulnerability</a><a href={emailHref("privacy")}>Privacy & legal</a><a href="/docs/terms-of-service">Terms of Service</a><button type="button" data-analytics-toggle>Usage analytics</button><a href="/contact">All contact options <span aria-hidden="true">↗</span></a>
         </nav></div>
       </div>
       <div className="container footer-bottom">
