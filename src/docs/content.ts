@@ -950,6 +950,149 @@ export const docPages: DocPage[] = [
       },
     ],
   },
+  {
+    slug: "terms-of-service",
+    title: "Terms of Service",
+    description: "The terms that govern use of the Impact Gate website, workspace, GitHub App, and agent plugin.",
+    group: "Reference",
+    readingTime: 8,
+    sections: [
+      {
+        id: "agreement",
+        title: "Agreement to these terms",
+        blocks: [
+          { type: "paragraph", text: "These Terms of Service (\u201cTerms\u201d) govern your use of the Impact Gate website at impactgate.in, the Impact Gate workspace and dashboard, the Impact Gate GitHub App, the Impact Gate agent plugin for supported AI coding hosts, and related documentation and APIs (together, the \u201cService\u201d). The Service is operated by Abhinav Sharma, trading as Impact Gate (\u201cImpact Gate\u201d, \u201cwe\u201d, \u201cus\u201d), Sector 3, HSR Layout, Bengaluru, Karnataka 560102, India." },
+          { type: "paragraph", text: "By creating an account, connecting a GitHub organization or repository, installing the agent plugin, or otherwise using the Service, you agree to these Terms. If you use the Service on behalf of an organization, you confirm that you are authorized to accept these Terms for that organization, and the organization is the account holder." },
+          { type: "paragraph", text: "Effective date: October 16, 2026. If you do not agree, do not use the Service." },
+        ],
+      },
+      {
+        id: "the-service",
+        title: "What the Service does",
+        blocks: [
+          { type: "paragraph", text: "Impact Gate is a code-level observability tool for API changes. For repositories you connect, it discovers API endpoints from OpenAPI documents, finds supported API call references in consumer code, maps API flows to handlers and functions, and produces advisory impact evidence when a pull request changes a supported contract. If you connect a Prometheus or Datadog account, the Service can also import observed request and function-call counts for selected services." },
+          { type: "bullets", items: [
+            "The Service is read-only. It does not edit, commit, merge, delete, or reformat your repositories, and it does not block merges. Reports and check results are advisory.",
+            "Access is scoped by workspace. Each workspace sees only the repositories and data connected to that workspace, and the agent plugin returns only tenant-authorized, read-only evidence for the workspace you select.",
+            "Analysis is deterministic and coverage-bound. Results reflect the repositories, commits, file types, and call patterns the Service can see and parse. Unknown or out-of-coverage consumers are reported as unknown, not as safe.",
+          ] },
+          { type: "callout", tone: "warning", title: "Not a guarantee of safety", text: "Impact Gate findings, including a result with no findings, do not guarantee that a change is safe, compatible, or complete. You remain responsible for reviewing evidence, coverage notes, and your own testing before merging or deprecating anything." },
+        ],
+      },
+      {
+        id: "accounts",
+        title: "Accounts and eligibility",
+        blocks: [
+          { type: "paragraph", text: "You sign in with a supported provider (GitHub, Google, or passwordless email). You must be at least 18 years old and able to form a binding contract. You are responsible for activity under your account, for keeping your sign-in methods secure, and for the accuracy of the information you give us." },
+          { type: "paragraph", text: "Workspace access is your responsibility: add only people who should see the connected repositories\u2019 derived data, and remove them when that changes." },
+        ],
+      },
+      {
+        id: "github-and-data",
+        title: "Connecting GitHub and your data",
+        blocks: [
+          { type: "paragraph", text: "When you install the Impact Gate GitHub App, you choose the organization and repositories we may read. We read repository contents and pull request metadata only to provide the analysis described above, and we derive indexes, graphs, and reports from them. You can revoke access at any time by uninstalling the GitHub App or disconnecting repositories; derived data for your workspace is deleted or scheduled for deletion when you disconnect or close your account, subject to the retention notes in our data documentation." },
+          { type: "paragraph", text: "You represent that you have the rights and permissions needed to connect the repositories and runtime accounts you connect, and that doing so does not violate any agreement or policy that binds you." },
+          { type: "links", items: [
+            { label: "Permissions and data", href: "/docs/permissions-and-data", description: "Exactly what the Service reads, stores, and deletes." },
+            { label: "Coverage and limitations", href: "/docs/coverage-and-limitations", description: "What the analysis can and cannot see." },
+          ] },
+        ],
+      },
+      {
+        id: "acceptable-use",
+        title: "Acceptable use",
+        blocks: [
+          { type: "paragraph", text: "You agree not to:" },
+          { type: "bullets", items: [
+            "Use the Service for anything unlawful, or to violate the rights of others.",
+            "Connect repositories or data you are not authorized to connect.",
+            "Probe, scan, or test the Service or its infrastructure for vulnerabilities without written permission, or attempt to access another workspace\u2019s data.",
+            "Interfere with the Service, including by exceeding rate limits, scraping at abusive volumes, or reselling access without our written agreement.",
+            "Misrepresent Service output, for example by presenting an advisory report as a guarantee that a change is safe.",
+          ] },
+          { type: "paragraph", text: "We may suspend or end access where use breaches these Terms, creates risk for other users, or where required by law." },
+        ],
+      },
+      {
+        id: "agent-plugin",
+        title: "Agent plugin",
+        blocks: [
+          { type: "paragraph", text: "The Impact Gate agent plugin connects supported AI coding hosts to your workspace over a read-only interface. Authorizing the plugin lets your host agent request tenant-authorized evidence about API changes, consumers, API flows, function usage, runtime observations, coverage, and fix verification. The plugin does not install a local daemon, run a repository indexer, edit files, post pull request comments, or merge changes. You can revoke the plugin\u2019s authorization at any time from your workspace settings, after which it no longer returns workspace data." },
+        ],
+      },
+      {
+        id: "optional-features",
+        title: "Optional and planned capabilities",
+        blocks: [
+          { type: "paragraph", text: "Some capabilities shown in the product or documentation are planned and not yet available; these are marked with an asterisk (*) or a \u201cplanned\u201d label. This includes optional, user-controlled model assistance for explaining reports. Planned capabilities are not part of the Service today, may change before release, and create no obligation for us to deliver them. Where an optional feature uses an external model provider, it is off by default and is enabled only by your explicit choice." },
+        ],
+      },
+      {
+        id: "fees",
+        title: "Fees",
+        blocks: [
+          { type: "paragraph", text: "The Service is currently offered at no charge. If we introduce paid plans, we will post pricing and any additional terms before they apply to you, and continued use after that point constitutes acceptance of the paid terms you select." },
+        ],
+      },
+      {
+        id: "intellectual-property",
+        title: "Intellectual property",
+        blocks: [
+          { type: "paragraph", text: "You retain all rights in your repositories and data. You grant us the limited right to read and process them only to operate the Service for you. We retain all rights in the Service itself, including the analysis methods, software, and brand. Feedback you send us may be used to improve the Service without obligation to you." },
+        ],
+      },
+      {
+        id: "termination",
+        title: "Termination",
+        blocks: [
+          { type: "paragraph", text: "You can stop using the Service at any time: uninstall the GitHub App, revoke plugin authorizations, and contact us to close your account. We may suspend or terminate access for breach of these Terms or for risk to the Service or other users, with notice where practicable. Sections on intellectual property, disclaimers, limitation of liability, and governing law survive termination." },
+        ],
+      },
+      {
+        id: "disclaimers",
+        title: "Disclaimers",
+        blocks: [
+          { type: "paragraph", text: "The Service is provided \u201cas is\u201d and \u201cas available\u201d, without warranties of any kind, express or implied, including merchantability, fitness for a particular purpose, accuracy, completeness, and non-infringement. We do not warrant that analysis will find every affected consumer, that coverage will be complete, or that the Service will be uninterrupted or error-free." },
+        ],
+      },
+      {
+        id: "liability",
+        title: "Limitation of liability",
+        blocks: [
+          { type: "paragraph", text: "To the maximum extent permitted by law, Impact Gate and its operator are not liable for indirect, incidental, special, consequential, or punitive damages, or for lost profits, revenue, data, or goodwill, arising from or related to your use of the Service - including decisions made in reliance on advisory reports. Our total liability for any claim relating to the Service is limited to the amount you paid us for the Service in the twelve months before the claim, or, if you paid nothing, to INR 5,000." },
+        ],
+      },
+      {
+        id: "governing-law",
+        title: "Governing law and disputes",
+        blocks: [
+          { type: "paragraph", text: "These Terms are governed by the laws of India, without regard to conflict-of-law rules. Courts at Bengaluru, Karnataka have exclusive jurisdiction over disputes arising from these Terms or the Service, except where applicable law gives you a non-waivable right to bring a claim elsewhere." },
+        ],
+      },
+      {
+        id: "changes",
+        title: "Changes to these Terms",
+        blocks: [
+          { type: "paragraph", text: "We may update these Terms as the Service evolves. Material changes will be posted on this page with a new effective date, and, where reasonable, announced in the product or by email before they take effect. Continued use after the effective date constitutes acceptance." },
+        ],
+      },
+      {
+        id: "contact",
+        title: "Contact",
+        blocks: [
+          { type: "paragraph", text: "Questions about these Terms, privacy requests, and legal notices:" },
+          { type: "bullets", items: [
+            "Email: abhinav@impactgate.in",
+            "Post: Impact Gate, Abhinav Sharma, Sector 3, HSR Layout, Bengaluru, Karnataka 560102, India",
+          ] },
+          { type: "links", items: [
+            { label: "Contact page", href: "/contact", description: "All contact options, including support and security." },
+          ] },
+        ],
+      },
+    ],
+  },
 ];
 
 docPages.push(...guidePages);
