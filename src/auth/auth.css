@@ -64,3 +64,8 @@ html[data-theme="dark"] .ig-auth-button[data-auth-provider="google"] { backgroun
 @media (max-width: 480px) { .ig-auth-header { width: calc(100% - 32px); padding: 20px 0; } .ig-auth-brand { font-size: 17px; } .ig-auth-home { font-size: 11px; } .ig-auth-grid { width: calc(100% - 32px); margin-top: 16px; } .ig-auth-card { padding: 25px 22px; } .ig-auth-context { padding: 0 8px; } }
 @media (max-width: 480px) { .ig-auth-header-actions { gap: 10px; } .ig-auth-header-actions .ig-auth-docs { display: none; } .ig-auth-footer { width: calc(100% - 32px); } .ig-auth-footer nav { gap: 16px; } }
 @media (max-width: 350px) { .ig-auth-header-actions > a { max-width: 64px; line-height: 1.4; } .ig-auth-brand { gap: 7px; font-size: 15px; } .ig-auth-card { padding: 24px 18px; } }
+
+.ig-auth-consent { margin-top: 1rem; display: grid; gap: 0.5rem; }
+.ig-auth-checkbox { display: flex; gap: 0.5rem; align-items: flex-start; font-size: 0.875rem; line-height: 1.4; cursor: pointer; }
+.ig-auth-checkbox input { margin-top: 0.2rem; }
+.ig-auth-terms { margin: 0; font-size: 0.8125rem; opacity: 0.8; }
