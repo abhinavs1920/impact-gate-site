@@ -244,7 +244,7 @@ function Hero() {
             controls
             playsInline
             preload="metadata"
-            src="https://impact-gate-api.eastus.cloudapp.azure.com/media/commercial.mp4#t=0.1"
+            src="/media/commercial.mp4#t=0.1"
             aria-label="Impact Gate in one minute"
             onPlay={() => trackEvent("video_play", { content_type: "commercial" })}
             onTimeUpdate={(event) => trackVideoProgress(event.currentTarget, "commercial")}
@@ -279,7 +279,7 @@ function UseCase() {
           controls
           playsInline
           preload="metadata"
-          src="https://impact-gate-api.eastus.cloudapp.azure.com/media/demo.mp4#t=0.1"
+          src="/media/demo.mp4#t=0.1"
           aria-label="Impact Gate demo walkthrough"
           onPlay={() => trackEvent("video_play", { content_type: "demo" })}
           onTimeUpdate={(event) => trackVideoProgress(event.currentTarget, "demo")}
