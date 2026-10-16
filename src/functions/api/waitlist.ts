@@ -33,7 +33,7 @@ interface Payload {
   attribution?: unknown;
 }
 
-const OWNER_EMAIL = "abxh1920@gmail.com";
+const OWNER_EMAIL = "hello@impactgate.in";
 const SENDER_EMAIL = "beta@impactgate.in";
 
 const json = (body: Record<string, string | boolean>, status = 200) =>
