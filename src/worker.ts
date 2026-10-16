@@ -119,6 +119,14 @@ export async function proxyAgentApi(request: Request, env: Record<string, unknow
       upstream.pathname !== "/" || upstream.origin === incoming.origin
     ) throw new Error("Invalid API origin");
   } catch { return apiFailure(503, "The agent API is not configured."); }
+  // The API sits behind nginx and sometimes emits http:// or its internal host in
+  // request-derived metadata; every public response must name only the public origin.
+  const internalUrls = [`${upstream.protocol}//${upstream.host}`, `http://${upstream.host}`];
+  const publicUrl = (value: string): string => {
+    let out = value;
+    for (const internal of internalUrls) out = out.split(internal).join(incoming.origin);
+    return out;
+  };
   const target = new URL(upstream.origin);
   // The canonical public MCP endpoint is the host root; /mcp remains as an alias.
   target.pathname = incoming.pathname === "/" ? "/mcp" : incoming.pathname;
@@ -148,7 +156,7 @@ export async function proxyAgentApi(request: Request, env: Record<string, unknow
     "Access-Control-Allow-Methods", "Access-Control-Expose-Headers",
   ]) {
     const value = response.headers.get(name);
-    if (value) output.set(name, value.split(upstream.origin).join(incoming.origin));
+    if (value) output.set(name, publicUrl(value));
   }
   for (const cookie of response.headers.getSetCookie()) {
     if (/;\s*domain=/i.test(cookie)) continue; // never widen a cookie to another domain
@@ -157,9 +165,7 @@ export async function proxyAgentApi(request: Request, env: Record<string, unknow
   const contentType = response.headers.get("Content-Type") ?? "";
   if (contentType.includes("application/json") || contentType.includes("text/html")) {
     const body = await response.text();
-    const rewritten = body
-      .split(upstream.origin).join(incoming.origin)
-      .split(`"resource":"${incoming.origin}/mcp"`).join(`"resource":"${incoming.origin}/"`);
+    const rewritten = publicUrl(body).split(`"resource":"${incoming.origin}/mcp"`).join(`"resource":"${incoming.origin}/"`);
     return new Response(rewritten, { status: response.status, headers: output });
   }
   return new Response(response.body, { status: response.status, headers: output });
