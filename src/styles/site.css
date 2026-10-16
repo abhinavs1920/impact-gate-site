@@ -2577,3 +2577,6 @@ button:active {
     transform: none;
   }
 }
+
+.contact-form .form-consent { display: flex; gap: 0.55rem; align-items: flex-start; font-size: 0.9rem; line-height: 1.45; cursor: pointer; }
+.contact-form .form-consent input { margin-top: 0.2rem; flex: none; }
