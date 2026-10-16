@@ -8,6 +8,9 @@ const facts = JSON.parse(
 );
 assert.equal(facts.warnOnly.status, "available");
 assert.equal(facts.stage.status, "available");
+assert.equal(facts.model.status, "planned");
+assert.match(facts.model.copy, /planned/i);
+assert.match(facts.model.copy, /not enabled|not available/i);
 
 const source = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
 for (const section of [
@@ -37,6 +40,10 @@ assert.match(source, /href: "\/demo"/);
 assert.match(source, /Get in touch/);
 assert.match(source, /See which/);
 assert.match(source, /downstream services/);
+assert.match(source, /\/docs\/find-who-consumes-your-api-before-you-change-it/);
+assert.match(source, /\/docs\/detect-breaking-api-changes-in-pull-requests/);
+assert.match(source, /Do I need an AI code reviewer to find API consumers\?/);
+assert.match(source, /Does Impact Gate use AI or external model analysis\?/);
 assert.doesNotMatch(source, /Replace your production monitoring or observability tools/);
 assert.match(source, /data-theme-toggle|className="theme-toggle"/);
 assert.match(
@@ -56,6 +63,8 @@ assert.match(workspace, /ig-setup-steps/);
 assert.match(workspace, /Which API should we map first/);
 assert.match(workspace, /Runtime data is optional/);
 assert.match(workspace, /Retirement Radar/);
+assert.match(workspace, /href="\/docs\/pull-request-reports"/);
+assert.match(workspace, /href="\/docs\/detect-breaking-api-changes-in-pull-requests"/);
 
 const filesUnder = (root) => readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
   const path = join(root, entry.name);
@@ -77,6 +86,7 @@ for (const path of visibleSources) {
 const index = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const jsonLd = JSON.parse(index.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)[1]);
 const faq = jsonLd["@graph"].find((entry) => entry["@type"] === "FAQPage");
+assert.equal(faq.mainEntity.length, 7, "Homepage FAQ should contain seven questions.");
 const renderedHtml = readFileSync(new URL("../dist/index.html", import.meta.url), "utf8");
 const renderedDocument = parseHTML(renderedHtml).document;
 const visibleFaq = [...renderedDocument.querySelectorAll("details.faq-item")];

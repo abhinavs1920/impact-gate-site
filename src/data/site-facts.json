@@ -50,7 +50,7 @@
   "model": {
     "status": "planned",
     "label": "Optional model assistance",
-    "copy": "Optional model assistance is not required for the deterministic core and is not part of the default site promise."
+    "copy": "Optional model assistance is planned, but it is not enabled or available on the current deployment. Current analysis is deterministic and does not require a model provider."
   },
   "videos": {
     "status": "planned",

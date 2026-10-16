@@ -1,6 +1,6 @@
 # Impact Gate
 
-Last updated: 2026-10-13
+Last updated: 2026-10-16
 
 > Impact Gate is API change impact analysis for engineering teams. It reviews OpenAPI contract changes, traces downstream consumers in connected code, and shows evidence and uncertainty before merge. It is warn-only: it never blocks a pull request. Open to teams: MAP, GUARD, and RETIRE are available.
 
@@ -12,19 +12,29 @@ Impact Gate (impactgate.in) is an independent API change impact analysis product
 - [Coverage and limitations](https://impactgate.in/docs/coverage-and-limitations): what the analysis can and cannot conclude
 - [Permissions and data](https://impactgate.in/docs/permissions-and-data): what access is needed and how data is handled
 - [Pull request reports](https://impactgate.in/docs/pull-request-reports): what a report looks like
-- [Detect breaking API changes in a pull request](https://impactgate.in/docs/detect-breaking-api-changes-in-pull-requests)
+- [Detect downstream microservice impact before merging a GitHub PR](https://impactgate.in/docs/detect-breaking-api-changes-in-pull-requests)
 - [Find who consumes your API before you change it](https://impactgate.in/docs/find-who-consumes-your-api-before-you-change-it)
 - [API deprecation checklist](https://impactgate.in/docs/api-deprecation-impact-analysis-checklist)
-- [Cross-repo API impact analysis](https://impactgate.in/docs/cross-repo-api-impact-analysis)
-- [API usage observability with Prometheus or Datadog](https://impactgate.in/docs/api-usage-observability-prometheus-datadog)
+- [Cross-repository API change impact analysis](https://impactgate.in/docs/cross-repo-api-impact-analysis)
+- [oasdiff vs API consumer impact analysis: what each report tells you](https://impactgate.in/docs/oasdiff-vs-api-consumer-impact-analysis)
+- [Find API consumers with repository evidence and Prometheus or Datadog](https://impactgate.in/docs/api-usage-observability-prometheus-datadog)
+- [Connect Prometheus or Datadog](https://impactgate.in/docs/runtime-observability)
 - [How to deprecate a repository](https://impactgate.in/docs/how-to-deprecate-a-repository)
+- [Do I need an AI code reviewer to find API consumers?](https://impactgate.in/#faq)
 - [Contact](https://impactgate.in/contact)
 
 ## Facts
 - Input: OpenAPI contract changes in a pull request
 - Output: a pull request report with evidence, inferred paths, coverage gaps and "no observed use"
+- Consumer discovery: deterministic static analysis of selected, indexed repositories; supported patterns only
+- Runtime evidence: optional Prometheus request counters or Datadog indexed APM spans can add observed usage evidence
+- Optional model assistance: planned, not enabled; current analysis is deterministic and does not require a model provider
 - Posture: warn-only, merge decisions stay with the team
 - Status: open to teams; MAP, GUARD, RETIRE available
+
+## FAQ
+- **Do I need an AI code reviewer to find API consumers?** No. Impact Gate uses deterministic static analysis of connected, indexed repositories to trace supported API call paths and show source evidence. Optional Prometheus or Datadog runtime data can add observed request and function-call evidence, but it is not required for the first map. Coverage is limited to selected repositories and supported patterns, so external or dynamic consumers may still be unknown.
+- **Does Impact Gate use AI or external model analysis?** Optional model assistance is planned, but it is not enabled or available on the current deployment. Current analysis is deterministic and does not require a model provider.
 
 ## Official profiles
 - LinkedIn: https://www.linkedin.com/company/impactgate-in

@@ -178,6 +178,7 @@ export interface WorkspaceSettings {
   version: number;
   analysisMode: "deterministic";
   externalModelsEnabled: boolean;
+  aiSummaryEnabled: boolean;
   syncDefaultBranch: boolean;
   prCommentsEnabled: boolean;
   retentionDays: number;
@@ -279,6 +280,7 @@ export const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
   version: 1,
   analysisMode: "deterministic",
   externalModelsEnabled: false,
+  aiSummaryEnabled: false,
   syncDefaultBranch: true,
   prCommentsEnabled: true,
   retentionDays: 90,

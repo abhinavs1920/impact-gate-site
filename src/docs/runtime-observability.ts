@@ -214,6 +214,69 @@ export const runtimeObservabilityDoc: DocPage = {
       ],
     },
     {
+      id: "use-runtime-for-consumers",
+      title: "Use runtime evidence to investigate consumers",
+      blocks: [
+        {
+          type: "paragraph",
+          text: "Runtime data adds observed service and route activity to the static caller evidence from indexed repositories. A positive route observation shows that the mapped provider service received matching traffic during the configured window. It does not, by itself, identify which repository or source line made the request.",
+        },
+        {
+          type: "table",
+          headers: ["Runtime evidence", "What it supports", "What still needs review"],
+          rows: [
+            [
+              "Prometheus estimated requests",
+              "Observed activity from counter increases for the mapped service, method, and route template.",
+              "Caller identity, exact volume, and consumers outside the telemetry labels.",
+            ],
+            [
+              "Datadog indexed spans",
+              "Observed activity among indexed server request spans matching the configured query and facets.",
+              "Unsampled total traffic, complete retention coverage, and a caller source location.",
+            ],
+            [
+              "Runtime caller relationship",
+              "A source-supplied caller identity was mapped to an indexed consumer service.",
+              "Whether the static consumer uses the changed field or is the only deployed caller.",
+            ],
+            [
+              "No current observation",
+              "A coverage state requiring investigation.",
+              "It does not establish zero usage or absence of a consumer.",
+            ],
+          ],
+        },
+        {
+          type: "steps",
+          items: [
+            {
+              title: "Verify the route match",
+              text: "Compare the provider service mapping, HTTP method, and stable route template. `/orders/123` is not guessed into `/orders/{id}`; emit a template from instrumentation or configure the source field correctly.",
+            },
+            {
+              title: "Check caller identity",
+              text: "For Prometheus, aggregate a trustworthy low-cardinality `caller_service` label and set **Caller service label**. For Datadog, use a searchable caller facet. Map the caller value to an indexed consumer service before treating it as a dependency edge.",
+            },
+            {
+              title: "Compare static evidence",
+              text: "Open the consumer source reference at its recorded commit and compare it with the observation window. Runtime route activity can confirm service-level use while leaving the exact call site unknown.",
+            },
+            {
+              title: "Record the coverage boundary",
+              text: "Keep missing labels, sampled spans, group limits, stale imports, external clients, and unindexed repositories visible in the PR or deprecation review.",
+            },
+          ],
+        },
+        {
+          type: "callout",
+          tone: "warning",
+          title: "Runtime evidence does not replace compatibility analysis",
+          text: "Prometheus and Datadog observations provide aggregate context. Use the contract diff and static consumer references to determine whether a changed endpoint, request, response, or field affects a caller. A positive or zero runtime window is not approval to remove an API.",
+        },
+      ],
+    },
+    {
       id: "maintain-a-connection",
       title: "Refresh, edit, and disconnect",
       blocks: [
