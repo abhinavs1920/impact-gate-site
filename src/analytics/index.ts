@@ -7,6 +7,7 @@ import "./preferences.css";
 export type AnalyticsEvent =
   | "page_view" | "navigation_click" | "cta_click" | "contact_click" | "section_view" | "scroll_depth"
   | "form_start" | "form_submit" | "form_error" | "generate_lead"
+  | "marketing_opt_in" | "marketing_consent"
   | "docs_search" | "docs_search_result" | "docs_code_copy"
   | "sign_in_start" | "email_link_requested" | "login" | "sign_up" | "auth_error" | "sign_out"
   | "setup_started" | "github_connection_start" | "github_connected" | "repository_selection_saved"
@@ -22,6 +23,7 @@ export interface AnalyticsParams {
   contact_type?: string; provider?: string; method?: string; form_name?: string; error_type?: string;
   doc_slug?: string; search_topic?: string; content_type?: string; result_count?: number;
   repository_count?: number; endpoint_count?: number; service_count?: number; matched_count?: number;
+  choice?: string;
   unmatched_count?: number; percentage?: number; query_length?: number; lead_id?: string;
 }
 type Sdk = typeof import("firebase/analytics");
@@ -73,7 +75,7 @@ function safeParams(input: AnalyticsParams): Record<string, string | number> {
   const numeric = new Set(["result_count", "repository_count", "endpoint_count", "service_count",
     "matched_count", "unmatched_count", "percentage", "query_length"]);
   const text = new Set(["action", "placement", "page_section", "contact_type", "provider", "method",
-    "form_name", "error_type", "doc_slug", "search_topic", "content_type"]);
+    "form_name", "error_type", "doc_slug", "search_topic", "content_type", "choice"]);
   for (const [key, value] of Object.entries(input)) {
     if (numeric.has(key) && typeof value === "number" && Number.isFinite(value))
       clean[key] = Math.max(0, Math.min(1000000, Math.floor(value)));
