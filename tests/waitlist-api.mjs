@@ -46,7 +46,7 @@ const success = await onRequestPost({
 });
 assert.equal(success.status, 200);
 assert.match((await success.json()).message, /contact request was emailed successfully/i);
-assert.equal(sentMessage.to, "abxh1920@gmail.com");
+assert.equal(sentMessage.to, "hello@impactgate.in");
 assert.equal(sentMessage.from, "beta@impactgate.in");
 assert.equal(sentMessage.subject, "New Impact Gate contact request");
 assert.equal(sentMessage.replyTo, "applicant@example.com");
