@@ -90,9 +90,87 @@ export async function proxyWorkspaceApi(request: Request, env: Record<string, un
   return new Response(response.body, { status: response.status, headers: output });
 }
 
+const AGENT_PATH_PREFIXES = ["/.well-known", "/oauth", "/mcp", "/healthz"];
+
+/**
+ * Public agent entrypoint (mcp.impactgate.in): forwards MCP + OAuth traffic to the API
+ * origin. Unlike the workspace proxy this must let OAuth redirects and cookies pass, and
+ * it rewrites the internal origin out of discovery metadata so clients only see the
+ * public host. The upstream stays operator configured; request input never selects it.
+ */
+export async function proxyAgentApi(request: Request, env: Record<string, unknown>): Promise<Response> {
+  const incoming = new URL(request.url);
+  if (!["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"].includes(request.method))
+    return apiFailure(405, "Method not allowed.");
+  const allowed = AGENT_PATH_PREFIXES.some(
+    (prefix) => incoming.pathname === prefix || incoming.pathname.startsWith(`${prefix}/`),
+  );
+  if (!allowed) return apiFailure(404, "Not found.");
+  let upstream: URL;
+  try {
+    if (typeof env.IMPACT_GATE_API_ORIGIN !== "string") throw new Error("Missing API origin");
+    upstream = new URL(env.IMPACT_GATE_API_ORIGIN);
+    const local = ["localhost", "127.0.0.1", "[::1]"].includes(upstream.hostname);
+    if (
+      (upstream.protocol !== "https:" && !(upstream.protocol === "http:" && local)) ||
+      upstream.username || upstream.password || upstream.search || upstream.hash ||
+      upstream.pathname !== "/" || upstream.origin === incoming.origin
+    ) throw new Error("Invalid API origin");
+  } catch { return apiFailure(503, "The agent API is not configured."); }
+  const target = new URL(upstream.origin);
+  target.pathname = incoming.pathname;
+  target.search = incoming.search;
+  const headers = new Headers({ Accept: request.headers.get("Accept") ?? "*/*" });
+  for (const name of ["Authorization", "Content-Type", "MCP-Session-Id", "MCP-Protocol-Version", "Last-Event-ID", "Cookie"]) {
+    const value = request.headers.get(name);
+    if (value) headers.set(name, value);
+  }
+  headers.set("X-Forwarded-Proto", incoming.protocol.slice(0, -1));
+  headers.set("X-Forwarded-Host", incoming.host);
+  let response: Response;
+  try {
+    response = await fetch(target.href, {
+      method: request.method,
+      headers,
+      ...(request.method === "GET" || request.method === "HEAD" ? {} : { body: request.body }),
+      redirect: "manual",
+      signal: request.signal,
+    });
+  } catch { return apiFailure(502, "The agent API could not be reached."); }
+  const output = new Headers();
+  for (const name of [
+    "Content-Type", "Cache-Control", "Pragma", "Expires", "Retry-After", "ETag",
+    "Content-Security-Policy", "WWW-Authenticate", "Location", "MCP-Session-Id",
+    "MCP-Protocol-Version", "Access-Control-Allow-Origin", "Access-Control-Allow-Headers",
+    "Access-Control-Allow-Methods", "Access-Control-Expose-Headers",
+  ]) {
+    const value = response.headers.get(name);
+    if (value) output.set(name, value.split(upstream.origin).join(incoming.origin));
+  }
+  for (const cookie of response.headers.getSetCookie()) {
+    if (/;\s*domain=/i.test(cookie)) continue; // never widen a cookie to another domain
+    output.append("Set-Cookie", cookie.split(upstream.hostname).join(incoming.hostname));
+  }
+  const contentType = response.headers.get("Content-Type") ?? "";
+  if (contentType.includes("application/json") || contentType.includes("text/html")) {
+    const body = await response.text();
+    return new Response(body.split(upstream.origin).join(incoming.origin), {
+      status: response.status,
+      headers: output,
+    });
+  }
+  return new Response(response.body, { status: response.status, headers: output });
+}
+
 export default {
   async fetch(request: Request, env: Record<string, unknown>): Promise<Response> {
-    const pathname = new URL(request.url).pathname;
+    const url = new URL(request.url);
+    const pathname = url.pathname;
+    const agentHost =
+      typeof env.IMPACT_GATE_AGENT_HOST === "string" && env.IMPACT_GATE_AGENT_HOST
+        ? env.IMPACT_GATE_AGENT_HOST.toLowerCase()
+        : "mcp.impactgate.in";
+    if (url.hostname.toLowerCase() === agentHost) return proxyAgentApi(request, env);
     if (pathname === "/sandbox" || pathname.startsWith("/sandbox/")) {
       if (request.method !== "GET") return apiFailure(405, "The sandbox supports read-only GET requests.");
       return proxyWorkspaceApi(request, env);
@@ -114,3 +192,4 @@ export default {
     return new Response("Not found", { status: 404 });
   }
 };
+
