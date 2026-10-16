@@ -980,7 +980,7 @@ export const docPages: DocPage[] = [
         title: "2. OAuth authorization",
         blocks: [
           { type: "paragraph", text: "On first use the host opens the authorization endpoint. The reviewer registered a client through the dynamic registration endpoint, then opened the authorize URL with a PKCE S256 challenge. The hosted page asks for a Google sign-in:" },
-          { type: "image", src: "/docs/images/agent-plugin-authorize.png", alt: "The hosted Connect Impact Gate authorization page with a Continue with Google button.", caption: "The live authorization page at the production API origin, captured during this review." },
+          { type: "image", src: "/docs/images/agent-plugin-authorize-page.png", alt: "The hosted Connect Impact Gate authorization page with a Continue with Google button.", caption: "The live authorization page at the production API origin, captured during this review." },
           { type: "paragraph", text: "After sign-in the server redirected to the registered redirect URI with an authorization code and the original state value; the state matched the value sent. The code was exchanged at the token endpoint with the PKCE verifier, and the server returned an access token. An invalid code is rejected with invalid_grant." },
         ],
       },
