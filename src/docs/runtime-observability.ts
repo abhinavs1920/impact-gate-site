@@ -283,9 +283,9 @@ export const runtimeObservabilityDoc: DocPage = {
         {
           type: "bullets",
           items: [
-            "Each connection becomes eligible for an automatic import every 15 minutes. Imports are bounded and processed in small batches; backlog can delay a refresh. Use Sync now in Settings to request an immediate import.",
+            "Each connection is imported automatically on a regular schedule; a busy queue can delay a refresh. Use Sync now in Settings to request an immediate import.",
             "Edit connection retains your saved mappings. Choose Find services again to discover new names. Changes to the source settings require discovery again, or manual mappings. For Prometheus choose Keep saved credentials; for Datadog leave both keys blank to retain them. Changing the origin/site requires fresh credentials. Choose No authentication only for a Prometheus source that permits unauthenticated reads.",
-            "A failed import is shown as Sync error. Current endpoint coverage becomes unknown until a successful import. Observations older than 45 minutes are also excluded from current coverage.",
+            "A failed import is shown as Sync error. Current endpoint coverage becomes unknown until a successful import. Observations that have gone stale are also excluded from current coverage.",
             "Disconnect removes the saved encrypted credentials and imported evidence for that source. Repositories and static evidence remain available. Disconnect does not modify your Prometheus or Datadog account; revoke an obsolete key in that provider as well.",
             "When both sources observe an endpoint, the inventory prefers Prometheus counter increases for volume and can use Datadog for caller evidence. Counts from the two sources are not added together.",
           ],
@@ -313,7 +313,7 @@ export const runtimeObservabilityDoc: DocPage = {
             },
             {
               title: "Provide build provenance or review a link",
-              text: "Add the GitHub repository ID, full source commit SHA, and immutable sha256 image digest for a build, or choose Associate repository on a workload. The exact digest join reflects the submitted record; Impact Gate does not verify operator-submitted provenance against signed CI. A running Pod imageID is joined to its Deployment through Kubernetes owner references; tag-only workload images are not treated as immutable digests.",
+              text: "Add the GitHub repository ID, full source commit SHA, and immutable sha256 image digest for a build, or choose Associate repository on a workload. The exact digest join reflects the submitted record; Impact Gate does not verify operator-submitted provenance against signed CI.",
             },
             {
               title: "Review telemetry names separately",
@@ -341,7 +341,7 @@ rules:
           type: "callout",
           tone: "warning",
           title: "Evidence and freshness",
-          text: "Workload inventory refreshes every 15 minutes. A failed refresh leaves previous workload records marked stale. Conflicting artifact and operator evidence is shown as ambiguous. Runtime route traffic is service-level evidence and does not prove that a particular source call site executed.",
+          text: "Workload inventory refreshes automatically. A failed refresh leaves previous workload records marked stale. Conflicting artifact and operator evidence is shown as ambiguous. Runtime route traffic is service-level evidence and does not prove that a particular source call site executed.",
         },
       ],
     },
@@ -371,7 +371,7 @@ rules:
             ],
             [
               "Rate limit, timeout, or too many series",
-              "Narrow the environment, services, routes, or time window. Queries time out and imports accept at most 5,000 rows and 2 MiB. Datadog aggregation limits can omit groups even below the row limit.",
+              "Narrow the environment, services, routes, or time window. Very large queries can time out or be truncated. Datadog aggregation limits can omit groups even below the row limit.",
             ],
             [
               "No caller relationships",

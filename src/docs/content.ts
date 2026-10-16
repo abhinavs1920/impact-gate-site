@@ -646,7 +646,7 @@ export const docPages: DocPage[] = [
             ["Java consumers", "Supported HTTP client patterns, including supported Spring clients", "Framework support depends on recognizable source patterns; arbitrary reflection is not established."],
             ["Service identity", "Repository roots and supported package / Spring / deployment manifests", "Discovery may need review in monorepos or unusual layouts."],
             ["Runtime observations", "Prometheus request counters and Datadog indexed APM spans", "Requires an existing instrumented source, explicit service mapping, and fresh successful imports; missing data leaves usage unknown."],
-             ["Optional model assistance", "Planned; not enabled", "The connected worker currently performs deterministic analysis. No external model provider is connected, and model assistance is not required for the core analysis."],
+             ["Optional model assistance", "Planned*; not enabled", "The connected worker currently performs deterministic analysis. No external model provider is connected, and model assistance is not required for the core analysis."],
           ] },
           { type: "paragraph", text: "Source-language support describes extraction capabilities, not complete support for every library or code pattern. Check repository Coverage and individual report notes for the actual result in your codebase." },
         ],
@@ -686,7 +686,7 @@ export const docPages: DocPage[] = [
         title: "Why coverage can be partial",
         blocks: [
           { type: "bullets", items: ["No supported provider document was found, or a document was invalid.", "External or unresolved references prevented a complete contract comparison.", "A repository contains source languages or client patterns outside supported extraction.", "GitHub returned a truncated tree or an expected blob was unavailable.", "A file exceeded the per-file budget, contained binary data, or was a symlink.", "The repository or consumer analysis exceeded a processing budget."] },
-          { type: "paragraph", text: "Current repository collection uses a budget of 1,500 candidate files and approximately 24 MiB of declared file data, with a 500 KiB per-file cutoff. Contracts and manifests are prioritized before source when selecting files. Dependencies, build output, test/fixture directories, and lockfiles are excluded. These limits bound collection and do not promise exhaustive parsing of a repository." },
+          { type: "paragraph", text: "Repository collection is size-bounded and focuses on API contracts and the code that uses them. Dependencies, build output, test directories, and lockfiles are left out. Very large repositories or files may be only partly covered, so the report lists what was and was not analyzed instead of promising exhaustive parsing." },
           { type: "paragraph", text: "**Supported files**, **Skipped files**, **OpenAPI documents**, and the notes under **Coverage** describe the saved result. Re-indexing can resolve a missing document or restored access, but it does not add support for an unsupported language." },
         ],
       },
