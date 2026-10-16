@@ -28,6 +28,7 @@ interface Payload {
   email?: unknown;
   repository?: unknown;
   notes?: unknown;
+  marketing_opt_in?: unknown;
   website?: unknown;
   attribution?: unknown;
 }
@@ -85,6 +86,7 @@ export async function onRequestPost({
   const repository =
     typeof form.repository === "string" ? form.repository.trim() : "";
   const notes = typeof form.notes === "string" ? form.notes.trim() : "";
+  const marketingOptIn = form.marketing_opt_in === "yes";
 
   if (
     email.length > 254 ||
@@ -110,7 +112,7 @@ export async function onRequestPost({
       // notification result under separate keys instead of racing two writes.
       const key = saved ? "waitlist-notification:" + leadId : "waitlist:" + leadId;
       const record = saved ? { leadId, notificationStatus, updatedAt: new Date().toISOString() }
-        : { leadId, createdAt, email, repository, notes, attribution, notificationStatus,
+        : { leadId, createdAt, email, repository, notes, marketingOptIn, attribution, notificationStatus,
           ...(notificationStatus === "pending" ? { notificationKey: "waitlist-notification:" + leadId } : {}) };
       await env.WAITLIST.put(key, JSON.stringify(record),
         { expirationTtl: 60 * 60 * 24 * 90 });
@@ -135,6 +137,7 @@ export async function onRequestPost({
     `Work email: ${email}`,
     `GitHub organization or repository: ${repository}`,
     `Shared API context: ${notes || "(not provided)"}`,
+    `Marketing/promotions emails: ${marketingOptIn ? "YES - opted in on the contact form" : "no"}`,
     "",
     "Lead ID: " + leadId,
     "Received: " + createdAt,
@@ -145,6 +148,7 @@ export async function onRequestPost({
     `<p><strong>Work email:</strong> ${escapeHtml(email)}</p>`,
     `<p><strong>GitHub organization or repository:</strong> ${escapeHtml(repository)}</p>`,
     `<p><strong>Shared API context:</strong><br>${escapeHtml(notes || "(not provided)").replace(/\n/g, "<br>")}</p>`,
+    `<p><strong>Marketing/promotions emails:</strong> ${marketingOptIn ? "YES - opted in on the contact form" : "no"}</p>`,
     "<p><strong>Lead ID:</strong> " + leadId + "<br><strong>Received:</strong> " + createdAt + "</p>",
     "<ul>" + Object.entries(attribution).map(([key, value]) => "<li>" + escapeHtml(key) + ": " + escapeHtml(value) + "</li>").join("") + "</ul>",
   ].join("");
