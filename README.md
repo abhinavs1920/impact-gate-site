@@ -21,11 +21,11 @@ Veo prompts alone do not produce a finished file containing mixed real footage, 
 
 ## Website development
 
-The public site is a React/Vite application. The Cloudflare Worker in `src/worker.ts` serves the Vite `dist/` assets and handles `/api/waitlist`. Contact requests are saved in private Cloudflare KV for 90 days and sent to `abxh1920@gmail.com` through Cloudflare Email Service; the reply-to address is set to the applicant. Campaign attribution and a random lead reference connect accepted requests with website conversion events.
+The public site is a React/Vite application. The Cloudflare Worker in `src/worker.ts` serves the Vite `dist/` assets and handles `/api/waitlist`. Contact requests are saved in private Cloudflare KV for 90 days and sent to `hello@impactgate.in` through Cloudflare Email Service; the reply-to address is set to the applicant. Campaign attribution and a random lead reference connect accepted requests with website conversion events.
 
 The public homepage is indexable. `public/robots.txt` permits search and AI-answer crawlers while excluding the API, and `public/sitemap.xml` lists the canonical URL. The homepage includes canonical/social metadata and structured software and FAQ data. Indexing and search rankings are controlled by the search engines and are not guaranteed.
 
-Before contact notifications can be delivered, onboard `impactgate.in` under **Cloudflare Dashboard → Compute → Email Service → Email Sending**. Configure the DNS records Cloudflare provides and wait for sending-domain verification. The Worker uses `beta@impactgate.in` as sender, keeps `pilot@impactgate.in` on the sender allowlist for old threads, and sends notifications to `abxh1920@gmail.com`.
+Before contact notifications can be delivered, onboard `impactgate.in` under **Cloudflare Dashboard → Compute → Email Service → Email Sending**. Configure the DNS records Cloudflare provides and wait for sending-domain verification. The Worker uses `beta@impactgate.in` as sender, keeps `pilot@impactgate.in` on the sender allowlist for old threads, and sends notifications to `hello@impactgate.in`.
 
 ```sh
 pnpm install --frozen-lockfile
