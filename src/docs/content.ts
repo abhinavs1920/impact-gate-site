@@ -951,6 +951,81 @@ export const docPages: DocPage[] = [
     ],
   },
   {
+    slug: "agent-plugin-review",
+    title: "Agent plugin review walkthrough",
+    description: "A recorded end-to-end walkthrough of the Impact Gate agent plugin for marketplace reviewers: installation, OAuth authorization, MCP connection, read-only tools, tenant scoping, and representative output.",
+    group: "Reference",
+    readingTime: 6,
+    sections: [
+      {
+        id: "about",
+        title: "What this page shows",
+        blocks: [
+          { type: "paragraph", text: "This page is the review recording for the Impact Gate agent plugin submission. Every step below was executed against the live production deployment on October 16, 2026, and every screen and output shown is the real result captured at that time. No mockups or staging data are used." },
+          { type: "paragraph", text: "The plugin connects an AI coding host to Impact Gate over MCP (Model Context Protocol). It exposes six read-only tools that return tenant-scoped API impact evidence: workspace status, change analysis, consumer lookup, API flow detail, function usage, and fix verification." },
+        ],
+      },
+      {
+        id: "install",
+        title: "1. Install and configure",
+        blocks: [
+          { type: "paragraph", text: "The plugin ships in the Impact Gate repository under plugins/impact-gate-agent. Configuration points the host at the production MCP endpoint; no API keys are created or stored by the user, because authorization uses OAuth with dynamic client registration." },
+          { type: "code", language: "text", filename: "MCP endpoint", value: "https://impact-gate-api.centralindia.cloudapp.azure.com/mcp" },
+          { type: "code", language: "text", filename: "OAuth discovery document", value: "https://impact-gate-api.centralindia.cloudapp.azure.com/.well-known/oauth-authorization-server" },
+          { type: "paragraph", text: "The discovery document advertises the issuer, authorization endpoint, token endpoint, and dynamic registration endpoint, so a compliant host configures itself. The only scope is impact:read." },
+        ],
+      },
+      {
+        id: "oauth",
+        title: "2. OAuth authorization",
+        blocks: [
+          { type: "paragraph", text: "On first use the host opens the authorization endpoint. The reviewer registered a client through the dynamic registration endpoint, then opened the authorize URL with a PKCE S256 challenge. The hosted page asks for a Google sign-in:" },
+          { type: "image", src: "/docs/images/agent-plugin-authorize.png", alt: "The hosted Connect Impact Gate authorization page with a Continue with Google button.", caption: "The live authorization page at the production API origin, captured during this review." },
+          { type: "paragraph", text: "After sign-in the server redirected to the registered redirect URI with an authorization code and the original state value; the state matched the value sent. The code was exchanged at the token endpoint with the PKCE verifier, and the server returned an access token. An invalid code is rejected with invalid_grant." },
+        ],
+      },
+      {
+        id: "mcp",
+        title: "3. MCP connection and tools",
+        blocks: [
+          { type: "paragraph", text: "With the token as a Bearer credential, the MCP initialize handshake succeeded:" },
+          { type: "code", language: "json", filename: "initialize result", value: "{\n  \"protocolVersion\": \"2025-03-26\",\n  \"capabilities\": { \"tools\": {} },\n  \"serverInfo\": { \"name\": \"impact-gate\", \"version\": \"1\" },\n  \"instructions\": \"Read-only tenant-scoped Impact Gate evidence. Results state indexed commit, freshness, and uncertainty.\"\n}" },
+          { type: "paragraph", text: "tools/list returned exactly six tools, all annotated readOnlyHint: true and destructiveHint: false:" },
+          { type: "bullets", items: [
+            "impactgate_workspace_status - authorized workspace and indexed repository status.",
+            "impactgate_analyze_change - persisted deterministic impact findings for a bounded change.",
+            "impactgate_find_consumers - which consumers call an API endpoint or field.",
+            "impactgate_get_api_flow - handler and function flow for one API.",
+            "impactgate_get_function_usage - callers and callees for one function.",
+            "impactgate_verify_fix - check a proposed fix against persisted findings.",
+          ] },
+        ],
+      },
+      {
+        id: "scoping",
+        title: "4. Tenant and workspace scoping",
+        blocks: [
+          { type: "paragraph", text: "Calls without a workspace selection do not guess. The server answered with an error that lists only the workspaces this account is authorized for:" },
+          { type: "code", language: "json", filename: "workspace required", value: "{\n  \"code\": -32003,\n  \"message\": \"Select a workspace before continuing.\",\n  \"data\": [\n    { \"workspaceId\": \"3fb27312-fc17-42c2-a71c-52b31af510fd\", \"name\": \"impact-gate\" },\n    { \"workspaceId\": \"dfd57ca3-1548-461b-bedb-bef0af96b3a8\", \"name\": \"abhinavs1920\" }\n  ]\n}" },
+          { type: "paragraph", text: "Requests for data outside the authorized set are refused: asking for an endpoint the selected workspace does not contain returned \"No authorized workspace contains this data.\" Each response carries the workspace id, snapshot id, and the indexed commit it was computed from." },
+        ],
+      },
+      {
+        id: "output",
+        title: "5. Representative output",
+        blocks: [
+          { type: "paragraph", text: "impactgate_workspace_status on the demo workspace returned the indexed repositories with their exact commits and freshness:" },
+          { type: "code", language: "json", filename: "workspace status (excerpt)", value: "{\n  \"workspaceId\": \"3fb27312-fc17-42c2-a71c-52b31af510fd\",\n  \"snapshotId\": \"3fb27312-fc17-42c2-a71c-52b31af510fd:689\",\n  \"indexedAt\": \"2026-10-15T05:57:24.206Z\",\n  \"indexedRepositories\": [\n    { \"fullName\": \"impact-gate/ig-lab-catalog-api\", \"sha\": \"ad3dfeb7e6ced1f70164a09c8fac927593aec793\", \"status\": \"indexed\" },\n    { \"fullName\": \"impact-gate/ig-lab-consumer-java-1\", \"sha\": \"8c5485bcc497bfed49462e23bd5bfc145fb03975\", \"status\": \"indexed\" }\n  ]\n}" },
+          { type: "paragraph", text: "Every tool result includes a request id, generation time, coverage status, and limitation notes, so a reviewer can see exactly what evidence was available when the answer was computed. Analysis is deterministic and coverage-bound: what the index cannot see is reported as unknown, never as safe." },
+          { type: "links", items: [
+            { label: "Terms of Service", href: "/docs/terms-of-service", description: "The terms that govern the plugin and the Service." },
+            { label: "Coverage and limitations", href: "/docs/coverage-and-limitations", description: "What the analysis can and cannot see." },
+          ] },
+        ],
+      },
+    ],
+  },
+  {
     slug: "terms-of-service",
     title: "Terms of Service",
     description: "The terms that govern use of the Impact Gate website, workspace, GitHub App, and agent plugin.",
