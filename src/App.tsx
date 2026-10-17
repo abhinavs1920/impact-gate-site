@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from "react";
 import siteFacts from "./data/site-facts.json";
-import DocsApp from "./docs/DocsApp";
+const DocsApp = lazy(() =>
+  import("./docs/DocsApp").then((module) => ({ default: module.default })),
+);
 import ContactPage from "./contact/ContactPage";
 import { emailHref, emails } from "./ui/contact";
 import { leadAttribution, trackEvent, trackVideoProgress } from "./analytics";
@@ -898,7 +900,11 @@ export default function App({ pathname: requestedPath }: { pathname?: string } =
   }, []);
 
   if (pathname === "/docs" || pathname.startsWith("/docs/"))
-    return <DocsApp pathname={pathname} />;
+    return (
+      <Suspense fallback={<main className="product-screen-loading" />}>
+        <DocsApp pathname={pathname} />
+      </Suspense>
+    );
   if (pathname === "/contact")
     return <><a className="skip-link" href="#main-content">Skip to content</a><Header innerPage active="/contact" /><ContactPage /><Footer innerPage /></>;
   if (pathname === "/demo")
