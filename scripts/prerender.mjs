@@ -1,7 +1,23 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { createElement } from "react";
-import { renderToString } from "react-dom/server";
+import { renderToPipeableStream } from "react-dom/server";
+import { Writable } from "node:stream";
+
+function renderToHtml(element) {
+  return new Promise((resolve, reject) => {
+    let html = "";
+    const sink = new Writable({
+      write(chunk, _encoding, callback) { html += chunk.toString(); callback(); },
+    });
+    const { pipe } = renderToPipeableStream(element, {
+      onAllReady() { pipe(sink); },
+      onError(error) { reject(error); },
+    });
+    sink.on("finish", () => resolve(html));
+    sink.on("error", reject);
+  });
+}
 import { createServer } from "vite";
 
 const server = await createServer({
@@ -87,10 +103,8 @@ try {
   if (!template.includes(rootPlaceholder)) {
     throw new Error("React root placeholder is missing from dist/index.html.");
   }
-  const renderRoot = (pathname) =>
-    `<div id="root">${renderToString(createElement(App, { pathname }))}</div>`;
-  writeFileSync("dist/index.html", template.replace(rootPlaceholder, () => renderRoot("/")));
-
+  const renderRoot = async (pathname) =>
+    `<div id="root">${await renderToHtml(createElement(App, { pathname }))}</div>`;
   const routes = [{
     pathname: "/docs",
     title: "Documentation",
@@ -108,10 +122,12 @@ try {
     routes.push({ pathname: `/docs/${page.slug}`, title: page.title, description: page.description, page });
   }
   routes.push({ pathname: "/contact", title: "Contact the team", description: "Contact Impact Gate for product support, onboarding, business inquiries, billing, privacy requests, and security disclosures.", contact: true });
+  const homeRoot = await renderRoot("/");
+  writeFileSync("dist/index.html", template.replace(rootPlaceholder, () => homeRoot));
   for (const route of routes) {
     const output = `dist${route.pathname}.html`;
     mkdirSync(dirname(output), { recursive: true });
-    writeFileSync(output, documentationHtml(template, route, renderRoot(route.pathname)));
+    writeFileSync(output, documentationHtml(template, route, await renderRoot(route.pathname)));
   }
 
   const sitemapRoutes = ["/", ...routes.map((route) => route.pathname)];

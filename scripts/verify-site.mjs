@@ -159,7 +159,15 @@ if (!script) throw new Error("Rendered React bundle is missing.");
 const scriptPath = join("dist", script.replace(/^\/+/, ""));
 if (!existsSync(scriptPath))
   throw new Error(`Rendered React bundle not found: ${scriptPath}`);
-const js = readFileSync(scriptPath, "utf8");
+const js = [
+  scriptPath,
+  ...readdirSync(join("dist", "assets"))
+    .filter((file) => file.endsWith(".js"))
+    .map((file) => join("dist", "assets", file)),
+]
+  .filter((file, index, files) => files.indexOf(file) === index)
+  .map((file) => readFileSync(file, "utf8"))
+  .join("\n");
 for (const id of [
   "main-content",
   "how-it-works",
