@@ -1,5 +1,5 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { createElement } from "react";
 import { renderToPipeableStream } from "react-dom/server";
 import { Writable } from "node:stream";
@@ -47,6 +47,8 @@ function documentationHtml(template, route, renderedRoot) {
   const title = `${route.title} | Impact Gate${route.contact ? "" : " Docs"}`;
   const canonical = `${origin}${route.pathname}`;
   let html = template.replace(rootPlaceholder, () => renderedRoot);
+  html = replaceRequired(html, /<\/head>/,
+    `<meta name="impact-gate-prerendered" content="${route.pathname}" /></head>`, "prerender marker");
   html = replaceRequired(html, /<title>[\s\S]*?<\/title>/,
     `<title>${escapeHtml(title)}</title>`, "document title");
 
@@ -93,7 +95,35 @@ function documentationHtml(template, route, renderedRoot) {
   const json = JSON.stringify(structuredData).replace(/</g, "\\u003c");
   html = replaceRequired(html, /<script\s+type="application\/ld\+json">[\s\S]*?<\/script>/,
     `<script type="application/ld+json">${json}</script>`, "structured data");
+  if (route.preloadChunks?.length) {
+    const links = route.preloadChunks
+      .map((chunk) => `<link rel="modulepreload" href="/assets/${chunk}" />`)
+      .join("");
+    html = replaceRequired(html, /<\/head>/, `${links}</head>`, "modulepreload hint");
+  }
   return html;
+}
+
+function collectLazyChunks(entryPattern) {
+  const assetsDir = join("dist", "assets");
+  const names = new Set(readdirSync(assetsDir).filter((name) => name.endsWith(".js")));
+  const entry = [...names].find((name) => entryPattern.test(name));
+  if (!entry) throw new Error(`Lazy chunk not found in dist/assets: ${entryPattern}`);
+  const mainEntry = readFileSync("dist/index.html", "utf8").match(/src="\/assets\/([^"]+\.js)"/)?.[1];
+  const seen = new Set();
+  const queue = [entry];
+  while (queue.length) {
+    const name = queue.pop();
+    if (seen.has(name)) continue;
+    seen.add(name);
+    const code = readFileSync(join(assetsDir, name), "utf8");
+    for (const match of code.matchAll(/import\s*\(?\s*["']\.\/([^"']+\.js)["']\s*\)?/g)) {
+      const dep = match[1];
+      if (names.has(dep) && dep !== mainEntry && !seen.has(dep)) queue.push(dep);
+    }
+  }
+  seen.delete(mainEntry);
+  return [...seen];
 }
 
 try {
@@ -122,8 +152,18 @@ try {
     routes.push({ pathname: `/docs/${page.slug}`, title: page.title, description: page.description, page });
   }
   routes.push({ pathname: "/contact", title: "Contact the team", description: "Contact Impact Gate for product support, onboarding, business inquiries, billing, privacy requests, and security disclosures.", contact: true });
+  const docsChunks = collectLazyChunks(/^DocsApp-.*\.js$/);
+  for (const route of routes) {
+    if (route.pathname === "/docs" || route.pathname.startsWith("/docs/")) route.preloadChunks = docsChunks;
+  }
   const homeRoot = await renderRoot("/");
-  writeFileSync("dist/index.html", template.replace(rootPlaceholder, () => homeRoot));
+  const homeHtml = replaceRequired(
+    template.replace(rootPlaceholder, () => homeRoot),
+    /<\/head>/,
+    '<meta name="impact-gate-prerendered" content="/" /></head>',
+    "prerender marker",
+  );
+  writeFileSync("dist/index.html", homeHtml);
   for (const route of routes) {
     const output = `dist${route.pathname}.html`;
     mkdirSync(dirname(output), { recursive: true });
