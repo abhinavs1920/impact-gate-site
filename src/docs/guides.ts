@@ -357,6 +357,58 @@ export const guidePages: DocPage[] = [
     ],
   },
   {
+    slug: "api-backward-compatibility-what-breaks-consumers",
+    title: "API backward compatibility: which changes actually break consumers",
+    description: "A field-by-field reference for which REST API changes break existing consumers, which are usually safe, and how to check a change against real consumer code before merge.",
+    group: "Guides",
+    readingTime: 6,
+    sections: [
+      { id: "what-compatibility-means", title: "What backward compatibility means for a REST API", blocks: [
+        p("An API change is backward compatible when every existing consumer can keep working without changing its own code. That definition sounds contract-centric, but the real test is consumer-centric: a change is only safe if no consumer relies on the part you changed in a way you broke."),
+        p("This is why a contract diff alone cannot answer the compatibility question. The diff lists what changed in the interface. Whether that change breaks someone depends on which fields, statuses, and values each consumer actually reads, sends, or handles."),
+      ] },
+      { id: "changes-that-break", title: "Changes that break consumers", blocks: [
+        table(["Change", "Why it breaks"], [
+          ["Remove an endpoint or change its path or method", "Every caller of that route now fails at call time."],
+          ["Remove a response field", "Consumers that read or map the field fail or lose function."],
+          ["Change a field type or format", "Deserialization and comparisons in consumer code no longer match."],
+          ["Add a required request field or parameter", "Existing requests that omit it become invalid."],
+          ["Narrow a request enum or constraint", "Previously valid requests are rejected."],
+          ["Rename a field", "Equivalent to remove-plus-add: readers of the old name break."],
+          ["Change a documented success status or media type", "Clients that branch on status or content type mis-handle the response."],
+          ["Change default or validation behavior", "Consumers that relied on the old behavior change silently."],
+        ]),
+        warning("Removal is not the only break", "Teams watch for deleted routes and fields, but type changes, new required inputs, and behavior changes break consumers just as reliably, and they are easier to miss in review."),
+      ] },
+      { id: "changes-usually-safe", title: "Changes that are usually safe", blocks: [
+        bullets(["Adding a new endpoint, without changing existing ones.", "Adding an optional request field with a preserved default.", "Adding a response field, for consumers that ignore unknown fields.", "Widening a request constraint, so more requests become valid."]),
+        p("\"Usually\" is the operative word. A new response enum value breaks strict clients that reject unknown values. A new response field breaks consumers that validate responses against a closed schema. Safety depends on how tolerant each consumer's reading code is, not on the change alone."),
+      ] },
+      { id: "compatibility-is-consumer-centric", title: "Why compatibility is a property of consumers", blocks: [
+        p("Two consumers of the same API can experience the same change differently. A tolerant reader maps unknown enum values to a default and keeps working; a strict validator fails on the same payload. The contract change is identical, the outcome is not."),
+        p("The practical consequence: a compatibility review needs to know which consumers read the changed part. A removed field that no indexed consumer reads is a retirement candidate to review, not an incident. A new enum value read by three strict clients is a coordinated change, not a safe addition."),
+      ] },
+      { id: "review-workflow", title: "A practical compatibility review", blocks: [
+        steps([
+          ["Diff the contract", "List what changed between the base and head OpenAPI documents: paths, methods, parameters, schemas, statuses, enum values, constraints."],
+          ["Classify each change", "Mark each as breaking, usually safe, or behavior-changing using the tables above."],
+          ["Check who reads the changed part", "For every breaking or uncertain change, find the consumers that call the operation or read the field in connected, indexed repositories."],
+          ["Record the gaps", "External, dynamic, generated, or unindexed consumers are unknowns. Write them down as review gaps instead of treating them as absent."],
+          ["Coordinate before merge", "Give every confirmed affected consumer an owner and a migration plan, or record an explicitly accepted gap."],
+        ]),
+      ] },
+      { id: "where-impact-gate-fits", title: "Where Impact Gate fits", blocks: [
+        p("Impact Gate compares the pull request's exact base and head contracts and traces which selected, indexed consumer repositories call the changed operations and read the changed fields. The report shows source references, evidence states, and coverage notes, and it stays advisory: it never blocks a merge, and a clean report certifies only the analyzed scope."),
+        links([
+          { label: "Check a pull request before merge", href: "/docs/detect-breaking-api-changes-in-pull-requests", description: "Run the full contract-diff plus consumer-evidence workflow on a GitHub PR." },
+          { label: "Find who consumes your API", href: "/docs/find-who-consumes-your-api-before-you-change-it", description: "Troubleshoot missing static, runtime, and external consumer evidence." },
+          { label: "Compare oasdiff and consumer impact analysis", href: "/docs/oasdiff-vs-api-consumer-impact-analysis", description: "See how contract diffing and downstream evidence fit together." },
+          { label: "Read the coverage boundaries", href: "/docs/coverage-and-limitations", description: "What the analysis can and cannot conclude." },
+        ]),
+      ] },
+    ],
+  },
+  {
     slug: "how-to-deprecate-a-repository",
     title: "How to deprecate a repository: a checklist",
     description: "Steps to retire a GitHub repository without breaking dependents: find dependents, announce, redirect, archive.",

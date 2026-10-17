@@ -72,6 +72,7 @@ export const docPages: DocPage[] = [
              { label: "Assess downstream impact before merging", href: "/docs/detect-breaking-api-changes-in-pull-requests", description: "Combine a contract diff with consumer evidence in a GitHub PR." },
              { label: "Find consumers across repositories", href: "/docs/find-who-consumes-your-api-before-you-change-it", description: "Troubleshoot missing static, runtime, and external consumer evidence." },
              { label: "Compare oasdiff and consumer impact analysis", href: "/docs/oasdiff-vs-api-consumer-impact-analysis", description: "Understand how contract diffing and downstream analysis fit together." },
+             { label: "Check API backward compatibility", href: "/docs/api-backward-compatibility-what-breaks-consumers", description: "See which REST API changes break existing consumers and which are usually safe." },
            ] },
         ],
       },

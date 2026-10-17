@@ -1,6 +1,6 @@
 # Impact Gate
 
-Last updated: 2026-10-17
+Last updated: 2026-10-18
 
 > Impact Gate is API change impact analysis for engineering teams. It reviews OpenAPI contract changes, traces downstream consumers in connected code, and shows evidence and uncertainty before merge. It is warn-only: it never blocks a pull request. Open to teams: MAP, GUARD, and RETIRE are available.
 
@@ -20,6 +20,7 @@ Impact Gate (impactgate.in) is an independent API change impact analysis product
 - [Find API consumers with repository evidence and Prometheus or Datadog](https://impactgate.in/docs/api-usage-observability-prometheus-datadog)
 - [Connect Prometheus or Datadog](https://impactgate.in/docs/runtime-observability)
 - [How to deprecate a repository](https://impactgate.in/docs/how-to-deprecate-a-repository)
+- [API backward compatibility: which changes break consumers](https://impactgate.in/docs/api-backward-compatibility-what-breaks-consumers)
 - [Do I need an AI code reviewer to find API consumers?](https://impactgate.in/#faq)
 - [Impact Gate MCP server](https://impactgate.in/docs/mcp-server): hosted MCP endpoint, OAuth sign-in, workspace scoping, errors, security
 - [Connect an AI client](https://impactgate.in/docs/connect-mcp-clients): copy-paste MCP setup for Claude, Claude Code, Cursor, VS Code, ChatGPT
