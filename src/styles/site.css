@@ -2580,3 +2580,62 @@ button:active {
 
 .contact-form .form-consent { display: flex; gap: 0.55rem; align-items: flex-start; font-size: 0.9rem; line-height: 1.45; cursor: pointer; }
 .contact-form .form-consent input { margin-top: 0.2rem; flex: none; }
+
+/* Conversion batch: real product captures, vibe-tell trims */
+.hero::before,
+.hero::after {
+  display: none;
+}
+.workflow-shot {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  border: 1px solid rgb(0 0 0 / 12%);
+}
+[data-theme="dark"] .workflow-shot,
+[data-theme="dark"] .evidence-shot img {
+  border-color: rgb(255 255 255 / 14%);
+}
+.evidence-real {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+.evidence-shot {
+  margin: 0;
+}
+.evidence-shot img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+  border: 1px solid rgb(0 0 0 / 12%);
+}
+.evidence-shot figcaption {
+  margin-top: 0.75rem;
+  font-size: 0.95rem;
+  opacity: 0.8;
+}
+.evidence-state-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1.25rem;
+}
+.state-row h3 {
+  margin: 0.3rem 0 0.25rem;
+  font-size: 1.05rem;
+}
+.state-row p {
+  margin: 0;
+  font-size: 0.95rem;
+}
+@media (max-width: 900px) {
+  .evidence-real {
+    grid-template-columns: 1fr;
+  }
+}
