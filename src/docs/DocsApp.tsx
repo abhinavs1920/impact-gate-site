@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "
 import { docPages, type DocBlock, type DocPage } from "./content";
 import { emailHref, emails } from "../ui/contact";
 import { trackEvent } from "../analytics";
+import AnalyticsToggle from "../components/AnalyticsToggle";
 import { searchTopic } from "../analytics/schema";
 import "./docs.css";
 
@@ -230,7 +231,7 @@ export default function DocsApp({ pathname }: { pathname: string }) {
           <nav className="docs-pagination" aria-label="Previous and next guides">{position > 0 ? <a href={hrefFor(docPages[position - 1])}><small>← Previous guide</small><strong>{docPages[position - 1].title}</strong></a> : <a href="/docs"><small>← Documentation</small><strong>Browse all guides</strong></a>}{position < docPages.length - 1 && <a href={hrefFor(docPages[position + 1])}><small>Next guide →</small><strong>{docPages[position + 1].title}</strong></a>}</nav>
         </article> : <Home />}
         <aside className="docs-page-help"><div><strong>Still need a hand?</strong><p>Send your setup or product question to <a href={emailHref("support")}>{emails.support}</a>.</p></div><a href="/contact">Contact the team <Icon name="arrow" size={16} /></a></aside>
-        <footer className="docs-footer"><span>Impact Gate documentation</span><a href="/docs/troubleshooting">Troubleshooting</a><a href={emailHref("privacy")}>Privacy</a><button type="button" data-analytics-toggle>Usage analytics</button><a href={emailHref("security")}>Security</a><a href="#docs-content">Back to top ↑</a></footer>
+        <footer className="docs-footer"><span>Impact Gate documentation</span><a href="/docs/troubleshooting">Troubleshooting</a><a href={emailHref("privacy")}>Privacy</a><AnalyticsToggle /><a href={emailHref("security")}>Security</a><a href="#docs-content">Back to top ↑</a></footer>
       </main>
         <aside className="docs-toc">{page ? <nav aria-label="On this page"><h2>ON THIS PAGE</h2>{page.sections.map(section => <a key={section.id} href={"#" + section.id} className={activeSection === section.id ? "is-active" : ""} aria-current={activeSection === section.id ? "location" : undefined}>{section.title}</a>)}<div className="docs-toc-help"><span>Have a setup question?</span><a href="/docs/troubleshooting">Troubleshooting <Icon name="arrow" size={14} /></a></div></nav> : <div className="docs-start-note"><h2>A clear path to your first report.</h2><p>Start with the quickstart, then explore the workspace guides as you need them.</p><a href="/onboarding">Set up your workspace <Icon name="arrow" size={15} /></a></div>}</aside>
     </div>
