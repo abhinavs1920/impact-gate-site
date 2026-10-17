@@ -1,5 +1,5 @@
 import React from "react";
-import { createRoot } from "react-dom/client";
+import { createRoot, hydrateRoot } from "react-dom/client";
 import App from "./App";
 import { startWebsiteAnalytics } from "./analytics";
 import "./styles/site.css";
@@ -15,9 +15,17 @@ const app = (
   </React.StrictMode>
 );
 
+// Hydrate when the served document was prerendered for this exact pathname
+// (marked by the prerender script) so the server markup stays painted and LCP
+// is not delayed by a client re-render. Unknown edge-fallback routes still
+// render from scratch because their served markup does not match the path.
+const prerenderedPath = document
+  .querySelector('meta[name="impact-gate-prerendered"]')
+  ?.getAttribute("content");
+const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
 startWebsiteAnalytics();
-
-// Public routes share a fallback document at the edge. Render from the current
-// pathname instead of hydrating route-specific prerendered markup, which can
-// differ after theme initialization and causes React hydration warnings.
-createRoot(root).render(app);
+if (prerenderedPath === currentPath) {
+  hydrateRoot(root, app);
+} else {
+  createRoot(root).render(app);
+}

@@ -6,6 +6,7 @@ const DocsApp = lazy(() =>
 import ContactPage from "./contact/ContactPage";
 import { emailHref, emails } from "./ui/contact";
 import { leadAttribution, trackEvent, trackVideoProgress } from "./analytics";
+import AnalyticsToggle from "./components/AnalyticsToggle";
 
 const DependencyGraphScreen = lazy(() =>
   import("./screens/ProductScreens").then((module) => ({
@@ -840,7 +841,7 @@ function Footer({ innerPage = false }: { innerPage?: boolean }) {
           <a href="/dashboard">Dashboard</a>
         </nav></div>
         <div className="footer-group"><h2>Get in touch</h2><nav className="footer-links footer-contact-links" aria-label="Contact the team">
-          <a href={emailHref("contact")}>{emails.contact}</a><a href={emailHref("support")}>Product support</a><a href={emailHref("beta")}>Onboarding</a><a href={emailHref("security")}>Report a vulnerability</a><a href={emailHref("privacy")}>Privacy & legal</a><a href="/docs/terms-of-service">Terms of Service</a><button type="button" data-analytics-toggle>Usage analytics</button><a href="/contact">All contact options <span aria-hidden="true">↗</span></a>
+          <a href={emailHref("contact")}>{emails.contact}</a><a href={emailHref("support")}>Product support</a><a href={emailHref("beta")}>Onboarding</a><a href={emailHref("security")}>Report a vulnerability</a><a href={emailHref("privacy")}>Privacy & legal</a><a href="/docs/terms-of-service">Terms of Service</a><AnalyticsToggle /><a href="/contact">All contact options <span aria-hidden="true">↗</span></a>
         </nav></div>
       </div>
       <div className="container footer-bottom">
