@@ -137,8 +137,19 @@ function captureAttribution(): void {
   try { sessionStorage.setItem(attributionKey, JSON.stringify(attribution)); } catch { /* Memory only. */ }
 }
 
+const preferenceListeners = new Set<() => void>();
+
+export function analyticsPreferences(): { allowed: boolean; disabled: boolean } {
+  return { allowed: allowed(), disabled: browserBlocksAnalytics() };
+}
+
+export function onAnalyticsPreferences(listener: () => void): () => void {
+  preferenceListeners.add(listener);
+  return () => preferenceListeners.delete(listener);
+}
+
 function updatePreferences(): void {
-  for (const button of document.querySelectorAll<HTMLButtonElement>("[data-analytics-toggle]")) {
+  for (const button of document.querySelectorAll<HTMLButtonElement>("[data-analytics-toggle]:not([data-analytics-toggle-react])")) {
     const label = "Usage analytics: " + (allowed() ? "on" : "off");
     if (button.textContent !== label) button.textContent = label;
     button.setAttribute("aria-pressed", String(allowed()));
@@ -146,6 +157,7 @@ function updatePreferences(): void {
     button.title = button.disabled ? "Usage analytics is disabled by your browser privacy preference."
       : "Measure visits and product actions. Events exclude email, repository names, and typed text.";
   }
+  for (const listener of preferenceListeners) listener();
 }
 
 async function initialize(): Promise<void> {
