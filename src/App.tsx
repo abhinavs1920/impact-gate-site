@@ -155,10 +155,6 @@ function Header({ innerPage = false, active }: { innerPage?: boolean; active?: "
     <header className="site-header" ref={header}>
       <div className="container header-inner">
         <LogoMark />
-        <div className="header-status" aria-label="Product status">
-          <Fact status={siteFacts.stage.status} label="Open to teams" compact />
-          <Fact status={siteFacts.warnOnly.status} label="Warn-only" compact />
-        </div>
         <button
           ref={menuButton}
           className="menu-toggle"
@@ -236,7 +232,6 @@ function Hero() {
             />
             <span>Warn-only review; your team stays in control.</span>
           </div>
-          <div className="hero-note"><Fact status={siteFacts.warnOnly.status} label="Warn-only review" compact /><span>Runtime data enhances the map; it is not required for first value.</span></div>
         </div>
         <div className="hero-video-wrap" data-reveal>
           <video
@@ -244,6 +239,7 @@ function Hero() {
             controls
             playsInline
             preload="metadata"
+            poster="/media/captures/dependency-graph.webp"
             src="/media/commercial.mp4#t=0.1"
             aria-label="Impact Gate in one minute"
             onPlay={() => trackEvent("video_play", { content_type: "commercial" })}
@@ -263,8 +259,8 @@ function EvidenceGraph() {
 }
 
 function WorkflowCards() {
-  const workflows = [{ key: "MAP", title: "API Flows", copy: "See the code behind every endpoint.", detail: "API-to-code observability", href: "/sign-in", cta: "Explore API flows", docsHref: "/docs/find-who-consumes-your-api-before-you-change-it", docsCta: "Read about consumer mapping" }, { key: "GUARD", title: "PR Impact", copy: "See downstream impact before merge.", detail: "Downstream break detection", href: "/demo", cta: "Try the bot demo", docsHref: "/docs/detect-breaking-api-changes-in-pull-requests", docsCta: "Read the PR impact guide" }, { key: "RETIRE", title: "Retirement Radar", copy: "Plan removals with evidence, not assumptions.", detail: "Evidence-based API retirement", href: "/sign-in", cta: "Explore retirement evidence", docsHref: "/docs/api-deprecation-impact-analysis-checklist", docsCta: "Read the retirement checklist" }];
-  return <section className="section workflows" id="workflows" aria-labelledby="workflows-title"><div className="container"><div className="section-heading" data-reveal><span className="eyebrow">Three moments, one graph</span><h2 id="workflows-title">Map. Guard. Retire.</h2><p>Use the same evidence as you understand an API, review a change, and decide what needs a closer look.</p></div><div className="workflow-grid">{workflows.map((workflow) => <article className="workflow-card" data-reveal key={workflow.key}><span className="workflow-key">{workflow.key}</span><h3>{workflow.title}</h3><p>{workflow.copy}</p><span className="workflow-detail">{workflow.detail}</span><a href={workflow.href}>{workflow.cta} <span aria-hidden="true">→</span></a><a href={workflow.docsHref}>{workflow.docsCta} <span aria-hidden="true">↗</span></a></article>)}</div></div></section>;
+  const workflows = [{ key: "MAP", shot: "/media/captures/dependency-graph.webp", shotAlt: "Impact Gate dependency graph over the demo workspace: services and API relationships across repositories", shotW: 1200, shotH: 610, title: "API Flows", copy: "See the code behind every endpoint.", detail: "API-to-code observability", href: "/sign-in", cta: "Explore API flows", docsHref: "/docs/find-who-consumes-your-api-before-you-change-it", docsCta: "Read about consumer mapping" }, { key: "GUARD", shot: "/media/captures/bot-comment.webp", shotAlt: "Real Impact Gate bot comment on a demo pull request listing affected consumers with evidence states", shotW: 980, shotH: 568, title: "PR Impact", copy: "See downstream impact before merge.", detail: "Downstream break detection", href: "/demo", cta: "Try the bot demo", docsHref: "/docs/detect-breaking-api-changes-in-pull-requests", docsCta: "Read the PR impact guide" }, { key: "RETIRE", shot: "/media/captures/retirement-radar.webp", shotAlt: "Impact Gate Retirement Radar evidence inventory listing APIs with evidence state, callers, and review state", shotW: 1200, shotH: 610, title: "Retirement Radar", copy: "Plan removals with evidence, not assumptions.", detail: "Evidence-based API retirement", href: "/sign-in", cta: "Explore retirement evidence", docsHref: "/docs/api-deprecation-impact-analysis-checklist", docsCta: "Read the retirement checklist" }];
+  return <section className="section workflows" id="workflows" aria-labelledby="workflows-title"><div className="container"><div className="section-heading" data-reveal><span className="eyebrow">Three moments, one graph</span><h2 id="workflows-title">Map. Guard. Retire.</h2><p>Use the same evidence as you understand an API, review a change, and decide what needs a closer look.</p></div><div className="workflow-grid">{workflows.map((workflow) => <article className="workflow-card" data-reveal key={workflow.key}><img className="workflow-shot" src={workflow.shot} alt={workflow.shotAlt} width={workflow.shotW} height={workflow.shotH} loading="lazy" decoding="async" /><span className="workflow-key">{workflow.key}</span><h3>{workflow.title}</h3><p>{workflow.copy}</p><span className="workflow-detail">{workflow.detail}</span><a href={workflow.href}>{workflow.cta} <span aria-hidden="true">→</span></a><a href={workflow.docsHref}>{workflow.docsCta} <span aria-hidden="true">↗</span></a></article>)}</div></div></section>;
 }
 
 function UseCase() {
@@ -332,14 +328,10 @@ function HowItWorks() {
           <p>{siteFacts.mechanism.copy}</p>
         </div>
         <div className="steps">
-          {steps.map(([number, title, copy, category, symbol, footer]) => (
+          {steps.map(([number, title, copy, , , footer]) => (
             <article className="step-card" data-reveal key={number}>
               <div className="step-top">
                 <span className="step-number">{number}</span>
-                <span className="step-category">{category}</span>
-              </div>
-              <div className="step-symbol" aria-hidden="true">
-                {symbol}
               </div>
               <h3>{title}</h3>
               <p>{copy}</p>
@@ -403,24 +395,34 @@ function EvidenceStates() {
           <h2 id="evidence-title">Show what the evidence can—and can’t—say.</h2>
           <p>{siteFacts.policy.copy}</p>
         </div>
-        <div className="state-grid">
-          {states.map((state) => (
-            <article
-              className={`state-card ${state.className}`}
-              data-reveal
-              key={state.label}
-            >
-              <div className="state-header">
-                <span className="state-symbol" aria-hidden="true">
-                  {state.symbol}
-                </span>
+        <div className="evidence-real">
+          <figure className="evidence-shot" data-reveal>
+            <img
+              src="/media/captures/bot-comment-states.webp"
+              width="800"
+              height="250"
+              alt="Close-up of the live demo bot comment: two consumers with explicit POSSIBLE and UNKNOWN evidence states and source references"
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption>
+              The live demo's bot comment. Every consumer carries an explicit
+              evidence state; missing data is never treated as zero usage.
+            </figcaption>
+          </figure>
+          <ul className="evidence-state-list">
+            {states.map((state) => (
+              <li
+                key={state.label}
+                className={`state-row ${state.className}`}
+                data-reveal
+              >
                 <span className="state-badge">{state.label}</span>
-              </div>
-              <h3>{state.title}</h3>
-              <p>{state.copy}</p>
-              <span className="state-foot">{state.footer}</span>
-            </article>
-          ))}
+                <h3>{state.title}</h3>
+                <p>{state.copy}</p>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </section>
@@ -819,6 +821,10 @@ function Footer({ innerPage = false }: { innerPage?: boolean }) {
     ["#faq", "FAQ"],
     ["#contact", "Get started"],
     ["/docs", "Documentation"],
+    ["/docs/mcp-server", "MCP server"],
+    ["/docs/connect-mcp-clients", "Connect MCP clients"],
+    ["/docs/mcp-tools", "MCP tools"],
+    ["/api-change-safety-checklist.pdf", "Safety checklist (PDF)"],
   ];
   return (
     <footer className="site-footer">
