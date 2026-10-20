@@ -41,6 +41,16 @@ let config: PublicConfig;
 let session: SessionResponse | null = null;
 let workspace: WorkspaceMembership | null = null;
 let snapshot: WorkspaceSnapshot | null = null;
+let activeGroupId: string | null = null;
+function readGroupPreference(workspaceId: string): string | null {
+  try { return sessionStorage.getItem(`impact-gate-group-${workspaceId}`); } catch { return null; }
+}
+function writeGroupPreference(workspaceId: string, groupId: string | null): void {
+  try {
+    if (groupId) sessionStorage.setItem(`impact-gate-group-${workspaceId}`, groupId);
+    else sessionStorage.removeItem(`impact-gate-group-${workspaceId}`);
+  } catch { /* Preference only. */ }
+}
 let onboardingStatus: WorkspaceOnboardingStatus | null = null;
 let available: InstallationRepository[] | null = null;
 let selectedRepos = new Set<number>();
@@ -115,6 +125,11 @@ function renderShell(): void {
   for (const picker of document.querySelectorAll<HTMLSelectElement>("[data-workspace-picker]")) {
     picker.hidden = session.workspaces.length < 2;
     picker.innerHTML = session.workspaces.map(w => `<option value="${escape(w.id)}" ${w.id === workspace?.id ? "selected" : ""}>${escape(w.name)}</option>`).join("");
+  }
+  const groups = snapshot?.groups ?? [];
+  for (const picker of document.querySelectorAll<HTMLSelectElement>("[data-group-picker]")) {
+    picker.hidden = !groups.length;
+    picker.innerHTML = `<option value="">All repositories</option>` + groups.map(group => `<option value="${escape(group.id)}" ${group.id === activeGroupId ? "selected" : ""}>${escape(group.name)} (${group.repositoryIds.length})</option>`).join("");
   }
   const addWorkspace = $<HTMLButtonElement>('[data-action="add-workspace"]');
   if (addWorkspace) addWorkspace.hidden = !config?.github.configured || !canWrite();
@@ -436,7 +451,7 @@ function renderPRImpact(): string {
 function renderRepositories(): string {
   const s = snapshot!;
   const repos = s.repositories.filter(r => r.fullName.toLowerCase().includes(query.toLowerCase()) && (!filter || r.status === filter));
-  return heading("Repositories", "Manage GitHub App access, indexing, and parser coverage.", button("import", "Select repositories", writeDisabled()) + button("add-workspace", "Add account or organization", `${writeDisabled()}`, true)) + `<section class="ig-card">${filters("Search repositories", [["indexed", "Indexed"], ["queued", "Queued"], ["indexing", "Indexing"], ["partial", "Partial"], ["failed", "Failed"]])}${repos.length ? table(["Repository", "Branch", "Status", "Services", "Last index", "Actions"], repos.map(r => {
+  return heading("Repositories", "Manage GitHub App access, indexing, and parser coverage.", button("import", "Select repositories", writeDisabled()) + button("manage-groups", "Manage groups", `${writeDisabled()}`, true) + button("add-workspace", "Add account or organization", `${writeDisabled()}`, true)) + `<section class="ig-card">${filters("Search repositories", [["indexed", "Indexed"], ["queued", "Queued"], ["indexing", "Indexing"], ["partial", "Partial"], ["failed", "Failed"]])}${repos.length ? table(["Repository", "Branch", "Status", "Services", "Last index", "Actions"], repos.map(r => {
     const activeIndexJob = s.jobs
       .filter(job => job.repositoryId === r.id && job.type === "index_repository" && ["queued", "running"].includes(job.status))
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
@@ -915,7 +930,20 @@ async function discoverRuntimeServices(form: HTMLFormElement): Promise<void> {
 }
 async function refresh(renderView = true): Promise<void> {
   if (!workspace) return;
-  const next = await api.request<WorkspaceSnapshot>(`${route(workspace.id)}/snapshot`);
+  const workspaceId = workspace.id;
+  if (activeGroupId === null) activeGroupId = readGroupPreference(workspaceId);
+  const load = () => api.request<WorkspaceSnapshot>(`${route(workspaceId)}/snapshot${activeGroupId ? `?group=${encodeURIComponent(activeGroupId)}` : ""}`);
+  let next: WorkspaceSnapshot;
+  try {
+    next = await load();
+  } catch (error) {
+    // A remembered group may have been deleted; fall back to the full workspace.
+    if (activeGroupId && error instanceof WorkspaceApiError && error.status === 404) {
+      activeGroupId = null;
+      writeGroupPreference(workspaceId, null);
+      next = await load();
+    } else throw error;
+  }
   if (next.version !== 1 || next.workspaceId !== workspace.id || !Array.isArray(next.endpoints)) throw new Error("The workspace response is incompatible.");
   snapshot = next; errorMessage = ""; if (renderView) render();
   if (reportedWorkspace !== workspace.id) {
@@ -985,6 +1013,29 @@ async function chooseInstallation(flow: string): Promise<void> {
 async function importRepositories(): Promise<void> {
   await loadAvailable(); modal("Select repositories", repoSelection());
 }
+
+function groupManager(full: WorkspaceSnapshot): string {
+  const groups = full.groups ?? [];
+  const repoOptions = (selected: string[]) => full.repositories.map(repo =>
+    `<label class="ig-note" style="display:block"><input type="checkbox" name="repositoryIds" value="${escape(repo.id)}" ${selected.includes(repo.id) ? "checked" : ""}> ${escape(repo.fullName)}</label>`).join("");
+  const existing = groups.map(group => `<form data-group-form data-id="${escape(group.id)}" style="border-top:1px solid var(--ig-border, #ddd); padding-top:12px; margin-top:12px">
+      <h3>${escape(group.name)}</h3>
+      ${full.repositories.length ? repoOptions(group.repositoryIds) : '<p class="ig-note">No repositories are selected in this workspace yet.</p>'}
+      <div class="ig-actions" style="margin-top:8px"><button type="submit" class="ig-button" ${writeDisabled()}>Save ${escape(group.name)}</button><button type="button" class="ig-button ig-button-secondary" data-action="group-delete" data-id="${escape(group.id)}" ${writeDisabled()}>Delete group</button></div>
+      <p data-save-status role="status"></p>
+    </form>`).join("");
+  return `<form data-group-create>
+      <div class="ig-actions"><input name="name" required maxlength="60" placeholder="New group name" aria-label="New group name" style="flex:1"><button type="submit" class="ig-button" ${writeDisabled()}>Create group</button></div>
+      <p class="ig-note">Groups scope the APIs, services, and jobs shown across the dashboard to the repositories you pick.</p>
+      <p data-save-status role="status"></p>
+    </form>${existing}`;
+}
+async function manageGroups(): Promise<void> {
+  if (!workspace) return;
+  const full = await api.request<WorkspaceSnapshot>(`${route(workspace.id)}/snapshot`);
+  modal("Repository groups", groupManager(full));
+}
+
 async function mutate(action: () => Promise<void>, success?: string, onError?: (error: unknown) => void): Promise<boolean> {
   if (busy) return false;
   busy = true;
@@ -1021,9 +1072,35 @@ document.addEventListener("change", event => {
   if (runtimeForm && event.target instanceof Element) { runtimeConnectionChanged(runtimeForm, event.target); return; }
   const select = event.target; if (!(select instanceof HTMLSelectElement)) return;
   if (select.matches("[data-filter]")) { filter = select.value; render(); }
-  if (select.matches("[data-workspace-picker]")) { const id = select.value; if (document.body.dataset.navOpen === "true") closeNavigation(); api.cancel(); clearTimeout(poll); snapshot = null; available = null; selectedRepos.clear(); repoSearchQuery = ""; repoFilter = "all"; repoSelectionInitialized = false; query = ""; filter = ""; showAllFindings = false; workspace = session?.workspaces.find(w => w.id === id) ?? null; try { sessionStorage.setItem("impact-gate-workspace", id); } catch { /* Preference only. */ } state("Loading workspace", "Fetching the selected organization’s data."); void refresh().catch(handleError); }
+  if (select.matches("[data-group-picker]")) { activeGroupId = select.value || null; if (workspace) writeGroupPreference(workspace.id, activeGroupId); void refresh().catch(handleError); }
+  if (select.matches("[data-workspace-picker]")) { activeGroupId = null; const id = select.value; if (document.body.dataset.navOpen === "true") closeNavigation(); api.cancel(); clearTimeout(poll); snapshot = null; available = null; selectedRepos.clear(); repoSearchQuery = ""; repoFilter = "all"; repoSelectionInitialized = false; query = ""; filter = ""; showAllFindings = false; workspace = session?.workspaces.find(w => w.id === id) ?? null; try { sessionStorage.setItem("impact-gate-workspace", id); } catch { /* Preference only. */ } state("Loading workspace", "Fetching the selected organization’s data."); void refresh().catch(handleError); }
 });
 document.addEventListener("submit", event => {
+  const groupForm = event.target;
+  if (groupForm instanceof HTMLFormElement && groupForm.matches("[data-group-create]")) {
+    event.preventDefault();
+    if (!groupForm.reportValidity() || !workspace || !canWrite()) return;
+    const name = String(new FormData(groupForm).get("name") ?? "").trim();
+    void mutate(async () => {
+      await api.request(`${route(workspace!.id)}/groups`, { method: "POST", body: { name } });
+      await refresh();
+      await manageGroups();
+    }, "Group created.");
+    return;
+  }
+  if (groupForm instanceof HTMLFormElement && groupForm.matches("[data-group-form]")) {
+    event.preventDefault();
+    if (!workspace || !canWrite()) return;
+    const groupId = groupForm.dataset.id!;
+    const repositoryIds = new FormData(groupForm).getAll("repositoryIds").map(String);
+    void mutate(async () => {
+      await api.request(`${route(workspace!.id)}/groups/${encodeURIComponent(groupId)}/repositories`, { method: "PUT", body: { repositoryIds } });
+      await refresh();
+      await manageGroups();
+    }, "Group saved.");
+    return;
+  }
+
   const form = event.target; if (!(form instanceof HTMLFormElement)) return;
   if (form.matches("[data-artifact-form]")) {
     event.preventDefault(); if (!form.reportValidity() || !workspace || !canWrite()) return;
@@ -1189,6 +1266,16 @@ document.addEventListener("click", event => {
   if (action === "connect-github" || action === "add-workspace") { void mutate(async () => { const installation = new URL(location.href).searchParams.get("installation_id"); const result = await api.request<{ url: string }>("/api/v1/github/connect/start", { method: "POST", body: { returnTo: "/onboarding", ...(installation && /^\d+$/.test(installation) ? { installationId: Number(installation) } : {}) } }); const destination = new URL(result.url); if (destination.protocol !== "https:" || destination.hostname !== "github.com") throw new Error("The GitHub authorization URL is invalid."); trackEvent("github_connection_start", { provider: "github" }); location.assign(destination.href); }); return; }
   if (action === "finish-github" && id) { void mutate(async () => { const result = await api.request<{ workspace: WorkspaceMembership }>("/api/v1/github/connect/finish", { method: "POST", body: { flow: trigger.dataset.flow, installationId: Number(id) } }); try { sessionStorage.setItem("impact-gate-workspace", result.workspace.id); } catch { /* The new workspace remains available in the workspace picker. */ } trackEvent("github_connected", { provider: "github" }); history.replaceState(null, "", "/onboarding"); await bootstrap(); }, "GitHub account connected."); return; }
   if (action === "import") { void importRepositories().catch(handleError); return; }
+  if (action === "manage-groups") { void manageGroups().catch(handleError); return; }
+  if (action === "group-delete" && id) {
+    void mutate(async () => {
+      await api.request(`${route(workspace!.id)}/groups/${encodeURIComponent(id)}`, { method: "DELETE" });
+      if (activeGroupId === id) { activeGroupId = null; writeGroupPreference(workspace!.id, null); }
+      $<HTMLDialogElement>(".ig-dialog")?.close();
+      await refresh();
+    }, "Group deleted.");
+    return;
+  }
   if (action === "repo-select-all") {
     const form = trigger.closest<HTMLFormElement>("[data-repositories-form]");
     if (form) {

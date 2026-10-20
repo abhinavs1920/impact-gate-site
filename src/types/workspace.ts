@@ -196,12 +196,22 @@ export interface WorkspaceJob {
   createdAt: string;
   updatedAt: string;
 }
+/** A named grouping of selected repositories inside one workspace. */
+export interface WorkspaceRepositoryGroup {
+  id: string;
+  name: string;
+  repositoryIds: string[];
+  createdAt: string;
+}
+
 export interface WorkspaceSnapshot {
   version: 1;
   workspaceId: string;
   snapshotId: string | null;
   generatedAt: string;
   repositories: WorkspaceRepository[];
+  groups?: WorkspaceRepositoryGroup[];
+  activeGroupId?: string | null;
   services: WorkspaceService[];
   endpoints: WorkspaceEndpoint[];
   edges: WorkspaceEdge[];
