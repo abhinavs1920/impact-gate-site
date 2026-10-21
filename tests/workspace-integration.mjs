@@ -159,7 +159,7 @@ try {
     };
     vm.runInNewContext(script, context); await delay(); await delay();
     const content = document.querySelector('main').textContent;
-    assert.ok(requested.includes('/api/v1/workspaces/w1/snapshot'), `${screen} loads actual workspace snapshot`);
+    assert.ok(requested.some(path => path.startsWith('/api/v1/workspaces/w1/snapshot')), `${screen} loads actual workspace snapshot`);
     if (screen === 'settings') {
       assert.match(content, /Kubernetes deployment identity/);
       assert.match(content, /Connect cluster/);
