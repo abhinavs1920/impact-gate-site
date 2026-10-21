@@ -94,7 +94,7 @@ function heading(title: string, description: string, actions = ""): string {
   return `<div class="ig-live-heading"><div><h1>${title}</h1><p>${escape(description)}</p></div><div class="ig-actions">${actions}</div></div>${displayError ? `<div class="ig-inline-error" role="alert">${escape(displayError)} ${button("retry", "Refresh", "", true)}</div>` : ""}${workspace?.role === "viewer" ? '<div class="ig-permission">You have view access. A workspace owner or admin can select repositories and change preferences.</div>' : ""}`;
 }
 function canWrite(): boolean { return workspace?.role !== "viewer" && Boolean(session?.user.emailVerified); }
-function writeDisabled(): string { return canWrite() && !busy ? "" : "disabled"; }
+function writeDisabled(): string { return canWrite() ? "" : "disabled"; }
 function closeNavigation(): void {
   document.body.dataset.navOpen = "false"; $("[data-action=menu]")?.setAttribute("aria-expanded", "false");
   const backdrop = $(".ig-backdrop"); if (backdrop) backdrop.hidden = true;
@@ -928,11 +928,26 @@ async function discoverRuntimeServices(form: HTMLFormElement): Promise<void> {
   if (status) status.textContent = `${result.autoMatchedCount} matches ready · ${result.suggestedCount + result.unmatchedCount} to review. Nothing is saved until you connect.`;
   if (result.services.length) $<HTMLButtonElement>("[data-runtime-primary]", form)?.focus();
 }
+function snapshotView(): string {
+  if (page === "api-usage") {
+    return selectedEndpoint && endpointTab === "flow" ? "api-flow" : "api-usage";
+  }
+  if (page === "function-usage") return "function-usage";
+  if (page === "deprecation-candidates") return "retirement";
+  if (page === "repositories") return "repositories";
+  if (page === "dependency-graph") return "dependency-graph";
+  if (page === "pr-impact") return "pr-impact";
+  if (page === "settings") return "settings";
+  if (page === "onboarding" || page === "github-setup") return "onboarding";
+  return "overview";
+}
 async function refresh(renderView = true): Promise<void> {
   if (!workspace) return;
   const workspaceId = workspace.id;
   if (activeGroupId === null) activeGroupId = readGroupPreference(workspaceId);
-  const load = () => api.request<WorkspaceSnapshot>(`${route(workspaceId)}/snapshot${activeGroupId ? `?group=${encodeURIComponent(activeGroupId)}` : ""}`);
+  const search = new URLSearchParams({ view: snapshotView() });
+  if (activeGroupId) search.set("group", activeGroupId);
+  const load = () => api.request<WorkspaceSnapshot>(`${route(workspaceId)}/snapshot?${search}`);
   let next: WorkspaceSnapshot;
   try {
     next = await load();
@@ -1032,7 +1047,7 @@ function groupManager(full: WorkspaceSnapshot): string {
 }
 async function manageGroups(): Promise<void> {
   if (!workspace) return;
-  const full = await api.request<WorkspaceSnapshot>(`${route(workspace.id)}/snapshot`);
+  const full = await api.request<WorkspaceSnapshot>(`${route(workspace.id)}/snapshot?view=repositories`);
   modal("Repository groups", groupManager(full));
 }
 
@@ -1368,7 +1383,7 @@ document.addEventListener("click", event => {
     }
     if (!ids.length) { toast("No repositories selected. Please select at least one repository."); return; }
     void mutate(async () => {
-      snapshot = await api.request<WorkspaceSnapshot>(`${route(workspace!.id)}/quickstart`, { method: "POST", body: { repositoryIds: [...new Set(ids)] } });
+      snapshot = await api.request<WorkspaceSnapshot>(`${route(workspace!.id)}/quickstart?view=onboarding`, { method: "POST", body: { repositoryIds: [...new Set(ids)] } });
       onboardingStatus = await api.request<WorkspaceOnboardingStatus>(`${route(workspace!.id)}/onboarding`);
       await loadAvailable();
       render();
@@ -1400,7 +1415,9 @@ document.addEventListener("click", event => {
       else nextUrl.searchParams.delete("tab");
       history.pushState({ endpointId: id, tab: endpointTab }, "", nextUrl.toString());
     } catch { /* Navigation fallback */ }
+    const needsCode = endpointTab === "flow" && !snapshot?.code;
     render();
+    if (needsCode) void refresh().catch(handleError);
     focusEndpointScreen();
     return;
   }
@@ -1412,7 +1429,9 @@ document.addEventListener("click", event => {
       else nextUrl.searchParams.delete("tab");
       history.replaceState({ endpointId: selectedEndpoint, tab: endpointTab }, "", nextUrl.toString());
     } catch { /* History fallback */ }
+    const needsCode = endpointTab === "flow" && !snapshot?.code;
     render();
+    if (needsCode) void refresh().catch(handleError);
     focusEndpointTab(endpointTab);
     return;
   }
@@ -1448,7 +1467,7 @@ document.addEventListener("click", event => {
   if (action === "finding" && id) { const finding = snapshot?.findings.find(f => f.id === id); if (finding) modal(finding.endpoint, `<p>${badge(finding.risk, "risk")} ${escape(finding.verdict)}</p><p>${escape(finding.explanation)}</p><p><a href="${escape(url(finding.pullRequestUrl))}" target="_blank" rel="noopener noreferrer">Open pull request #${finding.pullRequestNumber} ↗</a></p>${finding.consumerEndpointIds ? `<h3>Possible affected consumer APIs</h3>${renderConsumerApiLinks(snapshot!,finding.consumerEndpointIds)}` : ""}${evidence(finding.evidence)}`); return; }
   if (action === "repository" && id) { const repository = snapshot?.repositories.find(r => r.id === id); if (repository) modal(repository.fullName, `<p>${badge(repository.status)} · ${escape(repository.defaultBranch)}</p><p>${repository.coverage.supportedFiles} supported files · ${repository.coverage.skippedFiles} skipped files · ${repository.coverage.openApiDocuments} OpenAPI documents</p><ul>${repository.coverage.notes.map(note => `<li>${escape(note)}</li>`).join("")}</ul>${repository.error ? `<p>${escape(repository.error)}</p>` : ""}<p class="ig-note">Indexed commit ${escape(repository.indexedSha ?? "not indexed")}</p>`); return; }
   if (action === "candidate" && id) { const candidate = snapshot?.candidates.find(c => c.endpointId === id); const endpoint = snapshot?.endpoints.find(e => e.id === id); if (candidate && endpoint) modal(`${endpoint.method} ${endpoint.path}`, `<p>${escape(candidate.reason)}</p><p>${candidate.staticCallerCount} static callers · ${escape(coverage(endpoint))}</p><p class="ig-note">Reviewing records your evidence review for this snapshot. Plan removals with your team and check unobserved consumers.</p>${evidence([endpoint.source, ...snapshot!.edges.filter(e => e.endpointId === id).flatMap(e => e.references)])}${button("confirm-review", candidate.reviewedAt && candidate.reviewedSnapshotId === snapshot?.snapshotId ? "Mark needs review" : "Mark reviewed for this snapshot", `data-id="${escape(id)}" data-reviewed="${!(candidate.reviewedAt && candidate.reviewedSnapshotId === snapshot?.snapshotId)}" ${writeDisabled()}`)}<p data-save-status role="status"></p>`); return; }
-  if (action === "confirm-review" && id && canWrite()) { void mutate(async () => { snapshot = await api.request<WorkspaceSnapshot>(`${route(workspace!.id)}/candidates/${encodeURIComponent(id)}/review`, { method: "POST", body: { snapshotId: snapshot!.snapshotId, reviewed: trigger.dataset.reviewed === "true" } }); trackEvent("evidence_review_saved", { action: trigger.dataset.reviewed === "true" ? "reviewed" : "needs_review" }); $<HTMLDialogElement>(".ig-dialog")?.close(); render(); }, "Candidate review saved."); return; }
+  if (action === "confirm-review" && id && canWrite()) { void mutate(async () => { snapshot = await api.request<WorkspaceSnapshot>(`${route(workspace!.id)}/candidates/${encodeURIComponent(id)}/review?view=retirement`, { method: "POST", body: { snapshotId: snapshot!.snapshotId, reviewed: trigger.dataset.reviewed === "true" } }); trackEvent("evidence_review_saved", { action: trigger.dataset.reviewed === "true" ? "reviewed" : "needs_review" }); $<HTMLDialogElement>(".ig-dialog")?.close(); render(); }, "Candidate review saved."); return; }
   if (action === "reindex" && id && canWrite()) {
     reindexErrors.delete(id);
     if (trigger instanceof HTMLButtonElement) trigger.disabled = true;
@@ -1550,7 +1569,9 @@ window.addEventListener("popstate", () => {
         const prevId = selectedEndpoint;
         selectedEndpoint = newEndpointId;
         endpointTab = newTab;
+        const needsCode = endpointTab === "flow" && !snapshot?.code;
         render();
+        if (needsCode) void refresh().catch(handleError);
         if (selectedEndpoint) {
           focusEndpointScreen();
         } else if (returningToList && prevId) {
