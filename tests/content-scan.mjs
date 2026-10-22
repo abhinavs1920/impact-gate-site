@@ -50,7 +50,7 @@ assert.match(
 );
 assert.match(
   readFileSync(new URL("../index.html", import.meta.url), "utf8"),
-  /prefers-color-scheme/,
+  /light-default-v1/,
 );
 assert.match(source, /localStorage\.setItem\("impact-gate-theme"/);
 const workspace = readFileSync(new URL("../src/dashboard/connected.ts", import.meta.url), "utf8");
