@@ -812,7 +812,7 @@ try {
         document.querySelector("[data-workflow=retire] .ig-workflow-link").textContent,
         /View all candidates/,
       );
-      assert.equal(document.querySelectorAll("#recent-findings tbody tr").length, 5);
+      assert.equal(document.querySelectorAll("#recent-findings tbody tr").length, 7);
       assert.equal(
         document.querySelector("[data-action=finding]").dataset.id,
         "f7",
@@ -827,7 +827,7 @@ try {
         /2 of 2 matching/,
       );
       document.querySelector("[data-action=clear-filters]").click();
-      assert.equal(document.querySelectorAll("#recent-findings tbody tr").length, 5);
+      assert.equal(document.querySelectorAll("#recent-findings tbody tr").length, 7);
       document.querySelector("[data-action=finding]").click();
       assert.equal(dialog.open, true);
       assert.match(dialog.textContent, /Finding 7/);
