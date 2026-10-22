@@ -43,14 +43,10 @@ function Fact({
   label: string;
   compact?: boolean;
 }) {
-  if (!isFactStatus(status))
-    throw new Error(`Unsupported site fact status: ${status}`);
+  if (!isFactStatus(status)) throw new Error(`Unsupported site fact status: ${status}`);
 
   return (
-    <span
-      className={`fact${compact ? " compact" : ""}`}
-      data-fact-status={status}
-    >
+    <span className={`fact${compact ? " compact" : ""}`} data-fact-status={status}>
       <span className="fact-dot" aria-hidden="true" />
       <span>{label}</span>
       {!compact && <small>{factStatusLabels[status]}</small>}
@@ -60,11 +56,7 @@ function Fact({
 
 function LogoMark({ inverse = false }: { inverse?: boolean }) {
   return (
-    <a
-      className={`brand${inverse ? " inverse" : ""}`}
-      href="/"
-      aria-label="Impact Gate home"
-    >
+    <a className={`brand${inverse ? " inverse" : ""}`} href="/" aria-label="Impact Gate home">
       <svg
         className="logo-mark interactive animate"
         width="76"
@@ -79,22 +71,8 @@ function LogoMark({ inverse = false }: { inverse?: boolean }) {
           <path className="chevron chevron-right" d="M71 33 87 50 71 67" />
         </g>
         <g className="bars" aria-hidden="true">
-          <rect
-            className="bar bar-left"
-            x="35"
-            y="28"
-            width="8"
-            height="44"
-            rx="4"
-          />
-          <rect
-            className="bar bar-right"
-            x="57"
-            y="28"
-            width="8"
-            height="44"
-            rx="4"
-          />
+          <rect className="bar bar-left" x="35" y="28" width="8" height="44" rx="4" />
+          <rect className="bar bar-right" x="57" y="28" width="8" height="44" rx="4" />
         </g>
         <g className="dots" aria-hidden="true">
           <circle className="dot dot-1" cx="25" cy="50" r="3" />
@@ -123,14 +101,21 @@ function Header({ innerPage = false, active }: { innerPage?: boolean; active?: "
   useEffect(() => {
     if (!menuOpen) return;
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") { setMenuOpen(false); menuButton.current?.focus(); }
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        menuButton.current?.focus();
+      }
     };
     const closeOutside = (event: PointerEvent) => {
-      if (event.target instanceof Node && !header.current?.contains(event.target)) setMenuOpen(false);
+      if (event.target instanceof Node && !header.current?.contains(event.target))
+        setMenuOpen(false);
     };
     document.addEventListener("keydown", closeOnEscape);
     document.addEventListener("pointerdown", closeOutside);
-    return () => { document.removeEventListener("keydown", closeOnEscape); document.removeEventListener("pointerdown", closeOutside); };
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      document.removeEventListener("pointerdown", closeOutside);
+    };
   }, [menuOpen]);
 
   function toggleTheme() {
@@ -166,9 +151,7 @@ function Header({ innerPage = false, active }: { innerPage?: boolean; active?: "
           aria-controls="primary-navigation"
           onClick={() => setMenuOpen(!menuOpen)}
         >
-          <span className="sr-only">
-            {menuOpen ? "Close navigation" : "Open navigation"}
-          </span>
+          <span className="sr-only">{menuOpen ? "Close navigation" : "Open navigation"}</span>
           <span className="menu-icon" aria-hidden="true">
             <i />
             <i />
@@ -180,11 +163,18 @@ function Header({ innerPage = false, active }: { innerPage?: boolean; active?: "
           aria-label="Primary navigation"
         >
           {links.map(([href, label]) => (
-            <a key={href} href={innerPage && href.startsWith("#") ? "/" + href : href} onClick={() => setMenuOpen(false)} aria-current={href === active ? "page" : undefined}>
+            <a
+              key={href}
+              href={innerPage && href.startsWith("#") ? "/" + href : href}
+              onClick={() => setMenuOpen(false)}
+              aria-current={href === active ? "page" : undefined}
+            >
               {label}
             </a>
           ))}
-          <a className="mobile-sign-in" href="/sign-in" onClick={() => setMenuOpen(false)}>Sign in <span aria-hidden="true">→</span></a>
+          <a className="mobile-sign-in" href="/sign-in" onClick={() => setMenuOpen(false)}>
+            Sign in <span aria-hidden="true">→</span>
+          </a>
         </nav>
         <a className="header-cta" href="/sign-in">
           Sign in <span aria-hidden="true">↗</span>
@@ -215,24 +205,43 @@ function Hero() {
     <section className="hero" aria-labelledby="hero-title">
       <div className="container hero-grid">
         <div className="hero-copy" data-reveal>
-          <div className="hero-kicker"><span className="kicker-mark" aria-hidden="true">◇</span> API Change Intelligence</div>
-          <h1 id="hero-title">Know what your API changes will affect<span className="period">.</span></h1>
-          <p className="hero-lede">Impact Gate maps OpenAPI endpoints to services, functions, and consumers across your repositories—then uses that evidence to review pull requests and plan API retirement.</p>
-          <p className="hero-supporting-copy">See which downstream services may be affected, with source and uncertainty visible at every step.</p>
+          <div className="hero-kicker">
+            <span className="kicker-mark" aria-hidden="true">
+              ◇
+            </span>{" "}
+            API Change Intelligence
+          </div>
+          <h1 id="hero-title">
+            Know what your API changes will affect<span className="period">.</span>
+          </h1>
+          <p className="hero-lede">
+            Impact Gate maps OpenAPI endpoints to services, functions, and consumers across your
+            repositories—then uses that evidence to review pull requests and plan API retirement.
+          </p>
+          <p className="hero-supporting-copy">
+            See which downstream services may be affected, with source and uncertainty visible at
+            every step.
+          </p>
           <div className="hero-actions">
-            <a className="button primary" href="/onboarding/github" data-analytics-action="connect_github">Connect GitHub <span aria-hidden="true">↗</span></a>
-            <a className="button secondary" href="/demo" data-analytics-action="demo_open">Try demo <span aria-hidden="true">→</span></a>
+            <a
+              className="button primary"
+              href="/onboarding/github"
+              data-analytics-action="connect_github"
+            >
+              Connect GitHub <span aria-hidden="true">↗</span>
+            </a>
+            <a className="button secondary" href="/demo" data-analytics-action="demo_open">
+              Try demo <span aria-hidden="true">→</span>
+            </a>
           </div>
           <p className="hero-demo-note">
             No account needed for the demo.{" "}
-            <a href="#contact" data-analytics-action="request_pilot">Get in touch</a>
+            <a href="#contact" data-analytics-action="request_pilot">
+              Get in touch
+            </a>
           </p>
           <div className="hero-note">
-            <Fact
-              status={siteFacts.stage.status}
-              label="Open to teams"
-              compact
-            />
+            <Fact status={siteFacts.stage.status} label="Open to teams" compact />
             <span>Warn-only review; your team stays in control.</span>
           </div>
         </div>
@@ -247,9 +256,13 @@ function Hero() {
             aria-label="Impact Gate in one minute"
             onPlay={() => trackEvent("video_play", { content_type: "commercial" })}
             onTimeUpdate={(event) => trackVideoProgress(event.currentTarget, "commercial")}
-            onEnded={() => trackEvent("video_complete", { content_type: "commercial", percentage: 100 })}
+            onEnded={() =>
+              trackEvent("video_complete", { content_type: "commercial", percentage: 100 })
+            }
           />
-          <p className="video-caption">A short overview of how Impact Gate follows an API change into downstream code.</p>
+          <p className="video-caption">
+            A short overview of how Impact Gate follows an API change into downstream code.
+          </p>
         </div>
       </div>
     </section>
@@ -257,13 +270,145 @@ function Hero() {
 }
 
 function EvidenceGraph() {
-  const nodes = [["01", "Contract", "GET /orders/{id}"], ["02", "Code", "OrderController → OrderService"], ["03", "Runtime", "Observed requests · optional"], ["04", "Change review", "Downstream consumers"], ["05", "Retirement review", "Evidence-backed next action"]];
-  return <section className="section evidence-graph-section" id="evidence-graph" aria-labelledby="evidence-graph-title"><div className="container"><div className="section-heading" data-reveal><span className="eyebrow">One evidence graph</span><h2 id="evidence-graph-title">From contract to consequence.</h2><p>Impact Gate combines what your contracts declare, what your repositories expose, and what production telemetry observes. Each result keeps its source and uncertainty visible. <a href="/docs/find-who-consumes-your-api-before-you-change-it">Learn how consumer evidence is assembled</a> and <a href="/docs/api-usage-observability-prometheus-datadog">how optional runtime evidence fits in</a>.</p></div><div className="evidence-graph" role="list" aria-label="Impact Gate evidence graph">{nodes.map(([number, label, value], index) => <div className="evidence-graph-step" role="listitem" key={label} data-reveal><span className="evidence-graph-index">{number}</span><div><strong>{label}</strong><code>{value}</code></div>{index < nodes.length - 1 && <span className="evidence-graph-arrow" aria-hidden="true">→</span>}</div>)}</div></div></section>;
+  const nodes = [
+    ["01", "Contract", "GET /orders/{id}"],
+    ["02", "Code", "OrderController → OrderService"],
+    ["03", "Runtime", "Observed requests · optional"],
+    ["04", "Change review", "Downstream consumers"],
+    ["05", "Retirement review", "Evidence-backed next action"],
+  ];
+  return (
+    <section
+      className="section evidence-graph-section"
+      id="evidence-graph"
+      aria-labelledby="evidence-graph-title"
+    >
+      <div className="container">
+        <div className="section-heading" data-reveal>
+          <span className="eyebrow">One evidence graph</span>
+          <h2 id="evidence-graph-title">From contract to consequence.</h2>
+          <p>
+            Impact Gate combines what your contracts declare, what your repositories expose, and
+            what production telemetry observes. Each result keeps its source and uncertainty
+            visible.{" "}
+            <a href="/docs/find-who-consumes-your-api-before-you-change-it">
+              Learn how consumer evidence is assembled
+            </a>{" "}
+            and{" "}
+            <a href="/docs/api-usage-observability-prometheus-datadog">
+              how optional runtime evidence fits in
+            </a>
+            .
+          </p>
+        </div>
+        <div className="evidence-graph" role="list" aria-label="Impact Gate evidence graph">
+          {nodes.map(([number, label, value], index) => (
+            <div className="evidence-graph-step" role="listitem" key={label} data-reveal>
+              <span className="evidence-graph-index">{number}</span>
+              <div>
+                <strong>{label}</strong>
+                <code>{value}</code>
+              </div>
+              {index < nodes.length - 1 && (
+                <span className="evidence-graph-arrow" aria-hidden="true">
+                  →
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function WorkflowCards() {
-  const workflows = [{ key: "MAP", shot: "/media/captures/dependency-graph.webp", shotAlt: "Impact Gate dependency graph over the demo workspace: services and API relationships across repositories", shotW: 1200, shotH: 610, title: "API Flows", copy: "See the code behind every endpoint.", detail: "API-to-code observability", href: "/sign-in", cta: "Explore API flows", docsHref: "/docs/find-who-consumes-your-api-before-you-change-it", docsCta: "Read about consumer mapping" }, { key: "GUARD", shot: "/media/captures/bot-comment.webp", shotAlt: "Real Impact Gate bot comment on a demo pull request listing affected consumers with evidence states", shotW: 980, shotH: 568, title: "PR Impact", copy: "See downstream impact before merge.", detail: "Downstream break detection", href: "/demo", cta: "Try the bot demo", docsHref: "/docs/detect-breaking-api-changes-in-pull-requests", docsCta: "Read the PR impact guide" }, { key: "RETIRE", shot: "/media/captures/retirement-radar.webp", shotAlt: "Impact Gate Retirement Radar evidence inventory listing APIs with evidence state, callers, and review state", shotW: 1200, shotH: 610, title: "Retirement Radar", copy: "Plan removals with evidence, not assumptions.", detail: "Evidence-based API retirement", href: "/sign-in", cta: "Explore retirement evidence", docsHref: "/docs/api-deprecation-impact-analysis-checklist", docsCta: "Read the retirement checklist" }];
-  return <section className="section workflows" id="workflows" aria-labelledby="workflows-title"><div className="container"><div className="section-heading" data-reveal><span className="eyebrow">Three moments, one graph</span><h2 id="workflows-title">Map. Guard. Retire.</h2><p>Use the same evidence as you understand an API, review a change, and decide what needs a closer look.</p></div><div className="workflow-grid">{workflows.map((workflow) => <article className="workflow-card" data-reveal key={workflow.key}><img className="workflow-shot" src={workflow.shot} alt={workflow.shotAlt} width={workflow.shotW} height={workflow.shotH} loading="lazy" decoding="async" /><span className="workflow-key">{workflow.key}</span><h3>{workflow.title}</h3><p>{workflow.copy}</p><span className="workflow-detail">{workflow.detail}</span><a href={workflow.href}>{workflow.cta} <span aria-hidden="true">→</span></a><a href={workflow.docsHref}>{workflow.docsCta} <span aria-hidden="true">↗</span></a></article>)}</div></div></section>;
+  const workflows = [
+    {
+      key: "MAP",
+      shot: "/media/captures/dependency-graph.webp",
+      shotAlt:
+        "Impact Gate dependency graph over the demo workspace: services and API relationships across repositories",
+      shotW: 1200,
+      shotH: 610,
+      title: "API Flows",
+      copy: "See the code behind every endpoint.",
+      detail: "API-to-code observability",
+      href: "/sign-in",
+      cta: "Explore API flows",
+      docsHref: "/docs/find-who-consumes-your-api-before-you-change-it",
+      docsCta: "Read about consumer mapping",
+    },
+    {
+      key: "GUARD",
+      shot: "/media/captures/bot-comment.webp",
+      shotAlt:
+        "Real Impact Gate bot comment on a demo pull request listing affected consumers with evidence states",
+      shotW: 980,
+      shotH: 568,
+      title: "PR Impact",
+      copy: "See downstream impact before merge.",
+      detail: "Downstream break detection",
+      href: "/demo",
+      cta: "Try the bot demo",
+      docsHref: "/docs/detect-breaking-api-changes-in-pull-requests",
+      docsCta: "Read the PR impact guide",
+    },
+    {
+      key: "RETIRE",
+      shot: "/media/captures/retirement-radar.webp",
+      shotAlt:
+        "Impact Gate Retirement Radar evidence inventory listing APIs with evidence state, callers, and review state",
+      shotW: 1200,
+      shotH: 610,
+      title: "Retirement Radar",
+      copy: "Plan removals with evidence, not assumptions.",
+      detail: "Evidence-based API retirement",
+      href: "/sign-in",
+      cta: "Explore retirement evidence",
+      docsHref: "/docs/api-deprecation-impact-analysis-checklist",
+      docsCta: "Read the retirement checklist",
+    },
+  ];
+  return (
+    <section className="section workflows" id="workflows" aria-labelledby="workflows-title">
+      <div className="container">
+        <div className="section-heading" data-reveal>
+          <span className="eyebrow">Three moments, one graph</span>
+          <h2 id="workflows-title">Map. Guard. Retire.</h2>
+          <p>
+            Use the same evidence as you understand an API, review a change, and decide what needs a
+            closer look.
+          </p>
+        </div>
+        <div className="workflow-grid">
+          {workflows.map((workflow) => (
+            <article className="workflow-card" data-reveal key={workflow.key}>
+              <img
+                className="workflow-shot"
+                src={workflow.shot}
+                alt={workflow.shotAlt}
+                width={workflow.shotW}
+                height={workflow.shotH}
+                loading="lazy"
+                decoding="async"
+              />
+              <span className="workflow-key">{workflow.key}</span>
+              <h3>{workflow.title}</h3>
+              <p>{workflow.copy}</p>
+              <span className="workflow-detail">{workflow.detail}</span>
+              <a href={workflow.href}>
+                {workflow.cta} <span aria-hidden="true">→</span>
+              </a>
+              <a href={workflow.docsHref}>
+                {workflow.docsCta} <span aria-hidden="true">↗</span>
+              </a>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function UseCase() {
@@ -272,7 +417,8 @@ function UseCase() {
       <div className="container" style={{ maxWidth: "960px" }}>
         <h2 id="use-case-title">See it on a real pull request</h2>
         <p>
-          A short walkthrough of the live demo: explore the dashboard, then open a pull request on the demo repository and watch the Impact Gate bot comment.
+          A short walkthrough of the live demo: explore the dashboard, then open a pull request on
+          the demo repository and watch the Impact Gate bot comment.
         </p>
         <video
           controls
@@ -283,7 +429,14 @@ function UseCase() {
           onPlay={() => trackEvent("video_play", { content_type: "demo" })}
           onTimeUpdate={(event) => trackVideoProgress(event.currentTarget, "demo")}
           onEnded={() => trackEvent("video_complete", { content_type: "demo", percentage: 100 })}
-          style={{ width: "100%", height: "auto", display: "block", borderRadius: "12px", background: "#0b0f14", marginTop: "1.5rem" }}
+          style={{
+            width: "100%",
+            height: "auto",
+            display: "block",
+            borderRadius: "12px",
+            background: "#0b0f14",
+            marginTop: "1.5rem",
+          }}
         />
       </div>
     </section>
@@ -319,11 +472,7 @@ const steps = [
 
 function HowItWorks() {
   return (
-    <section
-      className="section process"
-      id="how-it-works"
-      aria-labelledby="process-title"
-    >
+    <section className="section process" id="how-it-works" aria-labelledby="process-title">
       <div className="container">
         <div className="section-heading" data-reveal>
           <span className="eyebrow">A review path, not a verdict engine</span>
@@ -387,11 +536,7 @@ const states = [
 
 function EvidenceStates() {
   return (
-    <section
-      className="section evidence"
-      id="evidence"
-      aria-labelledby="evidence-title"
-    >
+    <section className="section evidence" id="evidence" aria-labelledby="evidence-title">
       <div className="container">
         <div className="section-heading" data-reveal>
           <span className="eyebrow">Explicit outcome states</span>
@@ -409,17 +554,13 @@ function EvidenceStates() {
               decoding="async"
             />
             <figcaption>
-              The live demo's bot comment. Every consumer carries an explicit
-              evidence state; missing data is never treated as zero usage.
+              The live demo's bot comment. Every consumer carries an explicit evidence state;
+              missing data is never treated as zero usage.
             </figcaption>
           </figure>
           <ul className="evidence-state-list">
             {states.map((state) => (
-              <li
-                key={state.label}
-                className={`state-row ${state.className}`}
-                data-reveal
-              >
+              <li key={state.label} className={`state-row ${state.className}`} data-reveal>
                 <span className="state-badge">{state.label}</span>
                 <h3>{state.title}</h3>
                 <p>{state.copy}</p>
@@ -444,25 +585,15 @@ function SupportedChanges() {
             ? "SCHEMA"
             : "FIELD";
   return (
-    <section
-      className="section changes"
-      id="changes"
-      aria-labelledby="changes-title"
-    >
+    <section className="section changes" id="changes" aria-labelledby="changes-title">
       <div className="container changes-grid">
         <div className="section-heading" data-reveal>
           <span className="eyebrow">Current contract scope</span>
           <h2 id="changes-title">Supported OpenAPI changes</h2>
           <p>{siteFacts.contract.copy}</p>
           <div className="scope-note">
-            <Fact
-              status={siteFacts.contract.status}
-              label="OpenAPI contract review"
-              compact
-            />
-            <span>
-              Supported today: OpenAPI contract changes.
-            </span>
+            <Fact status={siteFacts.contract.status} label="OpenAPI contract review" compact />
+            <span>Supported today: OpenAPI contract changes.</span>
           </div>
         </div>
         <div className="change-list" data-reveal>
@@ -477,9 +608,7 @@ function SupportedChanges() {
             )
             .map(([title, copy], index) => (
               <article className="change-row" key={title}>
-                <span className="change-index">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
+                <span className="change-index">{String(index + 1).padStart(2, "0")}</span>
                 <div className="change-copy">
                   <h3>{title}</h3>
                   <p>{copy}</p>
@@ -491,7 +620,9 @@ function SupportedChanges() {
             <span aria-hidden="true">+</span>
             <p>
               <strong>See the full OpenAPI coverage list.</strong>{" "}
-              <a href="/docs/coverage-and-limitations">Explore all supported change types and analysis coverage.</a>
+              <a href="/docs/coverage-and-limitations">
+                Explore all supported change types and analysis coverage.
+              </a>
             </p>
           </div>
         </div>
@@ -513,21 +644,16 @@ const doesNot = [
 
 function Boundaries() {
   return (
-    <section
-      className="section limits"
-      id="limits"
-      aria-labelledby="limits-title"
-    >
+    <section className="section limits" id="limits" aria-labelledby="limits-title">
       <div className="container">
         <div className="section-heading" data-reveal>
           <span className="eyebrow">Product boundaries</span>
           <h2 id="limits-title">Know what the evidence covers.</h2>
           <p>
-            Impact Gate reviews supported OpenAPI changes against connected,
-            indexed consumer code. Every result is advisory and reflects only
-            the evidence available for review. Runtime data is optional for the
-            static map; Prometheus or Datadog adds API request counts and the
-            function calls attributable to each API.
+            Impact Gate reviews supported OpenAPI changes against connected, indexed consumer code.
+            Every result is advisory and reflects only the evidence available for review. Runtime
+            data is optional for the static map; Prometheus or Datadog adds API request counts and
+            the function calls attributable to each API.
           </p>
         </div>
         <div className="boundary-grid">
@@ -590,7 +716,10 @@ function ContactForm() {
     setSubmitting(true);
     setStatus({ message: "Sending your request…", state: "" });
     const form = event.currentTarget;
-    const payload = { ...Object.fromEntries(new FormData(form).entries()), attribution: leadAttribution() };
+    const payload = {
+      ...Object.fromEntries(new FormData(form).entries()),
+      attribution: leadAttribution(),
+    };
     trackEvent("form_submit", { form_name: "pilot_request" });
     if (new FormData(form).get("marketing_opt_in") === "yes")
       trackEvent("marketing_opt_in", { form_name: "pilot_request" });
@@ -601,19 +730,19 @@ function ContactForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const result = (await response.json()) as { message?: string; leadId?: string; accepted?: boolean };
+      const result = (await response.json()) as {
+        message?: string;
+        leadId?: string;
+        accepted?: boolean;
+      };
       if (!response.ok) {
         failureType = response.status >= 500 ? "server" : "validation";
-        throw new Error(
-          result.message ||
-            "We could not submit that request. Please try again.",
-        );
+        throw new Error(result.message || "We could not submit that request. Please try again.");
       }
       if (result.accepted !== false)
         trackEvent("generate_lead", { form_name: "pilot_request", lead_id: result.leadId });
       setStatus({
-        message:
-          result.message || "Thanks. Your contact request was received.",
+        message: result.message || "Thanks. Your contact request was received.",
         state: "success",
       });
       form.reset();
@@ -637,15 +766,9 @@ function ContactForm() {
         <div className="contact-form-copy" data-reveal>
           <span className="eyebrow">Get started</span>
           <h2 id="contact-title">Bring a shared API question.</h2>
-          <p>
-            {siteFacts.stage.copy}
-          </p>
+          <p>{siteFacts.stage.copy}</p>
           <div className="contact-form-status">
-            <Fact
-              status={siteFacts.warnOnly.status}
-              label={siteFacts.warnOnly.label}
-              compact
-            />
+            <Fact status={siteFacts.warnOnly.status} label={siteFacts.warnOnly.label} compact />
             <span>Non-blocking by default. No merge control.</span>
           </div>
           <div className="contact-form-details">
@@ -710,36 +833,27 @@ function ContactForm() {
             aria-hidden="true"
           />
           <label className="form-consent" htmlFor="marketing_opt_in">
-            <input
-              id="marketing_opt_in"
-              name="marketing_opt_in"
-              type="checkbox"
-              value="yes"
-            />
+            <input id="marketing_opt_in" name="marketing_opt_in" type="checkbox" value="yes" />
             <span>
-              Yes, email me product updates and promotions. Optional - every
-              email has an unsubscribe link, and you can opt out any time by
-              replying "stop".
+              Yes, email me product updates and promotions. Optional - every email has an
+              unsubscribe link, and you can opt out any time by replying "stop".
             </span>
           </label>
           <button type="submit" disabled={submitting}>
-            {submitting ? "Sending request…" : "Send message"}{" "}
-            <span aria-hidden="true">→</span>
+            {submitting ? "Sending request…" : "Send message"} <span aria-hidden="true">→</span>
           </button>
-          <p
-            className="form-status"
-            data-state={status.state}
-            role="status"
-            aria-live="polite"
-          >
+          <p className="form-status" data-state={status.state} role="status" aria-live="polite">
             {status.message}
           </p>
           <p className="form-privacy">
-            Your request is saved and emailed to the Impact Gate team so they can
-            follow up. <a href="/docs/permissions-and-data#website-analytics">Data and analytics details</a>.
-            {" "}Privacy questions? <a href={emailHref("privacy")}>{emails.privacy}</a>.
+            Your request is saved and emailed to the Impact Gate team so they can follow up.{" "}
+            <a href="/docs/permissions-and-data#website-analytics">Data and analytics details</a>.{" "}
+            Privacy questions? <a href={emailHref("privacy")}>{emails.privacy}</a>.
           </p>
-          <p className="form-email-alternative">Prefer to email us? <a href={emailHref("beta", "Impact Gate contact request")}>Email our onboarding team</a></p>
+          <p className="form-email-alternative">
+            Prefer to email us?{" "}
+            <a href={emailHref("beta", "Impact Gate contact request")}>Email our onboarding team</a>
+          </p>
         </form>
       </div>
     </section>
@@ -751,10 +865,7 @@ const questions = [
     "What is Impact Gate?",
     "Impact Gate reviews OpenAPI changes against connected consumer code, showing engineering teams which downstream services may be affected and linking potential impact to evidence for review.",
   ],
-  [
-    "Is Impact Gate available?",
-    "Yes. Map, Guard and Retire are open to everyone.",
-  ],
+  ["Is Impact Gate available?", "Yes. Map, Guard and Retire are open to everyone."],
   [
     "Will it block a pull request?",
     "No. The current product posture is warn-only: it presents review information and leaves merge decisions with your team.",
@@ -771,10 +882,7 @@ const questions = [
     "Do I need an AI code reviewer to find API consumers?",
     "No. Impact Gate uses deterministic static analysis of connected, indexed repositories to trace supported API call paths and show source evidence. Optional Prometheus or Datadog runtime data can add observed request and function-call evidence, but it is not required for the first map. Coverage is limited to selected repositories and supported patterns, so external or dynamic consumers may still be unknown.",
   ],
-  [
-    "Does Impact Gate use AI or external model analysis?",
-    siteFacts.model.copy,
-  ],
+  ["Does Impact Gate use AI or external model analysis?", siteFacts.model.copy],
 ];
 
 function FAQ() {
@@ -784,9 +892,7 @@ function FAQ() {
         <div className="section-heading" data-reveal>
           <span className="eyebrow">Frequently asked</span>
           <h2 id="faq-title">Clear answers before you connect.</h2>
-          <p>
-            What is available now and where the boundaries are.
-          </p>
+          <p>What is available now and where the boundaries are.</p>
         </div>
         <div className="faq-list" data-reveal>
           {questions.map(([question, answer], index) => (
@@ -795,10 +901,8 @@ function FAQ() {
               open={index === 0}
               key={question}
               onToggle={(event) => {
-                const marker =
-                  event.currentTarget.querySelector("summary span");
-                if (marker)
-                  marker.textContent = event.currentTarget.open ? "−" : "+";
+                const marker = event.currentTarget.querySelector("summary span");
+                if (marker) marker.textContent = event.currentTarget.open ? "−" : "+";
               }}
             >
               <summary>
@@ -808,7 +912,12 @@ function FAQ() {
               <p>{answer}</p>
             </details>
           ))}
-          <p className="faq-contact">Have another question? <a href={emailHref("info")}>Ask us at {emails.info} <span aria-hidden="true">↗</span></a></p>
+          <p className="faq-contact">
+            Have another question?{" "}
+            <a href={emailHref("info")}>
+              Ask us at {emails.info} <span aria-hidden="true">↗</span>
+            </a>
+          </p>
         </div>
       </div>
     </section>
@@ -836,19 +945,38 @@ function Footer({ innerPage = false }: { innerPage?: boolean }) {
           <LogoMark inverse />
           <p>Evidence for the changes that travel beyond your repository.</p>
         </div>
-        <div className="footer-group"><h2>Explore</h2><nav className="footer-links" aria-label="Footer navigation">
-          {links.map(([href, label]) => <a href={innerPage && href.startsWith("#") ? "/" + href : href} key={href}>{label}</a>)}
-          <a href="/dashboard">Dashboard</a>
-        </nav></div>
-        <div className="footer-group"><h2>Get in touch</h2><nav className="footer-links footer-contact-links" aria-label="Contact the team">
-          <a href={emailHref("contact")}>{emails.contact}</a><a href={emailHref("support")}>Product support</a><a href={emailHref("beta")}>Onboarding</a><a href={emailHref("security")}>Report a vulnerability</a><a href={emailHref("privacy")}>Privacy & legal</a><a href="/docs/terms-of-service">Terms of Service</a><AnalyticsToggle /><a href="/contact">All contact options <span aria-hidden="true">↗</span></a>
-        </nav></div>
+        <div className="footer-group">
+          <h2>Explore</h2>
+          <nav className="footer-links" aria-label="Footer navigation">
+            {links.map(([href, label]) => (
+              <a href={innerPage && href.startsWith("#") ? "/" + href : href} key={href}>
+                {label}
+              </a>
+            ))}
+            <a href="/dashboard">Dashboard</a>
+          </nav>
+        </div>
+        <div className="footer-group">
+          <h2>Get in touch</h2>
+          <nav className="footer-links footer-contact-links" aria-label="Contact the team">
+            <a href={emailHref("contact")}>{emails.contact}</a>
+            <a href={emailHref("support")}>Product support</a>
+            <a href={emailHref("beta")}>Onboarding</a>
+            <a href={emailHref("security")}>Report a vulnerability</a>
+            <a href={emailHref("privacy")}>Privacy & legal</a>
+            <a href="/docs/terms-of-service">Terms of Service</a>
+            <AnalyticsToggle />
+            <a href="/contact">
+              All contact options <span aria-hidden="true">↗</span>
+            </a>
+          </nav>
+        </div>
       </div>
       <div className="container footer-bottom">
         <p>© 2026 Impact Gate. All rights reserved.</p>
         <p>
-          GitHub is a trademark of GitHub, Inc. Impact Gate is not affiliated
-          with or endorsed by GitHub.
+          GitHub is a trademark of GitHub, Inc. Impact Gate is not affiliated with or endorsed by
+          GitHub.
         </p>
       </div>
     </footer>
@@ -860,30 +988,60 @@ function NotFound() {
     document.title = "Page not found | Impact Gate";
     document.querySelector('meta[name="robots"]')?.setAttribute("content", "noindex, follow");
   }, []);
-  return <main className="contact-page" id="main-content" tabIndex={-1}><div className="container"><section className="contact-heading"><span className="eyebrow">Page not found</span><h1>Let’s get you back on track.</h1><p>This link doesn’t match a page on Impact Gate. Return to the home page, open your workspace, or find what you need in the docs.</p><div className="contact-heading-actions"><a className="button primary" href="/">Back to home <span aria-hidden="true">→</span></a><a className="button secondary" href="/dashboard">Open dashboard</a></div></section><aside className="contact-support-note"><div><strong>Looking for something specific?</strong><p>Browse the <a href="/docs">documentation</a> or email <a href={emailHref("support")}>{emails.support}</a>.</p></div></aside></div></main>;
+  return (
+    <main className="contact-page" id="main-content" tabIndex={-1}>
+      <div className="container">
+        <section className="contact-heading">
+          <span className="eyebrow">Page not found</span>
+          <h1>Let’s get you back on track.</h1>
+          <p>
+            This link doesn’t match a page on Impact Gate. Return to the home page, open your
+            workspace, or find what you need in the docs.
+          </p>
+          <div className="contact-heading-actions">
+            <a className="button primary" href="/">
+              Back to home <span aria-hidden="true">→</span>
+            </a>
+            <a className="button secondary" href="/dashboard">
+              Open dashboard
+            </a>
+          </div>
+        </section>
+        <aside className="contact-support-note">
+          <div>
+            <strong>Looking for something specific?</strong>
+            <p>
+              Browse the <a href="/docs">documentation</a> or email{" "}
+              <a href={emailHref("support")}>{emails.support}</a>.
+            </p>
+          </div>
+        </aside>
+      </div>
+    </main>
+  );
 }
 
 export default function App({ pathname: requestedPath }: { pathname?: string } = {}) {
-  const pathname = requestedPath ?? (
-    typeof window === "undefined"
-      ? "/"
-      : window.location.pathname.replace(/\/+$/, "") || "/");
+  const pathname =
+    requestedPath ??
+    (typeof window === "undefined" ? "/" : window.location.pathname.replace(/\/+$/, "") || "/");
 
   useEffect(() => {
     const legacyContactHash = `#${["pi", "lot"].join("")}`;
     if (window.location.hash === legacyContactHash) {
-      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#contact`);
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}#contact`,
+      );
       document.getElementById("contact")?.scrollIntoView();
     }
   }, []);
 
   useEffect(() => {
     const targets = document.querySelectorAll<HTMLElement>("[data-reveal]");
-    const reducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    if (!targets.length || reducedMotion || !("IntersectionObserver" in window))
-      return;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!targets.length || reducedMotion || !("IntersectionObserver" in window)) return;
 
     document.documentElement.classList.add("reveal-ready");
     const observer = new IntersectionObserver(
@@ -907,7 +1065,16 @@ export default function App({ pathname: requestedPath }: { pathname?: string } =
       </Suspense>
     );
   if (pathname === "/contact")
-    return <><a className="skip-link" href="#main-content">Skip to content</a><Header innerPage active="/contact" /><ContactPage /><Footer innerPage /></>;
+    return (
+      <>
+        <a className="skip-link" href="#main-content">
+          Skip to content
+        </a>
+        <Header innerPage active="/contact" />
+        <ContactPage />
+        <Footer innerPage />
+      </>
+    );
   if (pathname === "/demo")
     return (
       <Suspense fallback={<main className="product-screen-loading" />}>
@@ -927,7 +1094,16 @@ export default function App({ pathname: requestedPath }: { pathname?: string } =
       </Suspense>
     );
   if (pathname !== "/")
-    return <><a className="skip-link" href="#main-content">Skip to content</a><Header innerPage /><NotFound /><Footer innerPage /></>;
+    return (
+      <>
+        <a className="skip-link" href="#main-content">
+          Skip to content
+        </a>
+        <Header innerPage />
+        <NotFound />
+        <Footer innerPage />
+      </>
+    );
 
   return (
     <>

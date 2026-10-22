@@ -25,8 +25,7 @@ const confidenceFilters: Array<[ConfidenceFilter, string]> = [
 
 function useTheme() {
   const [theme, setTheme] = useState<Theme>(() =>
-    typeof document !== "undefined" &&
-    document.documentElement.dataset.theme === "dark"
+    typeof document !== "undefined" && document.documentElement.dataset.theme === "dark"
       ? "dark"
       : "light",
   );
@@ -62,10 +61,7 @@ function ScreenHeader({
       </a>
       <nav className="product-screen-nav" aria-label="Product screens">
         <a href="/demo">GitHub bot demo</a>
-        <a
-          href="/dependency-graph"
-          aria-current={active === "graph" ? "page" : undefined}
-        >
+        <a href="/dependency-graph" aria-current={active === "graph" ? "page" : undefined}>
           Dependency graph
         </a>
         <a
@@ -120,12 +116,7 @@ function ConfidenceKey() {
 }
 
 function FindingState({ state }: { state: string }) {
-  const allowed = [
-    "verified",
-    "possible",
-    "usage_not_located",
-    "not_affected",
-  ];
+  const allowed = ["verified", "possible", "usage_not_located", "not_affected"];
   if (!allowed.includes(state)) return null;
   return (
     <span className={`finding-state finding-${state}`} data-state={state}>
@@ -135,9 +126,7 @@ function FindingState({ state }: { state: string }) {
 }
 
 type GraphSelection =
-  | { type: "service"; name: string }
-  | { type: "endpoint"; edge: EvaluationGraphEdge }
-  | null;
+  { type: "service"; name: string } | { type: "endpoint"; edge: EvaluationGraphEdge } | null;
 
 export function DependencyGraphScreen() {
   const { theme, toggleTheme } = useTheme();
@@ -155,15 +144,10 @@ export function DependencyGraphScreen() {
 
   const graphEdges = preview ? evaluationGraphEdges : [];
   const serviceNames = useMemo(
-    () =>
-      Array.from(
-        new Set(graphEdges.flatMap((edge) => [edge.from, edge.to])),
-      ).sort(),
+    () => Array.from(new Set(graphEdges.flatMap((edge) => [edge.from, edge.to]))).sort(),
     [graphEdges],
   );
-  const deprecationService = preview
-    ? evaluationDeprecationCandidate.service
-    : null;
+  const deprecationService = preview ? evaluationDeprecationCandidate.service : null;
 
   useEffect(() => {
     if (!canvasRef.current || !graphEdges.length) {
@@ -172,9 +156,7 @@ export function DependencyGraphScreen() {
     }
 
     const providerNames = new Set(graphEdges.map((edge) => edge.to));
-    const nodeNames = Array.from(
-      new Set(graphEdges.flatMap((edge) => [edge.from, edge.to])),
-    );
+    const nodeNames = Array.from(new Set(graphEdges.flatMap((edge) => [edge.from, edge.to])));
     const dark = theme === "dark";
     const cy = cytoscape({
       container: canvasRef.current,
@@ -186,20 +168,8 @@ export function DependencyGraphScreen() {
               id: name,
               label: name,
               role: provider ? "provider" : "consumer",
-              bgColor: provider
-                ? dark
-                  ? "#1c2d3d"
-                  : "#e8eff8"
-                : dark
-                  ? "#1e2127"
-                  : "#f2f4f6",
-              borderColor: provider
-                ? dark
-                  ? "#58a6ff"
-                  : "#3659a7"
-                : dark
-                  ? "#8b949e"
-                  : "#697481",
+              bgColor: provider ? (dark ? "#1c2d3d" : "#e8eff8") : dark ? "#1e2127" : "#f2f4f6",
+              borderColor: provider ? (dark ? "#58a6ff" : "#3659a7") : dark ? "#8b949e" : "#697481",
               borderWidth: provider ? 2 : 1,
               textColor: dark ? "#e6edf3" : "#191c1e",
             },
@@ -292,9 +262,7 @@ export function DependencyGraphScreen() {
     cy.on("tap", (event) => {
       if (event.target === cy) setSelection(null);
     });
-    cy.one("layoutstop", () =>
-      cy.fit(undefined, window.innerWidth <= 672 ? 52 : 48),
-    );
+    cy.one("layoutstop", () => cy.fit(undefined, window.innerWidth <= 672 ? 52 : 48));
 
     return () => {
       cy.destroy();
@@ -311,12 +279,9 @@ export function DependencyGraphScreen() {
     cy.edges().forEach((edge) => {
       const edgeData = edge.data();
       const edgeConfidence = edgeData.confidence as GraphConfidence;
-      const matchesConfidence =
-        confidence === "all" || edgeConfidence === confidence;
+      const matchesConfidence = confidence === "all" || edgeConfidence === confidence;
       const matchesService =
-        service === "all" ||
-        edgeData.source === service ||
-        edgeData.target === service;
+        service === "all" || edgeData.source === service || edgeData.target === service;
       const matchesQuery =
         !normalizedQuery ||
         String(edgeData.source).toLowerCase().includes(normalizedQuery) ||
@@ -339,14 +304,14 @@ export function DependencyGraphScreen() {
     });
 
     if (normalizedQuery) {
-      const matchingNode = cy.nodes().filter((node) =>
-        node.id().toLowerCase().includes(normalizedQuery),
-      )[0];
+      const matchingNode = cy
+        .nodes()
+        .filter((node) => node.id().toLowerCase().includes(normalizedQuery))[0];
       if (matchingNode) cy.animate({ center: { eles: matchingNode }, duration: 250 });
       else {
-        const matchingEdge = cy.edges().filter((edge) =>
-          String(edge.data("label")).toLowerCase().includes(normalizedQuery),
-        )[0];
+        const matchingEdge = cy
+          .edges()
+          .filter((edge) => String(edge.data("label")).toLowerCase().includes(normalizedQuery))[0];
         if (matchingEdge) cy.animate({ center: { eles: matchingEdge }, duration: 250 });
       }
     }
@@ -360,8 +325,7 @@ export function DependencyGraphScreen() {
     updatePreviewQuery(next);
   }
 
-  const selectedService =
-    selection?.type === "service" ? selection.name : selection?.edge.to;
+  const selectedService = selection?.type === "service" ? selection.name : selection?.edge.to;
   const callers = selectedService
     ? selection?.type === "endpoint"
       ? [selection.edge]
@@ -410,9 +374,7 @@ export function DependencyGraphScreen() {
             <span className="sr-only">Filter by confidence</span>
             <select
               value={confidence}
-              onChange={(event) =>
-                setConfidence(event.target.value as ConfidenceFilter)
-              }
+              onChange={(event) => setConfidence(event.target.value as ConfidenceFilter)}
             >
               {confidenceFilters.map(([value, label]) => (
                 <option key={value} value={value}>
@@ -423,10 +385,7 @@ export function DependencyGraphScreen() {
           </label>
           <label>
             <span className="sr-only">Filter by service</span>
-            <select
-              value={service}
-              onChange={(event) => setService(event.target.value)}
-            >
+            <select value={service} onChange={(event) => setService(event.target.value)}>
               <option value="all">All services</option>
               {serviceNames.map((name) => (
                 <option key={name} value={name}>
@@ -435,9 +394,7 @@ export function DependencyGraphScreen() {
               ))}
             </select>
           </label>
-          {preview && (
-            <span className="evaluation-label">Evaluation data · not live</span>
-          )}
+          {preview && <span className="evaluation-label">Evaluation data · not live</span>}
         </div>
 
         <section
@@ -458,16 +415,11 @@ export function DependencyGraphScreen() {
                   ↗
                 </span>
                 <h2>No graph data is connected to this screen yet.</h2>
-                <p>
-                  Connect repository and runtime data to explore service
-                  dependencies here.
-                </p>
+                <p>Connect repository and runtime data to explore service dependencies here.</p>
               </div>
             )}
             {preview && (
-              <span className="graph-evaluation-note">
-                Local evaluation graph · not live
-              </span>
+              <span className="graph-evaluation-note">Local evaluation graph · not live</span>
             )}
             {!!graphEdges.length && <ConfidenceKey />}
             {!!graphEdges.length && (
@@ -509,11 +461,7 @@ export function DependencyGraphScreen() {
               <span className="eyebrow">
                 {selection.type === "endpoint" ? "Endpoint" : "Service"}
               </span>
-              <h2>
-                {selection.type === "endpoint"
-                  ? selection.edge.endpoint
-                  : selection.name}
-              </h2>
+              <h2>{selection.type === "endpoint" ? selection.edge.endpoint : selection.name}</h2>
               {selection.type === "endpoint" && (
                 <p className="graph-detail-service">
                   {selection.edge.method} · {selection.edge.to}
@@ -521,55 +469,42 @@ export function DependencyGraphScreen() {
                   {confidenceNames[selection.edge.confidence]}
                 </p>
               )}
-              {preview && (
-                <p className="graph-detail-source">
-                  Evaluation data · not live
-                </p>
-              )}
+              {preview && <p className="graph-detail-source">Evaluation data · not live</p>}
               {staticOnlySelection && (
                 <p className="runtime-note">
-                  No runtime data connected for this service yet — confidence
-                  is based on code analysis only.
+                  No runtime data connected for this service yet — confidence is based on code
+                  analysis only.
                 </p>
               )}
               <h3>Callers</h3>
               {callers.length ? (
                 <ul className="graph-caller-list">
-                  {Array.from(new Set(callers.map((edge) => edge.from))).map(
-                    (caller) => (
-                      <li key={caller}>
-                        <span>{caller}</span>
-                        <span className="caller-findings-note">
-                          No connected Review finding
-                        </span>
-                        {callers
-                          .filter((edge) => edge.from === caller)
-                          .map((edge) =>
-                            edge.reviewState ? (
-                              <FindingState
-                                key={`${edge.method}:${edge.endpoint}`}
-                                state={edge.reviewState}
-                              />
-                            ) : null,
-                          )}
-                      </li>
-                    ),
-                  )}
+                  {Array.from(new Set(callers.map((edge) => edge.from))).map((caller) => (
+                    <li key={caller}>
+                      <span>{caller}</span>
+                      <span className="caller-findings-note">No connected Review finding</span>
+                      {callers
+                        .filter((edge) => edge.from === caller)
+                        .map((edge) =>
+                          edge.reviewState ? (
+                            <FindingState
+                              key={`${edge.method}:${edge.endpoint}`}
+                              state={edge.reviewState}
+                            />
+                          ) : null,
+                        )}
+                    </li>
+                  ))}
                 </ul>
               ) : (
-                <p className="graph-detail-empty">
-                  No caller data is connected for this service.
-                </p>
+                <p className="graph-detail-empty">No caller data is connected for this service.</p>
               )}
               <div className="graph-detail-actions">
                 {hasOpenFinding && (
-                    <a
-                      className="product-button primary"
-                      href="/#evidence"
-                    >
-                      Open in Reviews
-                    </a>
-                  )}
+                  <a className="product-button primary" href="/#evidence">
+                    Open in Reviews
+                  </a>
+                )}
                 {selectedCandidate && (
                   <a
                     className="product-button secondary"
@@ -584,8 +519,8 @@ export function DependencyGraphScreen() {
         </section>
         {preview && (
           <p className="graph-low-data-note">
-            This local evaluation graph is not connected to production
-            repositories or live runtime sources.
+            This local evaluation graph is not connected to production repositories or live runtime
+            sources.
           </p>
         )}
       </main>
@@ -593,10 +528,7 @@ export function DependencyGraphScreen() {
   );
 }
 
-type CandidateConfidence =
-  | "Strong candidate"
-  | "Rare caller — verify"
-  | "Building confidence";
+type CandidateConfidence = "Strong candidate" | "Rare caller — verify" | "Building confidence";
 
 interface CandidateRow {
   service: string;
@@ -623,9 +555,7 @@ const candidateConfidenceOptions: Array<CandidateConfidence | "all"> = [
 export function DeprecationCandidatesScreen() {
   const { theme, toggleTheme } = useTheme();
   const [preview, setPreview] = useState(getSearchPreview);
-  const [confidence, setConfidence] = useState<CandidateConfidence | "all">(
-    "all",
-  );
+  const [confidence, setConfidence] = useState<CandidateConfidence | "all">("all");
   const [service, setService] = useState("all");
   const [reviewedTab, setReviewedTab] = useState(false);
   const [reviewedRows, setReviewedRows] = useState<string[]>([]);
@@ -641,13 +571,11 @@ export function DeprecationCandidatesScreen() {
   const visibleRows = useMemo(
     () =>
       rows
-        .filter((row) => (reviewedRows.includes(row.endpoint) === reviewedTab))
+        .filter((row) => reviewedRows.includes(row.endpoint) === reviewedTab)
         .filter((row) => confidence === "all" || row.confidence === confidence)
         .filter((row) => service === "all" || row.service === service)
         .sort((left, right) =>
-          sortBy === "endpoint"
-            ? left.endpoint.localeCompare(right.endpoint)
-            : 0,
+          sortBy === "endpoint" ? left.endpoint.localeCompare(right.endpoint) : 0,
         ),
     [confidence, reviewedRows, reviewedTab, rows, service, sortBy],
   );
@@ -659,9 +587,7 @@ export function DeprecationCandidatesScreen() {
   }
 
   function markReviewed(endpoint: string) {
-    setReviewedRows((current) =>
-      current.includes(endpoint) ? current : [...current, endpoint],
-    );
+    setReviewedRows((current) => (current.includes(endpoint) ? current : [...current, endpoint]));
     setReviewedTab(true);
   }
 
@@ -675,18 +601,14 @@ export function DeprecationCandidatesScreen() {
 
   return (
     <div className="product-screen product-deprecation-screen">
-      <ScreenHeader
-        active="deprecation"
-        theme={theme}
-        onToggleTheme={toggleTheme}
-      />
+      <ScreenHeader active="deprecation" theme={theme} onToggleTheme={toggleTheme} />
       <div className="experimental-banner" role="note">
         <span className="experimental-mark" aria-hidden="true">
           i
         </span>
         <p>
-          <strong>Experimental</strong> — these are candidates for review, not
-          confirmed-dead code. Always verify before removing anything.
+          <strong>Experimental</strong> — these are candidates for review, not confirmed-dead code.
+          Always verify before removing anything.
         </p>
       </div>
       <main className="product-screen-main">
@@ -711,8 +633,8 @@ export function DeprecationCandidatesScreen() {
           <div className="runtime-source-callout" role="status">
             <span aria-hidden="true">i</span>
             <p>
-              Deprecation confidence is currently based on code analysis only —
-              connect a runtime data source to improve accuracy.
+              Deprecation confidence is currently based on code analysis only — connect a runtime
+              data source to improve accuracy.
             </p>
           </div>
         )}
@@ -723,9 +645,7 @@ export function DeprecationCandidatesScreen() {
               <select
                 value={confidence}
                 onChange={(event) =>
-                  setConfidence(
-                    event.target.value as CandidateConfidence | "all",
-                  )
+                  setConfidence(event.target.value as CandidateConfidence | "all")
                 }
               >
                 {candidateConfidenceOptions.map((option) => (
@@ -737,10 +657,7 @@ export function DeprecationCandidatesScreen() {
             </label>
             <label>
               <span className="sr-only">Filter by service</span>
-              <select
-                value={service}
-                onChange={(event) => setService(event.target.value)}
-              >
+              <select value={service} onChange={(event) => setService(event.target.value)}>
                 <option value="all">All services</option>
                 {serviceNames.map((name) => (
                   <option key={name} value={name}>
@@ -753,9 +670,7 @@ export function DeprecationCandidatesScreen() {
               <span className="sr-only">Sort candidates</span>
               <select
                 value={sortBy}
-                onChange={(event) =>
-                  setSortBy(event.target.value as "unused" | "endpoint")
-                }
+                onChange={(event) => setSortBy(event.target.value as "unused" | "endpoint")}
               >
                 <option value="unused">Longest unused</option>
                 <option value="endpoint">Endpoint/API name</option>
@@ -781,11 +696,7 @@ export function DeprecationCandidatesScreen() {
             </button>
           </div>
         </div>
-        {preview && (
-          <p className="candidate-evaluation-label">
-            Local evaluation data · not live
-          </p>
-        )}
+        {preview && <p className="candidate-evaluation-label">Local evaluation data · not live</p>}
         <section className="candidate-table-section" aria-label="Candidates">
           <table className="candidate-table">
             <thead>
@@ -808,19 +719,14 @@ export function DeprecationCandidatesScreen() {
                       <span className="candidate-service">{row.service}</span>
                     </td>
                     <td data-label="Confidence">
-                      <span
-                        className="candidate-confidence"
-                        data-confidence={row.confidence}
-                      >
+                      <span className="candidate-confidence" data-confidence={row.confidence}>
                         {row.confidence}
                       </span>
                     </td>
                     <td data-label="Last static reference">
                       {row.staticReference ?? "None found in indexed code"}
                     </td>
-                    <td data-label="Last observed call">
-                      {row.lastObservedCall}
-                    </td>
+                    <td data-label="Last observed call">{row.lastObservedCall}</td>
                     <td data-label="Actions" className="candidate-actions">
                       <button
                         type="button"
@@ -868,22 +774,14 @@ export function DeprecationCandidatesScreen() {
               {visibleRows.map(
                 (row) =>
                   expandedEvidence.includes(row.endpoint) && (
-                    <tr
-                      className="candidate-evidence-row"
-                      key={`${row.endpoint}-evidence`}
-                    >
+                    <tr className="candidate-evidence-row" key={`${row.endpoint}-evidence`}>
                       <td colSpan={5}>
                         <strong>Evidence</strong>
                         <p>{row.evidence}</p>
                         <p>
-                          Static reference:{" "}
-                          {row.staticReference ??
-                            "None found in indexed code."}
+                          Static reference: {row.staticReference ?? "None found in indexed code."}
                         </p>
-                        <p>
-                          Observed-call history: no runtime data is connected
-                          to this screen.
-                        </p>
+                        <p>Observed-call history: no runtime data is connected to this screen.</p>
                       </td>
                     </tr>
                   ),

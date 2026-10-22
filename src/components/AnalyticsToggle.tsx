@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { analyticsPreferences, onAnalyticsPreferences } from "../analytics";
 
-const enabledTitle = "Measure visits and product actions. Events exclude email, repository names, and typed text.";
+const enabledTitle =
+  "Measure visits and product actions. Events exclude email, repository names, and typed text.";
 const disabledTitle = "Usage analytics is disabled by your browser privacy preference.";
 
 // Renders the same text as the prerendered markup on first render so hydration

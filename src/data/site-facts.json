@@ -24,15 +24,30 @@
     "label": "OpenAPI contract changes",
     "copy": "Review supported changes to an OpenAPI contract against connected consumer code.",
     "changes": [
-      ["Endpoint or path changes", "Added, removed, or renamed routes that can change how consumers reach an API."],
-      ["Request and response types", "Schema changes that alter the shape consumers send or receive."],
+      [
+        "Endpoint or path changes",
+        "Added, removed, or renamed routes that can change how consumers reach an API."
+      ],
+      [
+        "Request and response types",
+        "Schema changes that alter the shape consumers send or receive."
+      ],
       ["Required fields", "New required inputs that existing callers may not provide."],
-      ["Optionality changes", "Fields becoming optional or required, changing the assumptions callers can make."],
+      [
+        "Optionality changes",
+        "Fields becoming optional or required, changing the assumptions callers can make."
+      ],
       ["Field removal or rename", "Removed or renamed fields that consumer code may still read."],
       ["Enum changes", "Added, removed, or renamed contract values that need review in callers."],
       ["Nullability changes", "Values changing between nullable and non-nullable states."],
-      ["Format and constraints", "Changes to formats, ranges, lengths, or other declared value constraints."],
-      ["Parameter changes", "Path, query, header, or cookie parameters that change a request contract."],
+      [
+        "Format and constraints",
+        "Changes to formats, ranges, lengths, or other declared value constraints."
+      ],
+      [
+        "Parameter changes",
+        "Path, query, header, or cookie parameters that change a request contract."
+      ],
       ["Status changes", "Documented response status changes that alter client handling."],
       ["Request body changes", "Changed payload requirements or content types for submitted data."],
       ["Response body changes", "Changed payload requirements or content types for returned data."]

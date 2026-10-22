@@ -21,9 +21,16 @@ const icons = {
 };
 
 /** A small DOM adapter usable by the static dashboard generator or the React site. */
-export function mountAuthPage(container: HTMLElement, client: ImpactGateAuthClient, options: AuthPageOptions = {}): () => void {
+export function mountAuthPage(
+  container: HTMLElement,
+  client: ImpactGateAuthClient,
+  options: AuthPageOptions = {},
+): () => void {
   const mode = options.mode ?? "sign-in";
-  const next = safeReturnPath(options.next ?? new URL(window.location.href).searchParams.get("next"), client.config.origin);
+  const next = safeReturnPath(
+    options.next ?? new URL(window.location.href).searchParams.get("next"),
+    client.config.origin,
+  );
   // Keep the one-time link in memory until it is consumed; never copy it into another URL.
   const initialLink = window.location.href;
   let completingLink = client.isEmailLink(initialLink);
@@ -65,7 +72,9 @@ export function mountAuthPage(container: HTMLElement, client: ImpactGateAuthClie
   const continueButton = find<HTMLButtonElement>("[data-auth-continue]");
   const pendingPanel = find("[data-auth-pending]");
   const linkButton = find<HTMLButtonElement>("[data-link-provider]");
-  const controls = [...container.querySelectorAll<HTMLInputElement | HTMLButtonElement>("input,button")].filter(control => !control.matches("[data-auth-theme],[data-analytics-toggle]"));
+  const controls = [
+    ...container.querySelectorAll<HTMLInputElement | HTMLButtonElement>("input,button"),
+  ].filter((control) => !control.matches("[data-auth-theme],[data-analytics-toggle]"));
   const listeners: Array<() => void> = [];
   const listen = (node: HTMLElement, event: string, handler: EventListener) => {
     node.addEventListener(event, handler);
@@ -82,7 +91,9 @@ export function mountAuthPage(container: HTMLElement, client: ImpactGateAuthClie
   function setBusy(value: boolean): void {
     busy = value;
     container.setAttribute("aria-busy", String(value));
-    controls.forEach(control => { control.disabled = value || !ready; });
+    controls.forEach((control) => {
+      control.disabled = value || !ready;
+    });
   }
   function renderAccount(user: User): void {
     if (disposed) return;
@@ -92,14 +103,16 @@ export function mountAuthPage(container: HTMLElement, client: ImpactGateAuthClie
     completionPanel.hidden = true;
     accountPanel.hidden = false;
     title.textContent = "You’re signed in";
-    description.textContent = "Continue to your workspace or finish connecting your sign-in methods.";
+    description.textContent =
+      "Continue to your workspace or finish connecting your sign-in methods.";
     find("[data-auth-account]").textContent = user.email ?? user.displayName ?? "your account";
     const provider = client.pendingProvider;
     pendingPanel.hidden = !provider;
     continueButton.hidden = Boolean(provider);
     if (provider) {
       const label = provider === "github" ? "GitHub" : "Google";
-      find("[data-auth-pending-copy]").textContent = `Link ${label} to this account to use either sign-in method next time.`;
+      find("[data-auth-pending-copy]").textContent =
+        `Link ${label} to this account to use either sign-in method next time.`;
       linkButton.innerHTML = `${providerIcon(provider)}<span>Link ${label} to this account</span>`;
     }
   }
@@ -110,9 +123,22 @@ export function mountAuthPage(container: HTMLElement, client: ImpactGateAuthClie
     methodPanel.hidden = completingLink;
     completionPanel.hidden = !completingLink;
     accountPanel.hidden = true;
-    const incompleteLink = !completingLink && window.location.pathname.replace(/\/$/, "") === "/auth/email-link";
-    title.textContent = completingLink ? "Finish signing in" : incompleteLink ? "Request a new sign-in link" : mode === "sign-up" ? "Create your account" : "Welcome back";
-    description.textContent = completingLink ? "Confirm your email to open your Impact Gate workspace." : incompleteLink ? "Enter your email to receive a new link, or continue with a connected provider." : mode === "sign-up" ? "Choose a sign-in method to create your engineering workspace." : "Sign in to connect your services and review their API dependencies.";
+    const incompleteLink =
+      !completingLink && window.location.pathname.replace(/\/$/, "") === "/auth/email-link";
+    title.textContent = completingLink
+      ? "Finish signing in"
+      : incompleteLink
+        ? "Request a new sign-in link"
+        : mode === "sign-up"
+          ? "Create your account"
+          : "Welcome back";
+    description.textContent = completingLink
+      ? "Confirm your email to open your Impact Gate workspace."
+      : incompleteLink
+        ? "Enter your email to receive a new link, or continue with a connected provider."
+        : mode === "sign-up"
+          ? "Choose a sign-in method to create your engineering workspace."
+          : "Sign in to connect your services and review their API dependencies.";
   }
   async function continueToWorkspace(user: User): Promise<void> {
     if (disposed) return;
@@ -121,16 +147,25 @@ export function mountAuthPage(container: HTMLElement, client: ImpactGateAuthClie
       if (options.onAuthenticated) await options.onAuthenticated(user, next);
       else window.location.assign(next);
     } catch {
-      throw new ImpactGateAuthError("auth/workspace-unavailable", "Your workspace could not be opened.");
+      throw new ImpactGateAuthError(
+        "auth/workspace-unavailable",
+        "Your workspace could not be opened.",
+      );
     }
   }
   async function run(action: () => Promise<void>): Promise<void> {
     if (busy || disposed || !ready) return;
     setBusy(true);
     message("");
-    try { await action(); }
-    catch (error: unknown) { const info = describeAuthError(error); trackEvent("auth_error", { error_type: info.code.replace(/[^a-z0-9_-]/gi, "_") }); message(info.message, true); }
-    finally { if (!disposed) setBusy(false); }
+    try {
+      await action();
+    } catch (error: unknown) {
+      const info = describeAuthError(error);
+      trackEvent("auth_error", { error_type: info.code.replace(/[^a-z0-9_-]/gi, "_") });
+      message(info.message, true);
+    } finally {
+      if (!disposed) setBusy(false);
+    }
   }
 
   find<HTMLAnchorElement>("[data-new-link]").href = signInDestination(next, client.config.origin);
@@ -147,30 +182,42 @@ export function mountAuthPage(container: HTMLElement, client: ImpactGateAuthClie
     trackEvent(getAdditionalUserInfo(result)?.isNewUser ? "sign_up" : "login", { method });
     const marketing = container.querySelector<HTMLInputElement>("[data-auth-marketing]");
     const optedIn = Boolean(marketing?.checked);
-    try { localStorage.setItem("impact-gate-marketing-opt-in", optedIn ? "yes" : "no"); } catch { /* Preference stays session-local. */ }
+    try {
+      localStorage.setItem("impact-gate-marketing-opt-in", optedIn ? "yes" : "no");
+    } catch {
+      /* Preference stays session-local. */
+    }
     trackEvent("marketing_consent", { choice: optedIn ? "yes" : "no" });
   }
   listen(themeButton, "click", () => {
     const theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = theme;
-    try { localStorage.setItem("impact-gate-theme", theme); } catch { /* Theme remains available for this page. */ }
+    try {
+      localStorage.setItem("impact-gate-theme", theme);
+    } catch {
+      /* Theme remains available for this page. */
+    }
     syncTheme();
   });
   for (const button of container.querySelectorAll<HTMLButtonElement>("[data-auth-provider]")) {
     const provider = button.dataset.authProvider as SocialProvider;
     button.hidden = !client.isEnabled(provider);
-    listen(button, "click", () => { void run(async () => {
-      message(`Opening ${provider === "google" ? "Google" : "GitHub"} sign-in…`);
-      trackEvent("sign_in_start", { method: provider });
-      const result = await client.signIn(provider);
-      recordAuth(result, provider);
-      renderAccount(result.user);
-      if (!client.pendingProvider) await continueToWorkspace(result.user);
-    }); });
+    listen(button, "click", () => {
+      void run(async () => {
+        message(`Opening ${provider === "google" ? "Google" : "GitHub"} sign-in…`);
+        trackEvent("sign_in_start", { method: provider });
+        const result = await client.signIn(provider);
+        recordAuth(result, provider);
+        renderAccount(result.user);
+        if (!client.pendingProvider) await continueToWorkspace(result.user);
+      });
+    });
   }
   emailForm.hidden = !client.isEnabled("email-link");
-  find("[data-email-divider]").hidden = !client.isEnabled("email-link") || !client.config.methods.some(method => method !== "email-link");
-  listen(emailForm, "submit", event => {
+  find("[data-email-divider]").hidden =
+    !client.isEnabled("email-link") ||
+    !client.config.methods.some((method) => method !== "email-link");
+  listen(emailForm, "submit", (event) => {
     event.preventDefault();
     if (!emailForm.reportValidity()) return;
     const email = String(new FormData(emailForm).get("email") ?? "");
@@ -178,20 +225,27 @@ export function mountAuthPage(container: HTMLElement, client: ImpactGateAuthClie
       trackEvent("sign_in_start", { method: "email_link" });
       const sent = await client.sendEmailLink(email, next);
       trackEvent("email_link_requested", { method: "email_link" });
-      message(`Check your inbox at ${sent.email}. Open the sign-in link to continue.${sent.remembered ? "" : " You’ll be asked to confirm your email when you open it."}`);
+      message(
+        `Check your inbox at ${sent.email}. Open the sign-in link to continue.${sent.remembered ? "" : " You’ll be asked to confirm your email when you open it."}`,
+      );
     });
   });
   async function complete(email: string): Promise<void> {
     const result = await client.completeEmailLink(email, initialLink);
     if (disposed) return;
     recordAuth(result, "email_link");
-    window.history.replaceState(window.history.state, "", consumedEmailLinkPath(client.config.origin, next));
+    window.history.replaceState(
+      window.history.state,
+      "",
+      consumedEmailLinkPath(client.config.origin, next),
+    );
     completingLink = false;
     renderAccount(result.user);
-    if (client.pendingProvider) message("Your email is confirmed. You can now link the other sign-in method.");
+    if (client.pendingProvider)
+      message("Your email is confirmed. You can now link the other sign-in method.");
     else await continueToWorkspace(result.user);
   }
-  listen(completionForm, "submit", event => {
+  listen(completionForm, "submit", (event) => {
     event.preventDefault();
     if (!completionForm.reportValidity()) return;
     const email = String(new FormData(completionForm).get("email") ?? "");
@@ -204,64 +258,76 @@ export function mountAuthPage(container: HTMLElement, client: ImpactGateAuthClie
       message("Opening live demo workspace…");
     });
   }
-  listen(continueButton, "click", () => { void run(async () => {
-    const user = client.currentUser ?? signedInUser;
-    if (!user) throw new ImpactGateAuthError("auth/not-signed-in", "Sign in to continue.");
-    await continueToWorkspace(user);
-  }); });
-  listen(linkButton, "click", () => { void run(async () => {
-    const result = await client.linkPendingProvider();
-    renderAccount(result.user);
-    message("Sign-in method linked to your account.");
-    await continueToWorkspace(result.user);
-  }); });
-  listen(find("[data-skip-link]"), "click", () => { void run(async () => {
-    client.cancelPendingLink();
-    const user = client.currentUser;
-    if (!user) throw new ImpactGateAuthError("auth/not-signed-in", "Sign in to continue.");
-    renderAccount(user);
-    await continueToWorkspace(user);
-  }); });
-  listen(find("[data-auth-sign-out]"), "click", () => { void run(async () => {
-    await client.signOut();
-    identifyAnalyticsUser(null);
-    trackEvent("sign_out");
-    renderEntry();
-    message("Choose a sign-in method for your account.");
-  }); });
+  listen(continueButton, "click", () => {
+    void run(async () => {
+      const user = client.currentUser ?? signedInUser;
+      if (!user) throw new ImpactGateAuthError("auth/not-signed-in", "Sign in to continue.");
+      await continueToWorkspace(user);
+    });
+  });
+  listen(linkButton, "click", () => {
+    void run(async () => {
+      const result = await client.linkPendingProvider();
+      renderAccount(result.user);
+      message("Sign-in method linked to your account.");
+      await continueToWorkspace(result.user);
+    });
+  });
+  listen(find("[data-skip-link]"), "click", () => {
+    void run(async () => {
+      client.cancelPendingLink();
+      const user = client.currentUser;
+      if (!user) throw new ImpactGateAuthError("auth/not-signed-in", "Sign in to continue.");
+      renderAccount(user);
+      await continueToWorkspace(user);
+    });
+  });
+  listen(find("[data-auth-sign-out]"), "click", () => {
+    void run(async () => {
+      await client.signOut();
+      identifyAnalyticsUser(null);
+      trackEvent("sign_out");
+      renderEntry();
+      message("Choose a sign-in method for your account.");
+    });
+  });
 
-  const unsubscribe = client.subscribe(session => {
+  const unsubscribe = client.subscribe((session) => {
     if (disposed) return;
     if (session.status === "error") message(session.error.message, true);
     // An action owns its view until it finishes; auth events may precede its promise.
     if (ready && !busy && session.status === "signed-out") renderEntry();
-    if (ready && !busy && session.status === "signed-in" && !completingLink) renderAccount(session.user);
+    if (ready && !busy && session.status === "signed-in" && !completingLink)
+      renderAccount(session.user);
   });
   renderEntry();
   setBusy(true);
   message("Loading sign-in…");
-  void client.ready.then(async user => {
-    if (disposed) return;
-    ready = true;
-    setBusy(false);
-    message("");
-    if (completingLink) {
-      const email = client.rememberedEmail();
-      if (email) {
-        find<HTMLInputElement>("#auth-confirm-email").value = email;
-        await run(() => complete(email));
-      } else find<HTMLInputElement>("#auth-confirm-email").focus();
-    } else if (user) renderAccount(user);
-    else if (window.location.pathname.replace(/\/$/, "") === "/auth/email-link") message("This sign-in link is incomplete. Request a new link to continue.", true);
-  }).catch((error: unknown) => {
-    if (disposed) return;
-    setBusy(false);
-    message(`${describeAuthError(error).message} Reload this page to try again.`, true);
-  });
+  void client.ready
+    .then(async (user) => {
+      if (disposed) return;
+      ready = true;
+      setBusy(false);
+      message("");
+      if (completingLink) {
+        const email = client.rememberedEmail();
+        if (email) {
+          find<HTMLInputElement>("#auth-confirm-email").value = email;
+          await run(() => complete(email));
+        } else find<HTMLInputElement>("#auth-confirm-email").focus();
+      } else if (user) renderAccount(user);
+      else if (window.location.pathname.replace(/\/$/, "") === "/auth/email-link")
+        message("This sign-in link is incomplete. Request a new link to continue.", true);
+    })
+    .catch((error: unknown) => {
+      if (disposed) return;
+      setBusy(false);
+      message(`${describeAuthError(error).message} Reload this page to try again.`, true);
+    });
 
   return () => {
     disposed = true;
     unsubscribe();
-    listeners.forEach(remove => remove());
+    listeners.forEach((remove) => remove());
   };
 }

@@ -6,8 +6,7 @@ import "./styles/site.css";
 import "./styles/product-screens.css";
 
 const root = document.getElementById("root");
-if (!root)
-  throw new Error("React application root is missing from the document.");
+if (!root) throw new Error("React application root is missing from the document.");
 
 const app = (
   <React.StrictMode>

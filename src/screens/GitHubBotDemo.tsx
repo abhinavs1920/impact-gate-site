@@ -11,7 +11,9 @@ function DemoHeader({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () 
       </a>
       <nav className="product-screen-nav" aria-label="Demo navigation">
         <a href="/">Overview</a>
-        <a className="bot-demo-dashboard-link" href="/dashboard">Go to dashboard <span aria-hidden="true">↗</span></a>
+        <a className="bot-demo-dashboard-link" href="/dashboard">
+          Go to dashboard <span aria-hidden="true">↗</span>
+        </a>
         <a href="/docs/pull-request-reports">Docs</a>
       </nav>
       <button
@@ -57,9 +59,8 @@ export function GitHubBotDemoScreen() {
           <span className="bot-demo-eyebrow">Try demo · Read-only</span>
           <h1 id="bot-demo-title">See the GitHub bot comment.</h1>
           <p>
-            When a pull request changes an OpenAPI contract, Impact Gate posts a
-            warn-only comment with the affected paths and the evidence engineers
-            can review.
+            When a pull request changes an OpenAPI contract, Impact Gate posts a warn-only comment
+            with the affected paths and the evidence engineers can review.
           </p>
         </section>
 
@@ -74,7 +75,9 @@ export function GitHubBotDemoScreen() {
 
           <article className="bot-comment" aria-label="Impact Gate GitHub bot comment">
             <header className="bot-comment-header">
-              <span className="bot-comment-avatar" aria-hidden="true">IG</span>
+              <span className="bot-comment-avatar" aria-hidden="true">
+                IG
+              </span>
               <strong>impact-gate[bot]</strong>
               <span>commented just now</span>
               <span className="bot-comment-label">DEMO</span>
@@ -116,13 +119,24 @@ export function GitHubBotDemoScreen() {
         <section className="bot-demo-next" aria-labelledby="bot-demo-next-title">
           <div>
             <span className="bot-demo-eyebrow">Next step</span>
-            <h2 id="bot-demo-next-title">Connect a GitHub organization to use your own pull requests.</h2>
-            <p>The demo is a read-only example. Connected repositories receive comments on their pull requests.</p>
+            <h2 id="bot-demo-next-title">
+              Connect a GitHub organization to use your own pull requests.
+            </h2>
+            <p>
+              The demo is a read-only example. Connected repositories receive comments on their pull
+              requests.
+            </p>
           </div>
           <div className="bot-demo-actions">
-            <a className="button primary" href="/onboarding/github">Connect GitHub <span aria-hidden="true">↗</span></a>
-            <a className="button dashboard" href="/dashboard">Go to dashboard <span aria-hidden="true">↗</span></a>
-            <a className="button secondary" href="/">Back to overview</a>
+            <a className="button primary" href="/onboarding/github">
+              Connect GitHub <span aria-hidden="true">↗</span>
+            </a>
+            <a className="button dashboard" href="/dashboard">
+              Go to dashboard <span aria-hidden="true">↗</span>
+            </a>
+            <a className="button secondary" href="/">
+              Back to overview
+            </a>
           </div>
         </section>
       </main>

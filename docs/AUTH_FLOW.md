@@ -14,13 +14,13 @@ The auth modules live in `src/auth/`. They implement website login with GitHub, 
 
 ## Page plan
 
-| Route | Behavior |
-| --- | --- |
-| `/sign-in` | GitHub and Google buttons, work-email link form, existing-session continuation |
-| `/sign-up` | The same methods with account-creation copy; Firebase creates a user when needed |
-| `/auth/email-link` | Consume the Firebase link, confirm the address when needed, then bootstrap the workspace |
-| `/onboarding` | Backend-owned lifecycle: verify GitHub App access, choose repositories, review discovered services, start indexing |
-| `/dashboard` and children | Wait for authentication, then fetch authorized backend data |
+| Route                     | Behavior                                                                                                           |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `/sign-in`                | GitHub and Google buttons, work-email link form, existing-session continuation                                     |
+| `/sign-up`                | The same methods with account-creation copy; Firebase creates a user when needed                                   |
+| `/auth/email-link`        | Consume the Firebase link, confirm the address when needed, then bootstrap the workspace                           |
+| `/onboarding`             | Backend-owned lifecycle: verify GitHub App access, choose repositories, review discovered services, start indexing |
+| `/dashboard` and children | Wait for authentication, then fetch authorized backend data                                                        |
 
 The auth page uses the homepage fonts and color tokens, indigo links, lime primary actions, and the existing light/dark preference. It renders with native DOM through `mountAuthPage`, so it can be used by the static dashboard generator or mounted from React. No illustrative workspace records appear on this page.
 

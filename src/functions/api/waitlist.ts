@@ -1,22 +1,22 @@
 import { sanitizeAttribution } from "../../analytics/schema";
 
 interface Store {
-  put(
-    key: string,
-    value: string,
-    options?: { expirationTtl?: number },
-  ): Promise<void>;
+  put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
 }
 
 interface EmailBinding {
-  send(message: {
-    to: string;
-    from: string;
-    replyTo: string;
-    subject: string;
-    text: string;
-    html: string;
-  } | unknown): Promise<{ messageId?: string } | void>;
+  send(
+    message:
+      | {
+          to: string;
+          from: string;
+          replyTo: string;
+          subject: string;
+          text: string;
+          html: string;
+        }
+      | unknown,
+  ): Promise<{ messageId?: string } | void>;
 }
 
 interface Env {
@@ -83,8 +83,7 @@ export async function onRequestPost({
   }
 
   const email = typeof form.email === "string" ? form.email.trim() : "";
-  const repository =
-    typeof form.repository === "string" ? form.repository.trim() : "";
+  const repository = typeof form.repository === "string" ? form.repository.trim() : "";
   const notes = typeof form.notes === "string" ? form.notes.trim() : "";
   const marketingOptIn = form.marketing_opt_in === "yes";
 
@@ -95,10 +94,7 @@ export async function onRequestPost({
     repository.length > 500 ||
     notes.length > 2000
   ) {
-    return json(
-      { message: "Please provide a valid work email and repository." },
-      400,
-    );
+    return json({ message: "Please provide a valid work email and repository." }, 400);
   }
 
   const leadId = crypto.randomUUID();
@@ -111,16 +107,30 @@ export async function onRequestPost({
       // KV permits one write per second per key. Keep the receipt and the
       // notification result under separate keys instead of racing two writes.
       const key = saved ? "waitlist-notification:" + leadId : "waitlist:" + leadId;
-      const record = saved ? { leadId, notificationStatus, updatedAt: new Date().toISOString() }
-        : { leadId, createdAt, email, repository, notes, marketingOptIn, attribution, notificationStatus,
-          ...(notificationStatus === "pending" ? { notificationKey: "waitlist-notification:" + leadId } : {}) };
-      await env.WAITLIST.put(key, JSON.stringify(record),
-        { expirationTtl: 60 * 60 * 24 * 90 });
+      const record = saved
+        ? { leadId, notificationStatus, updatedAt: new Date().toISOString() }
+        : {
+            leadId,
+            createdAt,
+            email,
+            repository,
+            notes,
+            marketingOptIn,
+            attribution,
+            notificationStatus,
+            ...(notificationStatus === "pending"
+              ? { notificationKey: "waitlist-notification:" + leadId }
+              : {}),
+          };
+      await env.WAITLIST.put(key, JSON.stringify(record), { expirationTtl: 60 * 60 * 24 * 90 });
       saved = true;
-    } catch { console.warn("Contact lead persistence unavailable."); }
+    } catch {
+      console.warn("Contact lead persistence unavailable.");
+    }
   }
   await save(env.EMAIL ? "pending" : "unavailable");
-  const received = () => json({ message: "Thanks. Your contact request was received.", accepted: true, leadId });
+  const received = () =>
+    json({ message: "Thanks. Your contact request was received.", accepted: true, leadId });
 
   if (!env.EMAIL) {
     console.error("Contact email binding is not configured.");
@@ -149,8 +159,16 @@ export async function onRequestPost({
     `<p><strong>GitHub organization or repository:</strong> ${escapeHtml(repository)}</p>`,
     `<p><strong>Shared API context:</strong><br>${escapeHtml(notes || "(not provided)").replace(/\n/g, "<br>")}</p>`,
     `<p><strong>Marketing/promotions emails:</strong> ${marketingOptIn ? "YES - opted in on the contact form" : "no"}</p>`,
-    "<p><strong>Lead ID:</strong> " + leadId + "<br><strong>Received:</strong> " + createdAt + "</p>",
-    "<ul>" + Object.entries(attribution).map(([key, value]) => "<li>" + escapeHtml(key) + ": " + escapeHtml(value) + "</li>").join("") + "</ul>",
+    "<p><strong>Lead ID:</strong> " +
+      leadId +
+      "<br><strong>Received:</strong> " +
+      createdAt +
+      "</p>",
+    "<ul>" +
+      Object.entries(attribution)
+        .map(([key, value]) => "<li>" + escapeHtml(key) + ": " + escapeHtml(value) + "</li>")
+        .join("") +
+      "</ul>",
   ].join("");
 
   try {
@@ -166,14 +184,8 @@ export async function onRequestPost({
     console.warn("Structured contact email send failed, attempting EmailMessage fallback.");
     try {
       const moduleName = "cloudflare:email";
-      const { EmailMessage } = (await import(
-        /* @vite-ignore */ moduleName
-      )) as {
-        EmailMessage: new (
-          from: string,
-          to: string,
-          raw: string,
-        ) => unknown;
+      const { EmailMessage } = (await import(/* @vite-ignore */ moduleName)) as {
+        EmailMessage: new (from: string, to: string, raw: string) => unknown;
       };
       const boundary = `boundary_${Date.now().toString(16)}`;
       const raw = [
@@ -210,16 +222,20 @@ export async function onRequestPost({
           ? structuredError.code
           : "unknown";
       void fallbackError;
-      console.error("Contact request email delivery failed.", /^[a-z0-9_-]{1,64}$/i.test(code) ? code : "unknown");
+      console.error(
+        "Contact request email delivery failed.",
+        /^[a-z0-9_-]{1,64}$/i.test(code) ? code : "unknown",
+      );
       await save("failed");
       if (saved) return received();
-      return json(
-        { message: "We could not send your request. Please try again shortly." },
-        502,
-      );
+      return json({ message: "We could not send your request. Please try again shortly." }, 502);
     }
   }
 
   await save("sent");
-  return json({ message: "Thanks. Your contact request was emailed successfully.", accepted: true, leadId });
+  return json({
+    message: "Thanks. Your contact request was emailed successfully.",
+    accepted: true,
+    leadId,
+  });
 }

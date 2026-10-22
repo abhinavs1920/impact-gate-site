@@ -4,15 +4,15 @@ Impact Gate uses the Firebase web Analytics SDK and its linked Google Analytics 
 
 ## Open the reports
 
-| Setting | Value |
-| --- | --- |
-| Website | https://impactgate.in |
-| Firebase project | `impact-gate-prod` |
-| Firebase web app | `1:830832356407:web:cd9ce464c85b35f05e63b2` |
-| GA4 property | `557166280` (`impact-gate-prod`) |
-| Web data stream | `15967481167` |
-| Measurement ID | `G-PDKMBG4FD8` |
-| Lead store | Cloudflare KV `impact-gate-leads`, Worker binding `WAITLIST` |
+| Setting          | Value                                                        |
+| ---------------- | ------------------------------------------------------------ |
+| Website          | https://impactgate.in                                        |
+| Firebase project | `impact-gate-prod`                                           |
+| Firebase web app | `1:830832356407:web:cd9ce464c85b35f05e63b2`                  |
+| GA4 property     | `557166280` (`impact-gate-prod`)                             |
+| Web data stream  | `15967481167`                                                |
+| Measurement ID   | `G-PDKMBG4FD8`                                               |
+| Lead store       | Cloudflare KV `impact-gate-leads`, Worker binding `WAITLIST` |
 
 - [Firebase Analytics](https://console.firebase.google.com/project/impact-gate-prod/analytics): events and audience activity for this project.
 - [GA4 Realtime](https://analytics.google.com/analytics/web/#/p557166280/realtime/overview): recent visits and events.
@@ -27,24 +27,24 @@ Realtime and DebugView are useful for recent activity. Standard reports can take
 
 All explicit events include a fixed public page path and `site_area` (`marketing`, `docs`, `authentication`, `setup`, or `workspace`). URLs omit query strings and fragments; unknown routes become `/not-found`. The adapter allows a small set of categorical fields and nonnegative counts.
 
-| Events | Meaning and useful parameters |
-| --- | --- |
-| `page_view` | Entry and navigation between documents; `page_path`, `site_area`. |
-| `navigation_click`, `cta_click` | Navigation and calls to action; `action`, `placement`, `target_page`, optional public `page_section`. |
-| `section_view`, `scroll_depth` | Interest in homepage sections and 25/50/75/90% scroll milestones. |
-| `contact_click` | Contact purpose, such as product or support; no email address. |
-| `form_start`, `form_submit`, `form_error` | Contact form engagement, submission attempts, and client validation/network/server failures. Native validation can emit an error for each invalid field. |
-| `generate_lead` | Server accepted a contact request after saving it or successfully notifying the team; `form_name`, random `lead_id`. Honeypot submissions do not generate leads. |
-| `docs_search`, `docs_search_result`, `docs_code_copy` | Search intent category, query length/result count, chosen guide, and copied code language; no typed search text. |
-| `sign_in_start`, `email_link_requested`, `login`, `sign_up`, `auth_error`, `sign_out` | Authentication steps and outcomes; provider/method and a sanitized error code. `sign_up` requires Firebase to identify a new account. |
-| `setup_started`, `github_connection_start`, `github_connected` | Onboarding and GitHub authorization steps; success follows the authenticated API response. |
-| `repository_selection_saved`, `repository_reindex_requested` | Successful selection and indexing requests; repository count only. |
-| `workspace_view`, `workspace_action`, `workspace_error` | Workspace page use, supported button actions, code-flow tab choice, and broad error category. Views are emitted once per workspace on a page, rather than on each poll. |
-| `evidence_review_saved`, `workspace_settings_saved` | Successful review or settings save; reviewed/needs-review category only. |
-| `runtime_discovery_start`, `runtime_services_discovered` | Provider discovery and total/matched/unmatched service counts. |
-| `runtime_connection_saved`, `runtime_sync_completed`, `runtime_connection_removed` | Successful Prometheus/Datadog connection operations; provider and mapped service count. |
-| `video_play`, `video_progress`, `video_complete` | Commercial and product walkthrough video playback; `content_type` and 25/50/75/100 `percentage` milestones. |
-| `cta_click` with `action=demo_open` or `action=demo_interact` | Opening `/demo` or the first click/scroll interaction within the demo page. |
+| Events                                                                                | Meaning and useful parameters                                                                                                                                           |
+| ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `page_view`                                                                           | Entry and navigation between documents; `page_path`, `site_area`.                                                                                                       |
+| `navigation_click`, `cta_click`                                                       | Navigation and calls to action; `action`, `placement`, `target_page`, optional public `page_section`.                                                                   |
+| `section_view`, `scroll_depth`                                                        | Interest in homepage sections and 25/50/75/90% scroll milestones.                                                                                                       |
+| `contact_click`                                                                       | Contact purpose, such as product or support; no email address.                                                                                                          |
+| `form_start`, `form_submit`, `form_error`                                             | Contact form engagement, submission attempts, and client validation/network/server failures. Native validation can emit an error for each invalid field.                |
+| `generate_lead`                                                                       | Server accepted a contact request after saving it or successfully notifying the team; `form_name`, random `lead_id`. Honeypot submissions do not generate leads.        |
+| `docs_search`, `docs_search_result`, `docs_code_copy`                                 | Search intent category, query length/result count, chosen guide, and copied code language; no typed search text.                                                        |
+| `sign_in_start`, `email_link_requested`, `login`, `sign_up`, `auth_error`, `sign_out` | Authentication steps and outcomes; provider/method and a sanitized error code. `sign_up` requires Firebase to identify a new account.                                   |
+| `setup_started`, `github_connection_start`, `github_connected`                        | Onboarding and GitHub authorization steps; success follows the authenticated API response.                                                                              |
+| `repository_selection_saved`, `repository_reindex_requested`                          | Successful selection and indexing requests; repository count only.                                                                                                      |
+| `workspace_view`, `workspace_action`, `workspace_error`                               | Workspace page use, supported button actions, code-flow tab choice, and broad error category. Views are emitted once per workspace on a page, rather than on each poll. |
+| `evidence_review_saved`, `workspace_settings_saved`                                   | Successful review or settings save; reviewed/needs-review category only.                                                                                                |
+| `runtime_discovery_start`, `runtime_services_discovered`                              | Provider discovery and total/matched/unmatched service counts.                                                                                                          |
+| `runtime_connection_saved`, `runtime_sync_completed`, `runtime_connection_removed`    | Successful Prometheus/Datadog connection operations; provider and mapped service count.                                                                                 |
+| `video_play`, `video_progress`, `video_complete`                                      | Commercial and product walkthrough video playback; `content_type` and 25/50/75/100 `percentage` milestones.                                                             |
+| `cta_click` with `action=demo_open` or `action=demo_interact`                         | Opening `/demo` or the first click/scroll interaction within the demo page.                                                                                             |
 
 Event names keep legacy 'pilot' wording on purpose, for GA4 continuity. In particular, `pilot_request`, `request_pilot`, and the `pilot` contact/form/section values remain unchanged while the visible labels say Contact or Get started.
 
@@ -89,12 +89,12 @@ These account-level report settings require Analytics Editor access. The existin
 3. Under **Admin → Data display → Custom definitions**, add event-scoped dimensions for `site_area`, `action`, `placement`, `target_page`, `page_section`, `contact_type`, `form_name`, `provider`, `method`, `error_type`, `search_topic`, `doc_slug`, and `content_type`. Add user-scoped dimensions for `account_state` and `workspace_role`. Optional event-scoped metrics include `repository_count`, `service_count`, `matched_count`, and `unmatched_count` with the Standard unit. Avoid registering the unique `lead_id` or Firebase UID as a custom dimension; they create high cardinality.
 4. Under **Explore → Funnel exploration**, create these sequences. Use an open funnel where visitors can enter partway through:
 
-| Funnel | Steps |
-| --- | --- |
-| Contact interest | `page_view` → `cta_click` with `action=request_pilot` → `form_start` → `form_submit` → `generate_lead`. |
-| Demo engagement | `page_view` on `/demo` → `cta_click` with `action=demo_interact` → video events by `content_type`. |
+| Funnel             | Steps                                                                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Contact interest   | `page_view` → `cta_click` with `action=request_pilot` → `form_start` → `form_submit` → `generate_lead`.                                    |
+| Demo engagement    | `page_view` on `/demo` → `cta_click` with `action=demo_interact` → video events by `content_type`.                                         |
 | Product activation | `sign_in_start` → `login` or `sign_up` → `setup_started` → `github_connected` → `repository_selection_saved` → `runtime_connection_saved`. |
-| Runtime setup | `runtime_discovery_start` → `runtime_services_discovered` → `runtime_connection_saved` → `runtime_sync_completed`, split by `provider`. |
+| Runtime setup      | `runtime_discovery_start` → `runtime_services_discovered` → `runtime_connection_saved` → `runtime_sync_completed`, split by `provider`.    |
 
 Compare channels, pages, and device types before changing the site. A large CTA-to-form drop suggests unclear expectations; form errors suggest submission friction; failed authentication or repository setup highlights onboarding problems; unmatched discovery counts indicate naming/mapping friction. Use cohorts and repeated patterns instead of treating a single visitor as evidence.
 

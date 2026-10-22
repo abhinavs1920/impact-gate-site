@@ -28,15 +28,15 @@ Implemented on 2026-09-30 from the six desktop exports in Stitch project `154007
 
 ## Page plan and delivery
 
-| Route | Delivered layout and behavior |
-| --- | --- |
-| `/dashboard` | Engineering overview, five snapshot summary cards, three charts, recent open findings and evidence review |
-| `/dashboard/api-usage` | Search and service filters, endpoint selection, overview/code flow/callers/history tabs, source and runtime evidence |
-| `/dashboard/dependency-graph` | Snapshot service graph, node inspector, search and evidence filters, fit, JSON export |
-| `/dashboard/function-usage` | Separate searchable function inventory with request attribution and measured-entry evidence |
-| `/dashboard/deprecation-candidates` | Status filters, search, evidence dialogs, server-confirmed snapshot reviews |
-| `/dashboard/repositories` | Repository search/status filters, coverage dialogs, authorized repository selection, reindexing and jobs |
-| `/dashboard/settings` | Server-confirmed workspace preferences, account providers, GitHub and runtime connections, account help links |
+| Route                               | Delivered layout and behavior                                                                                        |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `/dashboard`                        | Engineering overview, five snapshot summary cards, three charts, recent open findings and evidence review            |
+| `/dashboard/api-usage`              | Search and service filters, endpoint selection, overview/code flow/callers/history tabs, source and runtime evidence |
+| `/dashboard/dependency-graph`       | Snapshot service graph, node inspector, search and evidence filters, fit, JSON export                                |
+| `/dashboard/function-usage`         | Separate searchable function inventory with request attribution and measured-entry evidence                          |
+| `/dashboard/deprecation-candidates` | Status filters, search, evidence dialogs, server-confirmed snapshot reviews                                          |
+| `/dashboard/repositories`           | Repository search/status filters, coverage dialogs, authorized repository selection, reindexing and jobs             |
+| `/dashboard/settings`               | Server-confirmed workspace preferences, account providers, GitHub and runtime connections, account help links        |
 
 Shared navigation becomes a focus-managed drawer on smaller screens. Tables become labeled cards on phones. Dialogs, navigation, table selection and graph nodes support keyboard use. Reduced motion is respected.
 
