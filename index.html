@@ -44,15 +44,19 @@
     />
     <script>
       (() => {
-        let theme = "system";
+        let theme = "light";
         try {
-          theme = localStorage.getItem("impact-gate-theme") ?? "system";
+          const version = "light-default-v1";
+          if (localStorage.getItem("impact-gate-theme-version") !== version) {
+            localStorage.setItem("impact-gate-theme", "light");
+            localStorage.setItem("impact-gate-theme-version", version);
+          }
+          theme = localStorage.getItem("impact-gate-theme") ?? "light";
         } catch {
-          theme = "system";
+          theme = "light";
         }
         const isDark =
-          theme === "dark" ||
-          (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          theme === "dark";
         document.documentElement.dataset.theme = isDark ? "dark" : "light";
       })();
     </script>
