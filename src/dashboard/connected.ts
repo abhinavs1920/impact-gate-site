@@ -123,7 +123,6 @@ let repoFilter: "all" | "selected" | "recommended" = "all";
 let repoSelectionInitialized = false;
 let query = "";
 let filter = "";
-let showAllFindings = false;
 let collectionPage = 1;
 let apiServiceFilter = "";
 let apiSort = "service";
@@ -426,7 +425,13 @@ function renderHome(): string {
           .includes(query.toLowerCase()),
     )
     .sort((a, b) => Date.parse(b.finding.createdAt) - Date.parse(a.finding.createdAt));
-  const visible = showAllFindings ? findings : findings.slice(0, 5);
+  const overviewPage = {
+    page: collectionPage,
+    pageSize: 10,
+    total: findings.length,
+    hasNext: collectionPage * 10 < findings.length,
+  };
+  const visible = findings.slice((collectionPage - 1) * 10, collectionPage * 10);
   const rows = visible.map(({ finding: f, repository, name }) => [
     `<button type="button" data-action="finding" data-id="${escape(f.id)}" aria-label="Review finding for ${escape(f.endpoint)}"><strong>${escape(name)}</strong></button>${repository ? `<p class="ig-note">${escape(repository.fullName)}</p>` : ""}`,
     `<span class="ig-overview-change" title="${escape(f.endpoint)}">${escape(f.changeKind.replaceAll("_", " "))}</span>`,
@@ -434,7 +439,9 @@ function renderHome(): string {
     '<span class="ig-overview-status">Open</span>',
     `<a class="ig-overview-pr" href="${escape(url(f.pullRequestUrl))}" target="_blank" rel="noopener noreferrer" aria-label="Open pull request ${f.pullRequestNumber} on GitHub">#${f.pullRequestNumber} ↗</a>`,
   ]);
-  const count = `Showing ${visible.length} of ${findings.length}${query || filter ? " matching" : ""} findings`;
+  const start = findings.length ? (collectionPage - 1) * 10 + 1 : 0;
+  const end = Math.min(findings.length, collectionPage * 10);
+  const count = `Showing ${start}–${end} of ${findings.length}${query || filter ? " matching" : ""} findings`;
   const noFindings =
     query || filter
       ? empty(
@@ -570,6 +577,7 @@ function renderHome(): string {
           : ""
       }
       <div id="overview-findings-table">${rows.length ? table(["Service / Repository", "Change", "Severity", "Status", "GitHub PR"], rows) : noFindings}</div>
+      ${paginationControls(overviewPage, "pr")}
     </section>
     <section class="ig-card ig-evidence-legend"><div><h2>Evidence states</h2><p class="ig-note">Measured usage, mapped code, possible relationships, and unknown coverage remain distinct.</p></div><div class="ig-evidence-state-list">${productBadge("MEASURED", "measured")}<span>Runtime telemetry shows API request counts and observed function calls attributed to each API.</span>${productBadge("MAPPED", "mapped")}<span>Static analysis plus refinement maps possible function flows.</span>${productBadge("POSSIBLE", "possible")}<span>The relationship is plausible but not fully proven.</span>${productBadge("UNKNOWN", "unknown")}<span>Coverage, dynamic behavior, or telemetry is incomplete.</span></div></section>
   </div>`;
@@ -2171,7 +2179,6 @@ function clearSession(): void {
   graph = null;
   query = "";
   filter = "";
-  showAllFindings = false;
   errorMessage = "";
 }
 function chooseWorkspace(): void {
@@ -2425,7 +2432,6 @@ document.addEventListener("change", (event) => {
     repoSelectionInitialized = false;
     query = "";
     filter = "";
-    showAllFindings = false;
     workspace = session?.workspaces.find((w) => w.id === id) ?? null;
     try {
       sessionStorage.setItem("impact-gate-workspace", id);
@@ -3083,12 +3089,6 @@ document.addEventListener("click", (event) => {
   if (action === "demo-traffic-refresh") {
     const traffic = trigger.closest<HTMLElement>("[data-demo-traffic]");
     if (traffic) void refreshDemoTraffic(traffic);
-    return;
-  }
-  if (action === "toggle-findings" && page === "home") {
-    showAllFindings = !showAllFindings;
-    render();
-    $('[data-action="toggle-findings"]')?.focus();
     return;
   }
   if (action === "endpoint" && id) {
