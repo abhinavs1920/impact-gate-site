@@ -82,8 +82,8 @@ const button = (action: string, label: string, extra = "", secondary = false) =>
   `<button type="button" class="ig-button${secondary ? " ig-button-secondary" : ""}" data-action="${action}" ${extra}>${action === "connect-github" || action === "link-github" ? providerIcon("github") : action === "link-google" ? providerIcon("google") : ""}${label}</button>`;
 const empty = (title: string, copy: string, action = "") =>
   `<div class="ig-state"><h2>${escape(title)}</h2><p>${escape(copy)}</p>${action}</div>`;
-function table(headers: string[], rows: string[][]): string {
-  return `<div class="ig-live-table-wrap"><table class="ig-live-table"><thead><tr>${headers.map((h) => `<th scope="col">${escape(h)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell, i) => `<td data-label="${escape(headers[i])}"><div class="ig-table-cell">${cell}</div></td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+function table(headers: string[], rows: string[][], sortable = false): string {
+  return `<div class="ig-live-table-wrap"><table class="ig-live-table"><thead><tr>${headers.map((h, i) => `<th scope="col">${sortable ? `<button type="button" class="ig-sort-heading" data-action="api-sort" data-sort="${i}" aria-label="Sort by ${escape(h)}">${escape(h)}${apiSort === String(i) ? apiSortDirection === "asc" ? " ↑" : " ↓" : ""}</button>` : escape(h)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell, i) => `<td data-label="${escape(headers[i])}"><div class="ig-table-cell">${cell}</div></td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
 function evidence(references: SourceReference[]): string {
   return references.length
@@ -124,8 +124,9 @@ let repoSelectionInitialized = false;
 let query = "";
 let filter = "";
 let collectionPage = 1;
-let apiServiceFilter = "";
-let apiSort = "service";
+let apiServiceFilters = new Set<string>();
+let apiSort = "1";
+let apiSortDirection: "asc" | "desc" = "asc";
 let retirementServiceFilter = "";
 let retirementMethodFilter = "";
 let retirementEvidenceFilter = "";
@@ -447,7 +448,7 @@ function renderHome(): string {
       ? empty(
           "No matching findings",
           "Try another search or clear the filters.",
-          button("clear-filters", "Clear filters", "", true),
+          button("clear-api-filters", "Clear filters", "", true),
         )
       : empty(
           "No open findings",
@@ -743,20 +744,35 @@ function renderEndpoints(): string {
   if (selectedEndpoint) {
     selectedEndpoint = null;
   }
+  const serviceNames = new Map(s.services.map((service) => [service.id, service.name]));
   const allEndpoints = s.pagination?.endpoints
     ? s.endpoints
-    : s.endpoints.filter(
-        (e) =>
-          `${e.method} ${e.path} ${s.services.find((service) => service.id === e.serviceId)?.name}`
-            .toLowerCase()
-            .includes(query.toLowerCase()) &&
-          (!apiServiceFilter || e.serviceId === apiServiceFilter),
+    : s.endpoints.filter((e) =>
+        `${e.method} ${e.path} ${serviceNames.get(e.serviceId) ?? ""}`.toLowerCase().includes(query.toLowerCase()) &&
+        (!apiServiceFilters.size || apiServiceFilters.has(e.serviceId)),
       );
   const endpoints = s.pagination?.endpoints
     ? allEndpoints
-    : allEndpoints.slice((collectionPage - 1) * 10, collectionPage * 10);
+    : allEndpoints.slice((collectionPage - 1) * 50, collectionPage * 50);
+  const values = (e: WorkspaceEndpoint): Array<string | number> => {
+    const candidate = s.candidates.find((item) => item.endpointId === e.id);
+    const implementation = e.implementationSources?.[0] ?? (e.definitionSource === "code" ? e.source : null);
+    return [e.method + " " + e.path, serviceNames.get(e.serviceId) ?? "", endpointRouteType(e).label,
+      implementation?.functionName ?? "", e.staticCallerCount, e.runtimeCallsInWindow ?? -1,
+      e.measuredFunctionEntriesInWindow ?? -1,
+      s.findings.filter((f) => f.endpointId === e.id && f.status === "open").length,
+      candidate ? evidenceState(candidate, e).label : "Needs review"];
+  };
+  endpoints.sort((a, b) => {
+    const left = values(a)[Number(apiSort)] ?? "";
+    const right = values(b)[Number(apiSort)] ?? "";
+    const comparison = typeof left === "number" && typeof right === "number"
+      ? left - right
+      : String(left).localeCompare(String(right));
+    return comparison * (apiSortDirection === "asc" ? 1 : -1);
+  });
   const noResults =
-    query || filter
+    query || apiServiceFilters.size
       ? empty(
           "No matching endpoints",
           "Try another search or clear the filters.",
@@ -774,30 +790,7 @@ function renderEndpoints(): string {
             '<a class="ig-button" href="/onboarding">Connect repositories</a>',
           );
 
-  const grouped = s.services
-    .map((service) => ({
-      service,
-      endpoints: endpoints.filter((endpoint) => endpoint.serviceId === service.id),
-    }))
-    .filter((group) => group.endpoints.length);
-  const serviceOptions = s.services.map(
-    (service) => [service.id, service.name] as [string, string],
-  );
-  const serviceTree = grouped
-    .map(
-      ({ service, endpoints: serviceEndpoints }) =>
-        `<details class="ig-api-service" ${grouped.length === 1 ? "open" : ""}><summary><span><strong>${escape(service.name)}</strong><span class="ig-note">${service.rootPath}</span></span><span class="ig-overview-findings-count">${serviceEndpoints.length} APIs</span></summary>${table(
-          [
-            "Method / path",
-            "Route type",
-            "Handler / flow",
-            "Static callers",
-            "API requests",
-            "Attributed function calls",
-            "Open findings",
-            "Retirement state",
-          ],
-          serviceEndpoints.map((e) => {
+  const apiRows = endpoints.map((e) => {
             const candidate = s.candidates.find((item) => item.endpointId === e.id);
             const state = candidate
               ? evidenceState(candidate, e)
@@ -807,6 +800,7 @@ function renderEndpoints(): string {
               e.implementationSources?.[0] ?? (e.definitionSource === "code" ? e.source : null);
             return [
               `<button type="button" class="ig-endpoint-btn" data-action="endpoint" data-id="${escape(e.id)}"><code><span class="ig-method-badge ig-method-${e.method.toLowerCase()}">${escape(e.method)}</span> ${escape(e.path)}</code></button>`,
+              escape(serviceNames.get(e.serviceId) ?? "Unknown service"),
               `${productBadge(routeType.label, routeType.tone)}<p class="ig-note">${escape(routeType.reason)}</p>`,
               implementation
                 ? `<button type="button" class="ig-endpoint-btn" data-action="endpoint" data-id="${escape(e.id)}" data-tab="flow"><strong>${escape(implementation.functionName ?? "Open code flow")}</strong></button><p class="ig-note">${escape(implementation.filePath)}:${implementation.line}</p>`
@@ -819,33 +813,19 @@ function renderEndpoints(): string {
               String(s.findings.filter((f) => f.endpointId === e.id && f.status === "open").length),
               productBadge(state.label, state.tone),
             ];
-          }),
-        )}</details>`,
-    )
-    .join("");
+          });
   const page = s.pagination?.endpoints ?? {
     page: collectionPage,
-    pageSize: 10,
+    pageSize: 50,
     total: allEndpoints.length,
-    hasNext: collectionPage * 10 < allEndpoints.length,
+    hasNext: collectionPage * 50 < allEndpoints.length,
   };
   return (
     heading(
       "APIs",
-      "Explore services first, then expand a service to inspect its API modules and evidence.",
+      "Explore APIs, filter by module, and sort evidence from the column headings.",
     ) +
-    `<section class="ig-card ig-apis-catalog-screen"><div class="ig-api-toolbar">${filters("Search APIs and services", serviceOptions, apiServiceFilter)}<div class="ig-api-sort" role="group" aria-label="Sort APIs"><span class="ig-note">Sort by</span>${[
-      ["service", "Service"],
-      ["method", "Method"],
-      ["path", "Path"],
-    ]
-      .map(
-        ([value, label]) =>
-          `<button type="button" class="ig-repo-tab ${apiSort === value ? "active" : ""}" data-action="api-sort" data-sort="${value}">${label}</button>`,
-      )
-      .join(
-        "",
-      )}</div></div>${serviceTree || noResults}<p class="ig-note">Expand a service to reveal its API modules. Route type is inferred from source and route metadata; it does not confirm deployment or current usage.</p>${paginationControls(page, "api")}</section>`
+    `<section class="ig-card ig-apis-catalog-screen"><div class="ig-api-toolbar"><input data-query aria-label="Search APIs and services" placeholder="Search APIs and services" value="${escape(query)}"><details class="ig-api-module-filter" ${apiServiceFilters.size ? "open" : ""}><summary>Modules${apiServiceFilters.size ? ` (${apiServiceFilters.size})` : ""}</summary><div class="ig-api-module-menu"><label><input type="checkbox" data-api-service-all ${apiServiceFilters.size === 0 ? "checked" : ""}> All modules</label>${s.services.map((service) => `<label><input type="checkbox" data-api-service="${escape(service.id)}" ${apiServiceFilters.has(service.id) ? "checked" : ""}> ${escape(service.name)}</label>`).join("")}</div></details>${button("clear-api-filters", "Clear", "", true)}</div>${endpoints.length ? table(["Method / path", "Service", "Route type", "Handler / flow", "Static callers", "API requests", "Attributed function calls", "Open findings", "Retirement state"], apiRows, true) : noResults}<p class="ig-note">Route type is inferred from source and route metadata. It does not confirm deployment or current usage.</p>${paginationControls(page, "api")}</section>`
   );
 }
 
@@ -2024,10 +2004,9 @@ function snapshotView(): string {
 function snapshotPageParams(search: URLSearchParams): void {
   if (page === "api-usage") {
     search.set("page", String(collectionPage));
-    search.set("limit", "10");
-    search.set("sort", apiSort);
+    search.set("limit", "50");
     if (query) search.set("q", query);
-    if (apiServiceFilter) search.set("service", apiServiceFilter);
+    if (apiServiceFilters.size) search.set("services", [...apiServiceFilters].join(","));
   } else if (page === "pr-impact") {
     search.set("page", String(collectionPage));
     search.set("limit", "10");
@@ -2374,11 +2353,22 @@ document.addEventListener("change", (event) => {
     return;
   }
   const select = event.target;
+  if (event.target instanceof HTMLInputElement && event.target.matches("[data-api-service], [data-api-service-all]")) {
+    const checkbox = event.target;
+    if (checkbox.matches("[data-api-service-all]")) apiServiceFilters.clear();
+    else if (checkbox.dataset.apiService) {
+      if (checkbox.checked) apiServiceFilters.add(checkbox.dataset.apiService);
+      else apiServiceFilters.delete(checkbox.dataset.apiService);
+    }
+    collectionPage = 1;
+    scheduleCollectionRefresh();
+    return;
+  }
   if (!(select instanceof HTMLSelectElement)) return;
   if (select.matches("[data-filter]")) {
     collectionPage = 1;
     if (page === "api-usage") {
-      apiServiceFilter = select.value;
+      apiServiceFilters = select.value ? new Set([select.value]) : new Set();
       scheduleCollectionRefresh();
     } else if (page === "pr-impact") {
       filter = select.value;
@@ -2746,10 +2736,10 @@ document.addEventListener("click", (event) => {
   }
   if (action === "api-sort") {
     const requested = trigger.dataset.sort;
-    if (["service", "method", "path"].includes(requested ?? "")) {
-      apiSort = requested!;
-      collectionPage = 1;
-      void refresh().catch(handleError);
+    if (requested && /^\d+$/.test(requested)) {
+      if (apiSort === requested) apiSortDirection = apiSortDirection === "asc" ? "desc" : "asc";
+      else { apiSort = requested; apiSortDirection = "asc"; }
+      render();
     }
     return;
   }
@@ -3074,7 +3064,7 @@ document.addEventListener("click", (event) => {
   if (action === "clear-filters") {
     query = "";
     filter = "";
-    apiServiceFilter = "";
+    apiServiceFilters.clear();
     retirementServiceFilter = "";
     retirementMethodFilter = "";
     retirementEvidenceFilter = "";
@@ -3084,6 +3074,13 @@ document.addEventListener("click", (event) => {
     if (["api-usage", "pr-impact", "deprecation-candidates"].includes(page))
       void refresh().catch(handleError);
     else render();
+    return;
+  }
+  if (action === "clear-api-filters") {
+    query = "";
+    apiServiceFilters.clear();
+    collectionPage = 1;
+    void refresh().catch(handleError);
     return;
   }
   if (action === "demo-traffic-refresh") {
