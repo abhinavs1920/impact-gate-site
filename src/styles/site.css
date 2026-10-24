@@ -16,7 +16,7 @@
   --color-border-strong: #a6aeba;
   --color-gold: #e9c27a;
   --brand-mark-green: #26ba66;
-  --logo-mark-ink: #ffffff;
+  --logo-mark-ink: var(--color-navy);
   --color-error: #ba1a1a;
   --font-display: "Libre Caslon Text", Georgia, serif;
   --font-body: "Hanken Grotesk", "Segoe UI", system-ui, sans-serif;
