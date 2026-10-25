@@ -83,12 +83,12 @@ The routes do not have a production analyzer, runtime, or candidate API connecte
 
 All captures are local rendered page states. `empty` shows the honest default low-data state; `evaluation` is the explicitly labeled local preview, not live system data.
 
-| Screen/state | Desktop | Mobile |
-|---|---|---|
-| Dependency Graph — empty | [Light](screenshots/dependency-graph-empty-desktop.png) | [Light](screenshots/dependency-graph-empty-mobile-light.png), [dark](screenshots/dependency-graph-empty-mobile-dark.png) |
-| Dependency Graph — evaluation preview | [Light](screenshots/dependency-graph-evaluation-desktop.png), [dark](screenshots/dependency-graph-evaluation-desktop-dark.png) | [Light](screenshots/dependency-graph-evaluation-mobile.png) |
-| Deprecation Candidates — empty | [Light](screenshots/deprecation-candidates-empty-desktop.png) | [Light](screenshots/deprecation-candidates-empty-mobile.png), [dark](screenshots/deprecation-candidates-empty-mobile-dark.png) |
-| Deprecation Candidates — evaluation preview | [Light](screenshots/deprecation-candidates-evaluation-desktop.png), [dark](screenshots/deprecation-candidates-evaluation-desktop-dark.png) | [Light](screenshots/deprecation-candidates-evaluation-mobile.png) |
+| Screen/state                                | Desktop                                                                                                                                    | Mobile                                                                                                                         |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| Dependency Graph — empty                    | [Light](screenshots/dependency-graph-empty-desktop.png)                                                                                    | [Light](screenshots/dependency-graph-empty-mobile-light.png), [dark](screenshots/dependency-graph-empty-mobile-dark.png)       |
+| Dependency Graph — evaluation preview       | [Light](screenshots/dependency-graph-evaluation-desktop.png), [dark](screenshots/dependency-graph-evaluation-desktop-dark.png)             | [Light](screenshots/dependency-graph-evaluation-mobile.png)                                                                    |
+| Deprecation Candidates — empty              | [Light](screenshots/deprecation-candidates-empty-desktop.png)                                                                              | [Light](screenshots/deprecation-candidates-empty-mobile.png), [dark](screenshots/deprecation-candidates-empty-mobile-dark.png) |
+| Deprecation Candidates — evaluation preview | [Light](screenshots/deprecation-candidates-evaluation-desktop.png), [dark](screenshots/deprecation-candidates-evaluation-desktop-dark.png) | [Light](screenshots/deprecation-candidates-evaluation-mobile.png)                                                              |
 
 ### Verification
 

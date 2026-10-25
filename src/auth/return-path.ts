@@ -6,17 +6,33 @@ export function safeReturnPath(
   origin: string,
   fallback = "/dashboard",
 ): string {
-  if (!value || !value.startsWith("/") || value.startsWith("//") || /[\\\u0000-\u001f\u007f]/.test(value)) {
+  if (
+    !value ||
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    /[\\\u0000-\u001f\u007f]/.test(value)
+  ) {
     return fallback;
   }
   try {
     const destination = new URL(value, origin);
-    if (destination.origin !== new URL(origin).origin || destination.username || destination.password) return fallback;
+    if (
+      destination.origin !== new URL(origin).origin ||
+      destination.username ||
+      destination.password
+    )
+      return fallback;
     // Reject encoded separators and encoded control characters as well as literal ones.
     const decoded = decodeURIComponent(destination.pathname);
-    if (decoded !== destination.pathname && /[\\\u0000-\u001f\u007f]/.test(decoded)) return fallback;
+    if (decoded !== destination.pathname && /[\\\u0000-\u001f\u007f]/.test(decoded))
+      return fallback;
     if (/%2f|%5c/i.test(destination.pathname)) return fallback;
-    if (!destinations.some(path => destination.pathname === path || destination.pathname.startsWith(`${path}/`))) return fallback;
+    if (
+      !destinations.some(
+        (path) => destination.pathname === path || destination.pathname.startsWith(`${path}/`),
+      )
+    )
+      return fallback;
     return `${destination.pathname}${destination.search}${destination.hash}`;
   } catch {
     return fallback;
@@ -26,7 +42,11 @@ export function safeReturnPath(
 export function applicationOrigin(value: string): string {
   const url = new URL(value);
   const local = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
-  if (url.username || url.password || (url.protocol !== "https:" && !(url.protocol === "http:" && local))) {
+  if (
+    url.username ||
+    url.password ||
+    (url.protocol !== "https:" && !(url.protocol === "http:" && local))
+  ) {
     throw new Error("Authentication requires HTTPS or a local development origin.");
   }
   return url.origin;

@@ -84,7 +84,13 @@ assert.equal(unavailable.status, 503);
 
 const failed = await onRequestPost({
   request: post({ email: "applicant@example.com", repository: "repo" }),
-  env: { EMAIL: { async send() { throw new Error("provider offline"); } } },
+  env: {
+    EMAIL: {
+      async send() {
+        throw new Error("provider offline");
+      },
+    },
+  },
 });
 assert.equal(failed.status, 502);
 

@@ -3,14 +3,23 @@
   "compatibility_date": "2026-09-25",
   "observability": { "enabled": true, "logs": { "invocation_logs": false } },
   "vars": { "IMPACT_GATE_API_ORIGIN": "https://impact-gate-api.centralindia.cloudapp.azure.com" },
-  "kv_namespaces": [
-    { "binding": "WAITLIST", "id": "ac3f7ca15a61471da2a376c1a1590c0e" }
-  ],
+  "kv_namespaces": [{ "binding": "WAITLIST", "id": "ac3f7ca15a61471da2a376c1a1590c0e" }],
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/", "/demo", "/api/*", "/sandbox", "/sandbox/*", "/.well-known/*", "/oauth/*", "/mcp", "/mcp/*", "/healthz"]
+    "run_worker_first": [
+      "/",
+      "/demo",
+      "/api/*",
+      "/sandbox",
+      "/sandbox/*",
+      "/.well-known/*",
+      "/oauth/*",
+      "/mcp",
+      "/mcp/*",
+      "/healthz",
+    ],
   },
   "send_email": [
     {
@@ -23,15 +32,14 @@
         "contact@impactgate.in",
         "hello@impactgate.in",
         "team@impactgate.in",
-        "security@impactgate.in"
-      ]
-    }
+        "security@impactgate.in",
+      ],
+    },
   ],
   "routes": [
     { "pattern": "impactgate.in", "custom_domain": true },
     { "pattern": "www.impactgate.in", "custom_domain": true },
-    { "pattern": "mcp.impactgate.in", "custom_domain": true }
+    { "pattern": "mcp.impactgate.in", "custom_domain": true },
   ],
-  "main": "./src/worker.ts"
+  "main": "./src/worker.ts",
 }
-

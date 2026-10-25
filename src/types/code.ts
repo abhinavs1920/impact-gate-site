@@ -69,11 +69,7 @@ export interface WorkspaceCodeFunction extends IndexedCodeFunction {
 }
 
 export type ObservationQuality =
-  | "complete"
-  | "partial"
-  | "estimated_boundary"
-  | "unmapped_release"
-  | "unknown";
+  "complete" | "partial" | "estimated_boundary" | "unmapped_release" | "unknown";
 
 export interface FunctionMeasuredUsage {
   functionId: string;
@@ -146,8 +142,23 @@ export interface WorkspaceConditionalAnalysis {
   version: 1;
   status: "indexed" | "partial" | "unavailable";
   notes: string[];
-  callConditions: Array<{callId:string;source:SourceReference;conditions:Array<{predicateId:string;predicate:string;polarity:"true"|"false"|"nullish"|"non_nullish";source:SourceReference;inputOrigins:WorkspaceFlowInputOrigin[]}>}>;
-  valuePaths: Array<{callId:string;argumentIndex:number;source:SourceReference;inputOrigins:WorkspaceFlowInputOrigin[]}>;
+  callConditions: Array<{
+    callId: string;
+    source: SourceReference;
+    conditions: Array<{
+      predicateId: string;
+      predicate: string;
+      polarity: "true" | "false" | "nullish" | "non_nullish";
+      source: SourceReference;
+      inputOrigins: WorkspaceFlowInputOrigin[];
+    }>;
+  }>;
+  valuePaths: Array<{
+    callId: string;
+    argumentIndex: number;
+    source: SourceReference;
+    inputOrigins: WorkspaceFlowInputOrigin[];
+  }>;
 }
 
 export interface WorkspaceCodeSnapshot {

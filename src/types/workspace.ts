@@ -2,7 +2,8 @@
 import type { WorkspaceCodeSnapshot } from "./code";
 import type { RuntimeConnection, RuntimeProvider } from "./runtime";
 export type WorkspaceRole = "owner" | "admin" | "viewer";
-export type IndexStatus = "selected" | "queued" | "discovering" | "indexing" | "indexed" | "partial" | "failed" | "removed";
+export type IndexStatus =
+  "selected" | "queued" | "discovering" | "indexing" | "indexed" | "partial" | "failed" | "removed";
 export type RuntimeCoverage = "not_connected" | "not_observed" | "available";
 export type EvidenceSource = "static" | "runtime" | "both";
 export type RetirementEvidenceState =
@@ -12,9 +13,7 @@ export type RetirementEvidenceState =
   | "no_known_caller_selected_repositories"
   | "unknown_external_usage";
 export type RetirementReviewState =
-  | "not_reviewed"
-  | "reviewed_current_snapshot"
-  | "reviewed_previous_snapshot";
+  "not_reviewed" | "reviewed_current_snapshot" | "reviewed_previous_snapshot";
 
 export interface WorkspaceIdentity {
   uid: string;
@@ -56,7 +55,12 @@ export interface WorkspaceRepository {
   indexedAt: string | null;
   serviceCount: number;
   error: string | null;
-  coverage: { supportedFiles: number; skippedFiles: number; openApiDocuments: number; notes: string[] };
+  coverage: {
+    supportedFiles: number;
+    skippedFiles: number;
+    openApiDocuments: number;
+    notes: string[];
+  };
 }
 export interface WorkspaceService {
   id: string;
@@ -120,22 +124,72 @@ export interface WorkspaceEdge {
 }
 
 export interface KubernetesClusterConfig {
-  clusterId: string; displayName: string; environment: string; namespaces: string[];
-  status?: "connected" | "error"; lastInventoryAt?: string | null; lastError?: string | null;
+  clusterId: string;
+  displayName: string;
+  environment: string;
+  namespaces: string[];
+  status?: "connected" | "error";
+  lastInventoryAt?: string | null;
+  lastError?: string | null;
 }
 export interface KubernetesWorkloadIdentity {
-  clusterId: string; clusterName: string; environment: string; namespace: string;
-  kind: "Deployment" | "StatefulSet" | "DaemonSet"; name: string; uid: string; observedAt: string;
-  images: Array<{name:string; image:string; digest:string|null}>;
-  labels: Record<string,string>; annotations: Record<string,string>; serviceNames: string[];
-  confidence: "confirmed" | "probable" | "ambiguous" | "unmapped"; evidence: string[]; stale: boolean;
+  clusterId: string;
+  clusterName: string;
+  environment: string;
+  namespace: string;
+  kind: "Deployment" | "StatefulSet" | "DaemonSet";
+  name: string;
+  uid: string;
+  observedAt: string;
+  images: Array<{ name: string; image: string; digest: string | null }>;
+  labels: Record<string, string>;
+  annotations: Record<string, string>;
+  serviceNames: string[];
+  confidence: "confirmed" | "probable" | "ambiguous" | "unmapped";
+  evidence: string[];
+  stale: boolean;
 }
 export interface WorkspaceDeploymentIdentity {
-  clusters: KubernetesClusterConfig[]; workloads: KubernetesWorkloadIdentity[];
-  artifacts: Array<{id:string;repositoryId:string;githubRepositoryId:number;commitSha:string;imageDigest:string;componentPath:string|null;artifactReference:string|null;evidenceSource:"operator"|"oci_annotations"|"ci_attestation";observedAt:string;confidence:"confirmed"|"probable"}>;
-  links: Array<{repositoryId:string;clusterId:string;namespace:string;workloadKind:KubernetesWorkloadIdentity["kind"];workloadName:string;componentPath:string|null;confidence:"confirmed"|"probable"|"ambiguous";evidence:string[];updatedAt:string}>;
-  matches: Array<{workloadKey:string;repositoryIds:string[];confidence:"confirmed"|"probable"|"ambiguous"|"unmapped";evidence:string[]}>;
-  telemetryMatches: Array<{provider:"prometheus"|"datadog";telemetryService:string;serviceId:string;repositoryId:string;workloadKey:string;confidence:"confirmed"|"probable"|"ambiguous"|"stale";evidence:string[]}>;
+  clusters: KubernetesClusterConfig[];
+  workloads: KubernetesWorkloadIdentity[];
+  artifacts: Array<{
+    id: string;
+    repositoryId: string;
+    githubRepositoryId: number;
+    commitSha: string;
+    imageDigest: string;
+    componentPath: string | null;
+    artifactReference: string | null;
+    evidenceSource: "operator" | "oci_annotations" | "ci_attestation";
+    observedAt: string;
+    confidence: "confirmed" | "probable";
+  }>;
+  links: Array<{
+    repositoryId: string;
+    clusterId: string;
+    namespace: string;
+    workloadKind: KubernetesWorkloadIdentity["kind"];
+    workloadName: string;
+    componentPath: string | null;
+    confidence: "confirmed" | "probable" | "ambiguous";
+    evidence: string[];
+    updatedAt: string;
+  }>;
+  matches: Array<{
+    workloadKey: string;
+    repositoryIds: string[];
+    confidence: "confirmed" | "probable" | "ambiguous" | "unmapped";
+    evidence: string[];
+  }>;
+  telemetryMatches: Array<{
+    provider: "prometheus" | "datadog";
+    telemetryService: string;
+    serviceId: string;
+    repositoryId: string;
+    workloadKey: string;
+    confidence: "confirmed" | "probable" | "ambiguous" | "stale";
+    evidence: string[];
+  }>;
 }
 export interface WorkspaceFinding {
   id: string;
@@ -203,6 +257,12 @@ export interface WorkspaceRepositoryGroup {
   repositoryIds: string[];
   createdAt: string;
 }
+export interface WorkspaceCollectionPage {
+  page: number;
+  pageSize: number;
+  total: number;
+  hasNext: boolean;
+}
 
 export interface WorkspaceSnapshot {
   version: 1;
@@ -223,6 +283,11 @@ export interface WorkspaceSnapshot {
   runtimeConnections?: RuntimeConnection[];
   deploymentIdentity?: WorkspaceDeploymentIdentity;
   indexCoverage?: { missingCodeRepositoryIds: string[]; missingCallSiteRepositoryIds: string[] };
+  pagination?: {
+    endpoints?: WorkspaceCollectionPage;
+    findings?: WorkspaceCollectionPage;
+    candidates?: WorkspaceCollectionPage;
+  };
 }
 
 export type WorkspaceOnboardingStage =
@@ -238,7 +303,13 @@ export interface WorkspaceOnboardingStatus {
   stage: WorkspaceOnboardingStage;
   providerRepositories: Array<{ id: number; fullName: string; selected: boolean }>;
   recommendedConsumerRepositories: Array<{ id: number; fullName: string; selected: boolean }>;
-  firstValue: { ready: boolean; apiCount: number; flowCount: number; staticCallerCount: number; unresolvedBoundaryCount: number };
+  firstValue: {
+    ready: boolean;
+    apiCount: number;
+    flowCount: number;
+    staticCallerCount: number;
+    unresolvedBoundaryCount: number;
+  };
   runtime: { connected: boolean; functionMetricsDetected: boolean };
   deployment: { platform: string; confidence: string };
   nextAction: string;

@@ -63,24 +63,24 @@ Repository index -> symbols/types/imports/calls -> persistent semantic graph
 
 ### Component responsibilities
 
-| Component | Responsibility |
-| --- | --- |
-| `RepositoryIndexer` | Enumerate bounded, trusted source files and create parse jobs. |
-| `Parser` | Produce language-neutral syntax facts through TypeScript/Java adapters. |
-| `SymbolResolver` | Resolve stable symbols, imports, exports, re-exports, and declarations. |
-| `TypeResolver` | Resolve types while preserving `any`, casts, unions, and unknown states. |
-| `CallGraphProvider` | Provide demand-driven direct and polymorphic call edges with provenance. |
-| `CFGProvider` | Expose control-flow facts only where impact analysis needs them. |
-| `DataflowEngine` | Propagate changed values through parameters, returns, callbacks, and transforms. |
-| `ContractProvider` | Load OpenAPI first; leave extension points for AsyncAPI, GraphQL, and protobuf. |
-| `DiffEngine` | Emit normalized change kinds without prematurely calling them breaking. |
-| `APIMapper` | Connect contract endpoints/fields to framework handlers, clients, DTOs, and serializers. |
-| `ImpactEngine` | Traverse only the changed field/endpoint dependency closure. |
-| `EvidenceEngine` | Store explainable paths, source locations, transformations, guards, and uncertainty. |
+| Component              | Responsibility                                                                                |
+| ---------------------- | --------------------------------------------------------------------------------------------- |
+| `RepositoryIndexer`    | Enumerate bounded, trusted source files and create parse jobs.                                |
+| `Parser`               | Produce language-neutral syntax facts through TypeScript/Java adapters.                       |
+| `SymbolResolver`       | Resolve stable symbols, imports, exports, re-exports, and declarations.                       |
+| `TypeResolver`         | Resolve types while preserving `any`, casts, unions, and unknown states.                      |
+| `CallGraphProvider`    | Provide demand-driven direct and polymorphic call edges with provenance.                      |
+| `CFGProvider`          | Expose control-flow facts only where impact analysis needs them.                              |
+| `DataflowEngine`       | Propagate changed values through parameters, returns, callbacks, and transforms.              |
+| `ContractProvider`     | Load OpenAPI first; leave extension points for AsyncAPI, GraphQL, and protobuf.               |
+| `DiffEngine`           | Emit normalized change kinds without prematurely calling them breaking.                       |
+| `APIMapper`            | Connect contract endpoints/fields to framework handlers, clients, DTOs, and serializers.      |
+| `ImpactEngine`         | Traverse only the changed field/endpoint dependency closure.                                  |
+| `EvidenceEngine`       | Store explainable paths, source locations, transformations, guards, and uncertainty.          |
 | `ClassificationEngine` | Emit `SAFE`, `POTENTIAL_IMPACT`, `POTENTIAL_REGRESSION`, `VERIFIED_REGRESSION`, or `UNKNOWN`. |
-| `GraphStorage` | Persist immutable knowledge artifacts and graph manifests. |
-| `Cache` | Reuse analysis keyed by content, analyzer, configuration, and dependency closure. |
-| `PRAdapter` | Render findings as warn-only GitHub review information. |
+| `GraphStorage`         | Persist immutable knowledge artifacts and graph manifests.                                    |
+| `Cache`                | Reuse analysis keyed by content, analyzer, configuration, and dependency closure.             |
+| `PRAdapter`            | Render findings as warn-only GitHub review information.                                       |
 
 ## 4. Data and graph model
 
@@ -191,24 +191,24 @@ Track files analyzed, symbols, nodes, edges, cache hits/misses, duration, memory
 
 ## 10. Edge-case matrix
 
-| Edge case | Initial policy |
-| --- | --- |
-| Destructuring, spread, overwrite ordering | Supported in TypeScript/JavaScript vertical slice |
-| Aliases, reassignment, mutation | Basic local support; uncertain across opaque boundaries |
-| Dynamic/computed property access | Exact/enumerated/inferred/dynamic/unknown states |
-| Optional chaining, nullish/default guards | Supported in local dataflow milestone |
-| Callbacks, closures, promises, async | Supported incrementally; unresolved higher-order flow is uncertain |
-| Loops, recursion, exceptions | Bounded CFG; budget exhaustion is unknown |
-| Interfaces, inheritance, overloads, generics | Later language/type milestones |
-| `any`, `unknown`, casts, reflection | Preserve uncertainty; casts are not proof |
-| Spring proxies and dependency injection | Framework-model milestone |
-| Jackson annotations and polymorphic JSON | Java framework milestone |
-| Generated code | Provider extension; source-map/evidence dependent |
-| HTTP/event/external consumers | Boundary nodes; unknown when source/runtime evidence is absent |
-| `$ref`, cycles, oneOf/anyOf/allOf, discriminators | Normalized contract milestone with cycle guards |
-| Status, headers, parameters, content types | Contract model/diff milestone |
-| Branches, rebases, stale caches | Immutable manifests and dependency-keyed invalidation |
-| Timeout/resource exhaustion | Explicit incomplete analysis, never safe |
+| Edge case                                         | Initial policy                                                     |
+| ------------------------------------------------- | ------------------------------------------------------------------ |
+| Destructuring, spread, overwrite ordering         | Supported in TypeScript/JavaScript vertical slice                  |
+| Aliases, reassignment, mutation                   | Basic local support; uncertain across opaque boundaries            |
+| Dynamic/computed property access                  | Exact/enumerated/inferred/dynamic/unknown states                   |
+| Optional chaining, nullish/default guards         | Supported in local dataflow milestone                              |
+| Callbacks, closures, promises, async              | Supported incrementally; unresolved higher-order flow is uncertain |
+| Loops, recursion, exceptions                      | Bounded CFG; budget exhaustion is unknown                          |
+| Interfaces, inheritance, overloads, generics      | Later language/type milestones                                     |
+| `any`, `unknown`, casts, reflection               | Preserve uncertainty; casts are not proof                          |
+| Spring proxies and dependency injection           | Framework-model milestone                                          |
+| Jackson annotations and polymorphic JSON          | Java framework milestone                                           |
+| Generated code                                    | Provider extension; source-map/evidence dependent                  |
+| HTTP/event/external consumers                     | Boundary nodes; unknown when source/runtime evidence is absent     |
+| `$ref`, cycles, oneOf/anyOf/allOf, discriminators | Normalized contract milestone with cycle guards                    |
+| Status, headers, parameters, content types        | Contract model/diff milestone                                      |
+| Branches, rebases, stale caches                   | Immutable manifests and dependency-keyed invalidation              |
+| Timeout/resource exhaustion                       | Explicit incomplete analysis, never safe                           |
 
 ## 11. Staged roadmap and microtasks
 
@@ -218,13 +218,13 @@ Track files analyzed, symbols, nodes, edges, cache hits/misses, duration, memory
 
 **Microtasks**
 
-| ID | Task | Dependencies | Definition of done |
-| --- | --- | --- | --- |
-| S0-01 | Inventory React/Vite entry points, components, data, Worker API, scripts, tests, and deployment files | None | `ARCHITECTURE.md` current-state section matches repository |
-| S0-02 | Define analyzer boundaries, domain vocabulary, graph edges, and uncertainty states | S0-01 | Target architecture and graph model are documented |
-| S0-03 | Define staged roadmap, edge-case policy, risks, and acceptance gates | S0-02 | Roadmap and matrix are reviewed against product brief |
-| S0-04 | Record the decision to keep the website and analyzer decoupled | S0-01 | ADR exists and explains migration path |
-| S0-05 | Align illustrative UI copy with the canonical evidence example | S0-01 | Build and content checks pass |
+| ID    | Task                                                                                                  | Dependencies | Definition of done                                         |
+| ----- | ----------------------------------------------------------------------------------------------------- | ------------ | ---------------------------------------------------------- |
+| S0-01 | Inventory React/Vite entry points, components, data, Worker API, scripts, tests, and deployment files | None         | `ARCHITECTURE.md` current-state section matches repository |
+| S0-02 | Define analyzer boundaries, domain vocabulary, graph edges, and uncertainty states                    | S0-01        | Target architecture and graph model are documented         |
+| S0-03 | Define staged roadmap, edge-case policy, risks, and acceptance gates                                  | S0-02        | Roadmap and matrix are reviewed against product brief      |
+| S0-04 | Record the decision to keep the website and analyzer decoupled                                        | S0-01        | ADR exists and explains migration path                     |
+| S0-05 | Align illustrative UI copy with the canonical evidence example                                        | S0-01        | Build and content checks pass                              |
 
 **Stage 0 definition of done:** documentation exists, the illustrative UI is honest and aligned, and the existing site build/verification remains green.
 

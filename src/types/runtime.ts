@@ -25,8 +25,7 @@ export interface DatadogConnectionConfig extends RuntimeConnectionBase {
   routeFacet: string;
   callerFacet: string | null;
 }
-export type RuntimeConnectionConfig =
-  PrometheusConnectionConfig | DatadogConnectionConfig;
+export type RuntimeConnectionConfig = PrometheusConnectionConfig | DatadogConnectionConfig;
 export interface RuntimeCredentials {
   bearerToken?: string;
   username?: string;
