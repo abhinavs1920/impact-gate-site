@@ -4,6 +4,7 @@ import App from "./App";
 import { startWebsiteAnalytics } from "./analytics";
 import "./styles/site.css";
 import "./styles/product-screens.css";
+import "./ui/loading-indicator.css";
 
 const root = document.getElementById("root");
 if (!root) throw new Error("React application root is missing from the document.");

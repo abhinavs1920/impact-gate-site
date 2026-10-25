@@ -1,0 +1,99 @@
+.ig-loading-indicator {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  color: var(--ig-ink, var(--color-ink, #191c1e));
+  font: 500 13px/1.4 "Hanken Grotesk", "Segoe UI", sans-serif;
+}
+
+.ig-loading-indicator[hidden] {
+  display: none;
+}
+
+.ig-loading-indicator-floating {
+  position: fixed;
+  z-index: 120;
+  right: 24px;
+  bottom: 24px;
+  min-width: 220px;
+  max-width: min(360px, calc(100vw - 32px));
+  min-height: 58px;
+  padding: 11px 16px;
+  border: 1px solid var(--ig-border, var(--color-border, #e0e4ea));
+  border-radius: 12px;
+  background: var(--ig-surface, var(--color-surface, #fff));
+  box-shadow: 0 12px 32px rgb(13 30 56 / 18%);
+  animation: ig-loading-arrive 160ms ease-out both;
+}
+
+.ig-loading-indicator-inline {
+  justify-content: center;
+  padding: 24px;
+  color: var(--ig-secondary, var(--color-secondary, #535f6f));
+}
+
+.ig-loading-indicator-inline.is-centered {
+  min-height: 45vh;
+  font-size: 14px;
+}
+
+.product-screen-loading {
+  display: grid;
+  min-height: 65vh;
+  place-items: center;
+}
+
+.ig-loading-mark {
+  position: relative;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  place-items: center;
+}
+
+.ig-loading-mark::after {
+  position: absolute;
+  inset: -3px;
+  border: 2px solid var(--ig-border, var(--color-border, #e0e4ea));
+  border-top-color: var(--ig-primary, var(--color-primary, #2b3ac4));
+  border-radius: 50%;
+  content: "";
+  animation: ig-loading-spin 900ms linear infinite;
+}
+
+.ig-loading-mark img {
+  display: block;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+}
+
+.ig-loading-label {
+  min-width: 0;
+}
+
+@keyframes ig-loading-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes ig-loading-arrive {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 640px) {
+  .ig-loading-indicator-floating {
+    right: 12px;
+    bottom: 12px;
+    min-width: 0;
+    min-height: 52px;
+    padding: 9px 13px;
+    font-size: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ig-loading-mark::after { animation: none; }
+  .ig-loading-indicator-floating { animation: none; }
+}
