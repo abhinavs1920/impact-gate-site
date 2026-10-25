@@ -1161,7 +1161,7 @@ function renderRepositories(): string {
       button("import", "Select repositories", writeDisabled()) +
         button("manage-groups", "Manage groups", `${writeDisabled()}`, true) +
         button("add-workspace", "Add account or organization", `${writeDisabled()}`, true),
-    ) +
+    )}` +
     `<section class="ig-card">${filters("Search repositories", [
       ["indexed", "Indexed"],
       ["queued", "Queued"],
