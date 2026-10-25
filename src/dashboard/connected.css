@@ -315,6 +315,20 @@
   font-size: 12px;
   max-width: 190px;
 }
+/* Keep the global repository selector readable in both dashboard themes. */
+.ig-top-actions select[data-group-picker] {
+  min-height: 38px;
+  padding: 8px 34px 8px 12px;
+  border: 1px solid var(--ig-border);
+  border-radius: 6px;
+  background-color: var(--ig-muted);
+  color: var(--ig-ink);
+  font: 500 12px/1.3 "Hanken Grotesk", sans-serif;
+}
+.ig-top-actions select[data-group-picker]:focus-visible {
+  outline: 2px solid var(--ig-primary);
+  outline-offset: 2px;
+}
 .ig-load-icon {
   display: inline-block;
   width: 18px;
