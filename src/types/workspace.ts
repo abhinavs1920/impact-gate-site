@@ -62,6 +62,12 @@ export interface WorkspaceRepository {
     notes: string[];
   };
 }
+export interface WorkspaceRepositoryCoverageDetails {
+  supportedFiles: number;
+  skippedFiles: number;
+  openApiDocuments: number;
+  notes: string[];
+}
 export interface WorkspaceService {
   id: string;
   repositoryId: string;
@@ -69,6 +75,27 @@ export interface WorkspaceService {
   rootPath: string;
   criticality: "high" | "medium" | "low";
   nameSource: string;
+}
+/** Canonical repository-owned component contract; older snapshots use services as provisional modules. */
+export interface WorkspaceModule {
+  id: string;
+  repositoryId: string;
+  name: string;
+  path: string;
+  parentId?: string | null;
+  classification?: "application" | "library" | "tooling" | "test" | "unknown";
+  discoverySource?: string;
+  legacyServiceId?: string | null;
+}
+export interface WorkspaceModuleEdge {
+  id: string;
+  sourceModuleId: string;
+  targetModuleId: string;
+  kind: "api" | "import" | "package" | "unknown";
+  evidence: EvidenceSource;
+  confidence: "high" | "medium" | "low";
+  relationIds?: string[];
+  references: SourceReference[];
 }
 export interface SourceReference {
   repositoryId: string;
@@ -273,6 +300,8 @@ export interface WorkspaceSnapshot {
   groups?: WorkspaceRepositoryGroup[];
   activeGroupId?: string | null;
   services: WorkspaceService[];
+  modules?: WorkspaceModule[];
+  moduleEdges?: WorkspaceModuleEdge[];
   endpoints: WorkspaceEndpoint[];
   edges: WorkspaceEdge[];
   findings: WorkspaceFinding[];

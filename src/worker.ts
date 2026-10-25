@@ -98,6 +98,7 @@ export async function proxyWorkspaceApi(
     "Content-Type",
     "Retry-After",
     "ETag",
+    "Server-Timing",
     "Content-Security-Policy",
     "X-Demo-Request",
   ]) {

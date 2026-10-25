@@ -949,48 +949,19 @@ try {
     }
     if (screen === "settings") assert.match(content, /Save preferences/);
     if (screen === "dependency-graph") {
-      assert.equal(context.graphFixture.elements[0].data.label, "◆ customer-service");
-      const serviceEdges = context.graphFixture.elements.filter(
-        (element) => element.data.kind === "service-dependency",
+      assert.match(context.graphFixture.elements[0].data.label, /impact-gate\/customer-api/);
+      const repositoryEdges = context.graphFixture.elements.filter(
+        (element) => element.data.kind === "repository-dependency",
       );
-      assert.equal(
-        serviceEdges.length,
-        1,
-        "multiple API relationships collapse into one service arrow",
-      );
-      assert.equal(serviceEdges[0].data.label, "2 APIs");
+      assert.equal(repositoryEdges.length, 1, "multiple API relationships collapse into one repository arrow");
+      assert.equal(repositoryEdges[0].data.label, "1 modules · 2 APIs");
       const tapEdge = context.graphState.handlers.find(
         (handler) => handler.event === "tap" && handler.selector === "edge",
       ).handler;
-      tapEdge({ target: { data: () => serviceEdges[0].data } });
-      assert.equal(
-        JSON.stringify(
-          context.graphState.elements
-            .filter((element) => element.data.kind === "api")
-            .map((element) => element.data.label)
-            .sort(),
-        ),
-        JSON.stringify(["GET /customer/v1/orders", "POST /customer/v1/orders"]),
-      );
-      assert.ok(
-        context.graphState.zoomLevel > 1,
-        "expanding a service arrow zooms into its API arrows",
-      );
-      assert.match(
-        document.querySelector("[data-graph-inspector]").textContent,
-        /Expanded to 2 API relationships/,
-      );
-      const apiEdge = context.graphState.elements.find((element) => element.data.kind === "api");
-      tapEdge({ target: { data: () => apiEdge.data } });
-      assert.match(document.querySelector("[data-graph-inspector]").textContent, /Open API flow/);
-      document.querySelector("[data-action=graph-collapse]").click();
-      assert.equal(
-        context.graphFixture.elements.filter(
-          (element) => element.data.kind === "service-dependency",
-        ).length,
-        1,
-        "back to service view restores the aggregate arrow",
-      );
+      tapEdge({ target: { data: () => repositoryEdges[0].data } });
+      assert.match(document.querySelector("[data-graph-inspector]").textContent, /2 API relationships/);
+      assert.match(document.querySelector("[data-graph-inspector]").textContent, /GET \/customer\/v1\/orders/);
+      assert.match(document.querySelector("[data-graph-inspector]").textContent, /POST \/customer\/v1\/orders/);
     }
     if (screen === "function-usage") assert.match(content, /Function usage/);
     if (screen === "settings") {

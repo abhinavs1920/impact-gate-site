@@ -39,8 +39,16 @@ import type {
   WorkspaceSettings,
   WorkspaceSnapshot,
   WorkspaceOnboardingStatus,
+  WorkspaceRepository,
+  WorkspaceRepositoryCoverageDetails,
 } from "../types/workspace";
 import cytoscape from "cytoscape";
+import {
+  buildRepositoryGraph,
+  filteredRepositoryGraph,
+  repositoryModuleCount,
+  type RepositoryGraphModel,
+} from "./dependency-graph";
 import "./connected.css";
 import "./overview.css";
 import "../ui/loading-indicator.css";
@@ -147,6 +155,7 @@ let endpointTab = ["overview", "flow", "consumers", "changes", "retirement"].inc
   : "overview";
 let graph: cytoscape.Core | null = null;
 let expandedServicePair: string | null = null;
+let expandedRepositoryId: string | null = new URL(location.href).searchParams.get("repo");
 let codeGraph: cytoscape.Core | null = null;
 let poll: ReturnType<typeof setTimeout> | undefined;
 let busy = false;
@@ -1246,7 +1255,81 @@ function renderSettings(): string {
   <section class="ig-card ig-settings-help"><div><h2>Help with your account</h2><p class="ig-note">Talk to the right person about your workspace or account.</p></div><nav aria-label="Account assistance"><a href="${emailHref("support")}">${uiIcon("help")}Product support</a><a href="${emailHref("billing")}">${uiIcon("mail")}Billing & invoices</a><a href="${emailHref("privacy")}">${uiIcon("mail")}Privacy & legal</a><a href="/contact">All contact options →</a></nav></section>`
   );
 }
+function repositoryGraphSummary(model: RepositoryGraphModel, repositoryId: string): string {
+  const repository = model.repositories.find((item) => item.id === repositoryId);
+  if (!repository) return "";
+  const modules = model.modules.filter((module) => module.repositoryId === repositoryId);
+  const internal = model.relations.filter(
+    (relation) => relation.sourceRepositoryId === repositoryId && relation.targetRepositoryId === repositoryId,
+  );
+  const incoming = model.relations.filter((relation) => relation.targetRepositoryId === repositoryId && relation.sourceRepositoryId !== repositoryId);
+  const outgoing = model.relations.filter((relation) => relation.sourceRepositoryId === repositoryId && relation.targetRepositoryId !== repositoryId);
+  return `<div class="ig-graph-repository-summary"><h2>${escape(repository.fullName)}</h2><p class="ig-note">${modules.length} modules · ${internal.length} internal API relationships · ${incoming.length} incoming · ${outgoing.length} outgoing</p><div class="ig-actions">${button("graph-repository", "Open repository", `data-id="${escape(repository.id)}"`)}${button("graph-collapse-repository", "Collapse", "", true)}</div>${modules.length > 40 ? `<p class="ig-note">Showing the 40 most connected modules. ${modules.length - 40} more are available in the repository module list.</p>` : ""}</div>${table(
+    ["Module", "Path", "API relationships"],
+    modules
+      .sort((left, right) => right.relationCount - left.relationCount || left.name.localeCompare(right.name))
+      .slice(0, 40)
+      .map((module) => [
+        `<button data-action="graph-module" data-id="${escape(module.id)}">${escape(module.name)}</button>`,
+        `<code>${escape(module.path)}</code>`,
+        String(module.relationCount),
+      ]),
+  )}`;
+}
+
 function renderGraph(): string {
+  const model = buildRepositoryGraph(snapshot!);
+  const visible = filteredRepositoryGraph(model, query, filter);
+  const hasRepositories = visible.repositories.length > 0;
+  const expanded = expandedRepositoryId && model.repositories.some((repository) => repository.id === expandedRepositoryId)
+    ? expandedRepositoryId
+    : null;
+  const internalCount = expanded
+    ? model.relations.filter((relation) => relation.sourceRepositoryId === expanded && relation.targetRepositoryId === expanded).length
+    : 0;
+  const edgeLabel = (aggregate: RepositoryGraphModel["aggregates"][number]) =>
+    `${aggregate.modulePairKeys.length} module ${aggregate.modulePairKeys.length === 1 ? "dependency" : "dependencies"}`;
+  return (
+    heading(
+      expanded ? "Repository dependency graph" : "Repository dependency graph",
+      expanded
+        ? "Inspect this repository's modules and the dependencies that cross its boundary."
+        : "Each node is a GitHub repository. Open one to inspect its indexed modules.",
+    ) +
+    `<section class="ig-card">${filters("Search repositories and modules", [
+      ["static", "Static evidence"],
+      ["runtime", "Runtime evidence"],
+      ["both", "Static and runtime evidence"],
+    ])}<div class="ig-actions ig-graph-toolbar">${button("graph-fit", "Fit view", "", true)}${button("graph-export", "Export snapshot", "", true)}</div>${
+      hasRepositories
+        ? `<div class="ig-connected-graph" role="group" aria-label="Repository dependency graph"></div><div class="ig-graph-inspector" data-graph-inspector>${
+            expanded
+              ? repositoryGraphSummary(visible, expanded)
+              : '<p class="ig-note">Select a repository to see its modules. Select an edge to inspect aggregated dependency evidence.</p>'
+          }</div>`
+        : snapshot!.repositories.length
+          ? empty("No repositories match this filter", "Clear the search or evidence filter to see the selected repositories.")
+          : empty("Connect repositories to build the graph", "Choose GitHub repositories to inspect their modules and dependencies.", '<a class="ig-button" href="/onboarding">Connect repositories</a>')
+    }<p class="ig-note">${visible.repositories.length} repositories · ${visible.modules.length} modules · ${visible.aggregates.length} cross-repository dependencies${expanded ? ` · ${internalCount} internal API relationships in expanded repository` : ""}</p>${
+      !visible.aggregates.length && hasRepositories
+        ? '<p class="ig-note">No cross-repository dependencies were found in this snapshot. Open a repository to inspect its modules and coverage.</p>'
+        : visible.aggregates.length
+          ? table(
+              ["Source repository", "Target repository", "Dependency count", "API relationships", "Evidence"],
+              visible.aggregates.map((aggregate) => [
+                `<button data-action="graph-repository" data-id="${escape(aggregate.sourceRepositoryId)}">${escape(model.repositories.find((repository) => repository.id === aggregate.sourceRepositoryId)?.fullName ?? "Unknown repository")}</button>`,
+                `<button data-action="graph-repository" data-id="${escape(aggregate.targetRepositoryId)}">${escape(model.repositories.find((repository) => repository.id === aggregate.targetRepositoryId)?.fullName ?? "Unknown repository")}</button>`,
+                edgeLabel(aggregate),
+                String(aggregate.apiRelationshipCount),
+                aggregate.evidence.map((item) => badge(item)).join(" "),
+              ]),
+            )
+          : ""
+    }</section>`
+  );
+}
+
+function renderLegacyGraph(): string {
   const s = snapshot!;
   const servicePairCount = new Set(
     s.edges.flatMap((edge) => {
@@ -1351,7 +1434,7 @@ function graphServiceKind(
 function renderFunctionUsage(): string {
   return `<div class="ig-function-usage">${heading("Function usage", "Search indexed functions, API request attribution, and measured runtime entries.")}${renderFunctionInventory(snapshot!, codeQuery, codePage)}</div>`;
 }
-function mountGraph(): void {
+function mountLegacyGraph(): void {
   const container = $(".ig-connected-graph");
   if (!container || !snapshot) return;
   const s = snapshot;
@@ -1607,6 +1690,132 @@ function mountGraph(): void {
     )}`;
   });
 }
+function mountGraph(): void {
+  const container = $(".ig-connected-graph");
+  if (!container || !snapshot) return;
+  const model = filteredRepositoryGraph(buildRepositoryGraph(snapshot), query, filter);
+  const expanded = expandedRepositoryId && model.repositories.some((repository) => repository.id === expandedRepositoryId)
+    ? expandedRepositoryId
+    : null;
+  const repositoryIds = new Set(model.repositories.map((repository) => repository.id));
+  const elements: cytoscape.ElementDefinition[] = model.repositories.map((repository) => ({
+    data: {
+      id: `repository:${repository.id}`,
+      repositoryId: repository.id,
+      label: `${repository.fullName}\n${repositoryModuleCount(model, repository.id)} modules`,
+      kind: expanded === repository.id ? "repository-expanded" : "repository",
+    },
+  }));
+  for (const aggregate of model.aggregates) {
+    if (!repositoryIds.has(aggregate.sourceRepositoryId) || !repositoryIds.has(aggregate.targetRepositoryId)) continue;
+    elements.push({
+      data: {
+        id: `repository-edge:${aggregate.sourceRepositoryId}:${aggregate.targetRepositoryId}`,
+        source: `repository:${aggregate.sourceRepositoryId}`,
+        target: `repository:${aggregate.targetRepositoryId}`,
+        kind: "repository-dependency",
+        sourceRepositoryId: aggregate.sourceRepositoryId,
+        targetRepositoryId: aggregate.targetRepositoryId,
+        label: `${aggregate.modulePairKeys.length} modules · ${aggregate.apiRelationshipCount} APIs`,
+        relationIds: aggregate.relationIds,
+      },
+    });
+  }
+  if (expanded) {
+    const modules = model.modules.filter((module) => module.repositoryId === expanded);
+    for (const module of modules) {
+      elements.push({
+        data: {
+          id: module.id,
+          parent: `repository:${module.repositoryId}`,
+          label: `${module.name}\n${module.relationCount} relationships`,
+          kind: "module",
+        },
+      });
+    }
+    const modulePairs = new Map<string, { source: string; target: string; relationIds: string[] }>();
+    for (const relation of model.relations) {
+      if (relation.sourceRepositoryId !== expanded && relation.targetRepositoryId !== expanded) continue;
+      const key = `${relation.sourceModuleId}:${relation.targetModuleId}`;
+      const pair = modulePairs.get(key) ?? { source: relation.sourceModuleId, target: relation.targetModuleId, relationIds: [] };
+      pair.relationIds.push(relation.id);
+      modulePairs.set(key, pair);
+    }
+    for (const pair of modulePairs.values()) {
+      const source = model.modules.find((module) => module.id === pair.source);
+      const target = model.modules.find((module) => module.id === pair.target);
+      if (!source || !target) continue;
+      for (const boundary of [source, target]) {
+        if (boundary.repositoryId === expanded || elements.some((element) => element.data?.id === boundary.id)) continue;
+        elements.push({
+          data: {
+            id: boundary.id,
+            label: `${boundary.name}\n${model.repositories.find((repository) => repository.id === boundary.repositoryId)?.fullName ?? "External repository"}`,
+            kind: "boundary-module",
+          },
+        });
+      }
+      elements.push({
+        data: {
+          id: `module-edge:${pair.source}:${pair.target}`,
+          source: pair.source,
+          target: pair.target,
+          kind: "module-dependency",
+          relationIds: pair.relationIds,
+          label: `${pair.relationIds.length} APIs`,
+        },
+      });
+    }
+  }
+  const theme = document.documentElement.dataset.theme === "dark";
+  graph = cytoscape({
+    container,
+    elements,
+    layout: { name: expanded ? "cose" : "grid", fit: true, padding: 50, avoidOverlap: true },
+    style: [
+      { selector: "node", style: { label: "data(label)", "text-wrap": "wrap", "text-max-width": 150, "font-size": 12, "background-color": theme ? "#25324a" : "#ffffff", color: theme ? "#f4f7ff" : "#172033", "border-width": 2, "border-color": theme ? "#8296c5" : "#9aa8c6", padding: 14, shape: "round-rectangle", width: "label", height: "label" } },
+      { selector: 'node[kind = "module"]', style: { "background-color": theme ? "#273d34" : "#f1f8ef", "border-color": theme ? "#8bc99d" : "#79a878", "font-size": 10, padding: 9 } },
+      { selector: 'node[kind = "boundary-module"]', style: { "background-color": theme ? "#3b3030" : "#fff5f0", "border-color": theme ? "#e4a190" : "#cf876f", "font-size": 10, padding: 9 } },
+      { selector: 'node[kind = "repository-expanded"]', style: { "background-color": theme ? "#26324e" : "#eef2ff", "border-color": theme ? "#91a9ed" : "#6478c8", "padding": 22, "text-valign": "top" } },
+      { selector: "edge", style: { width: 2, "curve-style": "bezier", "target-arrow-shape": "triangle", "line-color": theme ? "#8094bd" : "#7484a8", "target-arrow-color": theme ? "#8094bd" : "#7484a8", label: "data(label)", "font-size": 9, color: theme ? "#d8e2ff" : "#3f4b66", "text-background-color": theme ? "#161e2e" : "#ffffff", "text-background-opacity": 1, "text-background-padding": 3 } },
+      { selector: 'edge[kind = "module-dependency"]', style: { width: 1.5, "line-style": "dashed" } },
+    ],
+  });
+  const inspector = $("[data-graph-inspector]");
+  graph.on("tap", "node", (event) => {
+    const data = event.target.data();
+    const repositoryId = data.repositoryId as string | undefined;
+    if (repositoryId && inspector) {
+      expandedRepositoryId = expandedRepositoryId === repositoryId ? null : repositoryId;
+      try {
+        const next = new URL(location.href);
+        if (expandedRepositoryId) next.searchParams.set("repo", expandedRepositoryId);
+        else next.searchParams.delete("repo");
+        history.pushState({ repositoryId: expandedRepositoryId }, "", next.toString());
+      } catch {
+        /* URL state is an enhancement. */
+      }
+      render();
+      return;
+    }
+    const module = model.modules.find((item) => item.id === event.target.id());
+    if (module && inspector) {
+      inspector.innerHTML = `<h2>${escape(module.name)}</h2><p class="ig-note"><code>${escape(module.path)}</code> · provisional module mapping · ${module.endpointCount} endpoints · ${module.relationCount} relationships</p>${table(["Method", "Endpoint", "Evidence"], model.relations.filter((relation) => relation.sourceModuleId === module.id || relation.targetModuleId === module.id).slice(0, 40).map((relation) => [`${escape(relation.endpoint.method)}`, `<button data-action="endpoint-dialog" data-id="${escape(relation.endpoint.id)}"><code>${escape(relation.endpoint.path)}</code></button>`, badge(relation.edge.evidence)]))}`;
+    }
+  });
+  graph.on("tap", "edge", (event) => {
+    const data = event.target.data();
+    if (!inspector) return;
+    const relationIds = (data.relationIds as string[] | undefined) ?? [];
+    const relations = model.relations.filter((relation) => relationIds.includes(relation.id));
+    inspector.innerHTML = `<h2>Dependency details</h2><p class="ig-note">${relations.length} API relationships across ${new Set(relations.map((relation) => `${relation.sourceModuleId}:${relation.targetModuleId}`)).size} module dependencies.</p>${table(["Source", "Target", "API", "Evidence"], relations.map((relation) => [escape(model.modules.find((module) => module.id === relation.sourceModuleId)?.name ?? "Unknown"), escape(model.modules.find((module) => module.id === relation.targetModuleId)?.name ?? "Unknown"), `<button data-action="endpoint-dialog" data-id="${escape(relation.endpoint.id)}"><code>${escape(relation.endpoint.method)} ${escape(relation.endpoint.path)}</code></button>`, badge(relation.edge.evidence)]))}`;
+  });
+}
+
+// Kept temporarily as a compatibility reference while existing snapshots migrate to modules.
+void renderLegacyGraph;
+void mountLegacyGraph;
+
 function focusEndpointScreen(): void {
   try {
     if (typeof window.scrollTo === "function") window.scrollTo({ top: 0, behavior: "instant" });
@@ -1945,6 +2154,31 @@ function modal(title: string, contents: string): HTMLDialogElement {
   dialog.showModal();
   return dialog;
 }
+function repositoryCoverageMarkup(
+  repository: WorkspaceRepository,
+  details: WorkspaceRepositoryCoverageDetails,
+): string {
+  return `<h2 id="dialog-title">${escape(repository.fullName)}</h2><p>${badge(repository.status)} · ${escape(repository.defaultBranch)}</p><p>${details.supportedFiles} supported files · ${details.skippedFiles} skipped files · ${details.openApiDocuments} OpenAPI documents</p>${details.notes.length ? `<ul>${details.notes.map((note) => `<li>${escape(note)}</li>`).join("")}</ul>` : '<p class="ig-note">No additional coverage notes.</p>'}${repository.error ? `<p>${escape(repository.error)}</p>` : ""}<p class="ig-note">Indexed commit ${escape(repository.indexedSha ?? "not indexed")}</p><div class="ig-dialog-actions">${button("close-dialog", "Close", "", true)}</div>`;
+}
+function showRepositoryCoverage(repository: WorkspaceRepository): void {
+  if (!workspace) return;
+  const workspaceId = workspace.id;
+  const dialog = modal(repository.fullName, '<p role="status">Loading coverage details…</p>');
+  void api
+    .request<{ coverage: WorkspaceRepositoryCoverageDetails }>(
+      `${route(workspaceId)}/repositories/${encodeURIComponent(repository.id)}/coverage`,
+    )
+    .then(({ coverage: details }) => {
+      if (!dialog.open || workspace?.id !== workspaceId) return;
+      dialog.innerHTML = repositoryCoverageMarkup(repository, details);
+    })
+    .catch((error) => {
+      if (dialog.open && workspace?.id === workspaceId) {
+        dialog.innerHTML = `<h2 id="dialog-title">${escape(repository.fullName)}</h2><p role="alert">Coverage details could not be loaded. Close this dialog and try again.</p><div class="ig-dialog-actions">${button("close-dialog", "Close", "", true)}</div>`;
+      }
+      handleError(error);
+    });
+}
 async function loadAvailable(): Promise<void> {
   if (!workspace) return;
   const response = await api.request<{ repositories: InstallationRepository[] }>(
@@ -2055,9 +2289,13 @@ async function refresh(renderView = true, showLoading = true): Promise<void> {
   }
   if (next.version !== 1 || next.workspaceId !== workspace.id || !Array.isArray(next.endpoints))
     throw new Error("The workspace response is incompatible.");
+  const previous = snapshot;
   snapshot = next;
   errorMessage = "";
-  if (renderView) render();
+  if (renderView) {
+    if (snapshotContentChanged(previous, next)) render();
+    else renderShell();
+  }
   if (reportedWorkspace !== workspace.id) {
     reportedWorkspace = workspace.id;
     identifyAnalyticsUser(auth.currentUser?.uid ?? null, workspace.role);
@@ -2091,6 +2329,19 @@ async function refresh(renderView = true, showLoading = true): Promise<void> {
       next.jobs.some((job) => ["queued", "running"].includes(job.status)) ? 5000 : 30000,
     );
 }
+
+/** Ignore the server's per-response timestamp so unchanged polls do not rebuild the UI. */
+function snapshotContentChanged(
+  previous: WorkspaceSnapshot | null,
+  next: WorkspaceSnapshot,
+): boolean {
+  if (!previous) return true;
+  return (
+    JSON.stringify({ ...previous, generatedAt: null }) !==
+    JSON.stringify({ ...next, generatedAt: null })
+  );
+}
+
 function scheduleCollectionRefresh(): void {
   clearTimeout(filterRefresh);
   filterRefresh = setTimeout(() => {
@@ -2209,14 +2460,20 @@ async function bootstrap(): Promise<void> {
     main.innerHTML = renderOnboarding();
     return;
   }
-  if (["onboarding", "github-setup"].includes(page)) await loadAvailable();
-  await refresh();
   if (["onboarding", "github-setup"].includes(page)) {
-    onboardingStatus = await api.request<WorkspaceOnboardingStatus>(
-      `${route(workspace.id)}/onboarding`,
-    );
+    const [availableResult, snapshotResult, statusResult] = await Promise.allSettled([
+      loadAvailable(),
+      refresh(false),
+      api.request<WorkspaceOnboardingStatus>(`${route(workspace.id)}/onboarding`),
+    ]);
+    if (availableResult.status === "rejected") throw availableResult.reason;
+    if (snapshotResult.status === "rejected") throw snapshotResult.reason;
+    if (statusResult.status === "fulfilled") onboardingStatus = statusResult.value;
     syncRecommendedRepos();
     render();
+    if (statusResult.status === "rejected") throw statusResult.reason;
+  } else {
+    await refresh();
   }
   if (new URL(location.href).searchParams.has("import") && page === "repositories")
     await importRepositories();
@@ -3202,6 +3459,39 @@ document.addEventListener("click", (event) => {
     render();
     return;
   }
+  if (action === "graph-repository" && id && page === "dependency-graph") {
+    expandedRepositoryId = id;
+    try {
+      const next = new URL(location.href);
+      next.searchParams.set("repo", id);
+      history.pushState({ repositoryId: id }, "", next.toString());
+    } catch {
+      /* URL state is an enhancement. */
+    }
+    render();
+    return;
+  }
+  if (action === "graph-collapse-repository" && page === "dependency-graph") {
+    expandedRepositoryId = null;
+    try {
+      const next = new URL(location.href);
+      next.searchParams.delete("repo");
+      history.pushState({ repositoryId: null }, "", next.toString());
+    } catch {
+      /* URL state is an enhancement. */
+    }
+    render();
+    return;
+  }
+  if (action === "graph-module" && id && page === "dependency-graph") {
+    const model = snapshot ? buildRepositoryGraph(snapshot) : null;
+    const module = model?.modules.find((item) => item.id === id);
+    const inspector = $("[data-graph-inspector]");
+    if (module && inspector && model) {
+      inspector.innerHTML = `<h2>${escape(module.name)}</h2><p class="ig-note"><code>${escape(module.path)}</code> · ${module.endpointCount} endpoints · ${module.relationCount} relationships</p>${table(["Method", "Endpoint", "Evidence"], model.relations.filter((relation) => relation.sourceModuleId === module.id || relation.targetModuleId === module.id).map((relation) => [escape(relation.endpoint.method), `<button data-action="endpoint-dialog" data-id="${escape(relation.endpoint.id)}"><code>${escape(relation.endpoint.path)}</code></button>`, badge(relation.edge.evidence)]))}`;
+    }
+    return;
+  }
   if (action === "finding" && id) {
     const finding = snapshot?.findings.find((f) => f.id === id);
     if (finding)
@@ -3213,11 +3503,7 @@ document.addEventListener("click", (event) => {
   }
   if (action === "repository" && id) {
     const repository = snapshot?.repositories.find((r) => r.id === id);
-    if (repository)
-      modal(
-        repository.fullName,
-        `<p>${badge(repository.status)} · ${escape(repository.defaultBranch)}</p><p>${repository.coverage.supportedFiles} supported files · ${repository.coverage.skippedFiles} skipped files · ${repository.coverage.openApiDocuments} OpenAPI documents</p><ul>${repository.coverage.notes.map((note) => `<li>${escape(note)}</li>`).join("")}</ul>${repository.error ? `<p>${escape(repository.error)}</p>` : ""}<p class="ig-note">Indexed commit ${escape(repository.indexedSha ?? "not indexed")}</p>`,
-      );
+    if (repository) showRepositoryCoverage(repository);
     return;
   }
   if (action === "candidate" && id) {
@@ -3309,11 +3595,15 @@ document.addEventListener("click", (event) => {
     const calls = flow
       ? snapshot.code?.calls.filter((call) => flow.callIds.includes(call.id))
       : snapshot.code?.calls;
+    const repositoryGraph = action === "graph-export" ? buildRepositoryGraph(snapshot) : null;
     const data =
       action === "code-export"
         ? { snapshotId: snapshot.snapshotId, flow, functions, calls }
         : {
             snapshotId: snapshot.snapshotId,
+            repositories: snapshot.repositories,
+            modules: repositoryGraph?.modules ?? [],
+            repositoryDependencies: repositoryGraph?.aggregates ?? [],
             services: snapshot.services,
             endpoints: snapshot.endpoints,
             edges: snapshot.edges,
@@ -3463,6 +3753,11 @@ async function start(): Promise<void> {
   await auth.ready;
 }
 window.addEventListener("popstate", () => {
+  if (page === "dependency-graph") {
+    expandedRepositoryId = new URL(location.href).searchParams.get("repo");
+    render();
+    return;
+  }
   if (page === "api-usage") {
     try {
       const params = new URL(location.href).searchParams;
