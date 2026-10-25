@@ -6,6 +6,7 @@ import { consumedEmailLinkPath, safeReturnPath, signInDestination } from "./retu
 import { emailHref, emails } from "../ui/contact";
 import { providerIcon, uiIcon } from "../ui/icons";
 import { identifyAnalyticsUser, trackEvent } from "../analytics";
+import { loadingFeedback } from "../ui/loading-feedback";
 import "./auth.css";
 
 export interface AuthPageOptions {
@@ -156,6 +157,7 @@ export function mountAuthPage(
   async function run(action: () => Promise<void>): Promise<void> {
     if (busy || disposed || !ready) return;
     setBusy(true);
+    const stopLoading = loadingFeedback.begin("Completing your sign-in…", 2);
     message("");
     try {
       await action();
@@ -164,6 +166,7 @@ export function mountAuthPage(
       trackEvent("auth_error", { error_type: info.code.replace(/[^a-z0-9_-]/gi, "_") });
       message(info.message, true);
     } finally {
+      stopLoading();
       if (!disposed) setBusy(false);
     }
   }

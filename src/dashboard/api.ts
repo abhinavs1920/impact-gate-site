@@ -15,7 +15,10 @@ export class WorkspaceApiError extends Error {
 export class WorkspaceApi {
   private controller = new AbortController();
   private generation = 0;
-  constructor(private readonly auth: Pick<ImpactGateAuthClient, "getIdToken" | "currentUser">) {}
+  constructor(
+    private readonly auth: Pick<ImpactGateAuthClient, "getIdToken" | "currentUser">,
+    private readonly onRequestStart?: () => () => void,
+  ) {}
 
   cancel(): void {
     this.generation++;
@@ -23,7 +26,12 @@ export class WorkspaceApi {
     this.controller = new AbortController();
   }
 
-  async request<T>(path: string, init: { method?: string; body?: unknown } = {}): Promise<T> {
+  async request<T>(
+    path: string,
+    init: { method?: string; body?: unknown; loading?: boolean } = {},
+  ): Promise<T> {
+    const stopLoading = init.loading === false ? undefined : this.onRequestStart?.();
+    try {
     if (!path.startsWith("/api/v1/") || path.startsWith("//"))
       throw new Error("Invalid workspace API route.");
     const generation = this.generation;
@@ -86,5 +94,8 @@ export class WorkspaceApi {
       return payload as T;
     }
     throw new WorkspaceApiError(401, "unauthorized", "Please sign in again.");
+    } finally {
+      stopLoading?.();
+    }
   }
 }

@@ -15,6 +15,7 @@ import {
 } from "./code-flow";
 import { emailHref } from "../ui/contact";
 import { providerIcon, uiIcon } from "../ui/icons";
+import { loadingFeedback, loadingIndicatorMarkup } from "../ui/loading-feedback";
 import {
   runtimeConnectionsPanel,
   runtimeConnectionForm,
@@ -42,6 +43,7 @@ import type {
 import cytoscape from "cytoscape";
 import "./connected.css";
 import "./overview.css";
+import "../ui/loading-indicator.css";
 import "../auth/auth.css";
 import { identifyAnalyticsUser, startWebsiteAnalytics, trackEvent } from "../analytics";
 
@@ -170,7 +172,7 @@ function state(title: string, message: string, retry = false): void {
   graph = null;
   codeGraph?.destroy();
   codeGraph = null;
-  main.innerHTML = `<div class="ig-state" role="status"><h1>${escape(title)}</h1><p>${escape(message)}</p>${retry ? button("retry", "Try again") + `<p class="ig-state-help"><a href="${emailHref("support")}">${uiIcon("help")}Contact support</a><a href="/docs/troubleshooting">Troubleshooting guide</a></p>` : '<span class="ig-load-icon" aria-hidden="true"></span>'}</div>`;
+  main.innerHTML = `<div class="ig-state" role="status"><h1>${escape(title)}</h1><p>${escape(message)}</p>${retry ? button("retry", "Try again") + `<p class="ig-state-help"><a href="${emailHref("support")}">${uiIcon("help")}Contact support</a><a href="/docs/troubleshooting">Troubleshooting guide</a></p>` : loadingIndicatorMarkup(message)}</div>`;
 }
 function heading(title: string, description: string, actions = ""): string {
   const displayError =
@@ -289,6 +291,7 @@ function renderDemoTraffic(): string {
 async function refreshDemoTraffic(container: HTMLElement): Promise<void> {
   const status = $<HTMLElement>("[data-demo-traffic-status]", container);
   const rows = $<HTMLElement>("[data-demo-traffic-rows]", container);
+  const stopLoading = loadingFeedback.begin("Refreshing demo traffic…", 1);
   try {
     const response = await fetch("/sandbox/traffic", { cache: "no-store" });
     if (!response.ok) throw new Error("Observed traffic is temporarily unavailable.");
@@ -313,6 +316,8 @@ async function refreshDemoTraffic(container: HTMLElement): Promise<void> {
     if (rows)
       rows.innerHTML =
         '<tr><td colspan="4">Connect to the demo service and refresh to retry.</td></tr>';
+  } finally {
+    stopLoading();
   }
 }
 
@@ -2023,14 +2028,14 @@ function snapshotPageParams(search: URLSearchParams): void {
     if (retirementReviewFilter) search.set("review", retirementReviewFilter);
   }
 }
-async function refresh(renderView = true): Promise<void> {
+async function refresh(renderView = true, showLoading = true): Promise<void> {
   if (!workspace) return;
   const workspaceId = workspace.id;
   if (activeGroupId === null) activeGroupId = readGroupPreference(workspaceId);
   const search = new URLSearchParams({ view: snapshotView() });
   if (activeGroupId) search.set("group", activeGroupId);
   snapshotPageParams(search);
-  const load = () => api.request<WorkspaceSnapshot>(`${route(workspaceId)}/snapshot?${search}`);
+  const load = () => api.request<WorkspaceSnapshot>(`${route(workspaceId)}/snapshot?${search}`, { loading: showLoading });
   let next: WorkspaceSnapshot;
   try {
     next = await load();
@@ -2075,7 +2080,7 @@ async function refresh(renderView = true): Promise<void> {
           schedulePoll();
           return;
         }
-        void refresh().catch(handleError);
+        void refresh(true, false).catch(handleError);
       },
       next.jobs.some((job) => ["queued", "running"].includes(job.status)) ? 5000 : 30000,
     );
@@ -2106,7 +2111,7 @@ function schedulePoll(): void {
         schedulePoll();
         return;
       }
-      void refresh().catch(handleError);
+      void refresh(true, false).catch(handleError);
     }, 5000);
 }
 function handleError(error: unknown): void {
@@ -2264,6 +2269,7 @@ async function mutate(
 ): Promise<boolean> {
   if (busy) return false;
   busy = true;
+  const stopLoading = loadingFeedback.begin(success ? "Saving your changes…" : "Working on it…", 2);
   const controls = [
     ...document.querySelectorAll<HTMLButtonElement | HTMLInputElement>(
       "[data-settings-form] button,[data-repositories-form] button,[data-action=confirm-review],[data-action=reindex],[data-runtime-form] button,button[data-provider]",
@@ -2288,6 +2294,7 @@ async function mutate(
       status.textContent = error instanceof Error ? error.message : "The change was not saved.";
     return false;
   } finally {
+    stopLoading();
     busy = false;
     controls.forEach((control, index) => {
       if (control.isConnected) control.disabled = previous[index];
@@ -3361,19 +3368,31 @@ async function start(): Promise<void> {
     return;
   }
   state("Loading your workspace", "Checking authentication configuration.");
-  const response = await fetch("/api/v1/config", { cache: "no-store", credentials: "same-origin" });
+  const stopConfigLoading = loadingFeedback.begin("Starting Impact Gate…", 1);
+  let response: Response;
+  try {
+    response = await fetch("/api/v1/config", { cache: "no-store", credentials: "same-origin" });
+  } finally {
+    stopConfigLoading();
+  }
   if (!response.ok) throw new Error("Authentication is unavailable. Please try again shortly.");
   const publicConfig: unknown = await response.json();
   config = publicConfig as PublicConfig;
   auth = new ImpactGateAuthClient(parseAuthConfig(publicConfig, location.origin));
-  api = new WorkspaceApi(auth);
+  api = new WorkspaceApi(auth, () => loadingFeedback.begin("Loading your data…", 1));
   if (page === "sign-in" && new URLSearchParams(location.search).get("demo") === "1") {
     state("Opening the live demo", "Signing you in to a read-only demo workspace.");
-    const demo = await fetch("/api/v1/demo/session", {
-      method: "POST",
-      cache: "no-store",
-      credentials: "same-origin",
-    });
+    const stopDemoLoading = loadingFeedback.begin("Opening the live demo…", 2);
+    let demo: Response;
+    try {
+      demo = await fetch("/api/v1/demo/session", {
+        method: "POST",
+        cache: "no-store",
+        credentials: "same-origin",
+      });
+    } finally {
+      stopDemoLoading();
+    }
     if (!demo.ok)
       throw new Error("The live demo is unavailable right now. Please try again shortly.");
     const { token } = (await demo.json()) as { token: string };
@@ -3403,6 +3422,7 @@ async function start(): Promise<void> {
       clearSession();
       if (!attemptingDemo && !["onboarding", "github-setup"].includes(page)) {
         attemptingDemo = true;
+        const stopDemoLoading = loadingFeedback.begin("Opening the live demo…", 2);
         try {
           state("Opening the live demo", "Loading read-only demo workspace.");
           const demo = await fetch("/api/v1/demo/session", {
@@ -3417,6 +3437,8 @@ async function start(): Promise<void> {
           }
         } catch {
           /* Fall through to sign-in on demo failure */
+        } finally {
+          stopDemoLoading();
         }
       }
       location.replace(

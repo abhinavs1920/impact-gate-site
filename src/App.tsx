@@ -7,6 +7,8 @@ import ContactPage from "./contact/ContactPage";
 import { emailHref, emails } from "./ui/contact";
 import { leadAttribution, trackEvent, trackVideoProgress } from "./analytics";
 import AnalyticsToggle from "./components/AnalyticsToggle";
+import { LoadingIndicator } from "./ui/LoadingIndicator";
+import { loadingFeedback } from "./ui/loading-feedback";
 
 const DependencyGraphScreen = lazy(() =>
   import("./screens/ProductScreens").then((module) => ({
@@ -715,6 +717,7 @@ function ContactForm() {
     if (submitting) return;
     setSubmitting(true);
     setStatus({ message: "Sending your request…", state: "" });
+    const stopLoading = loadingFeedback.begin("Sending your request…", 2);
     const form = event.currentTarget;
     const payload = {
       ...Object.fromEntries(new FormData(form).entries()),
@@ -756,6 +759,7 @@ function ContactForm() {
         state: "error",
       });
     } finally {
+      stopLoading();
       setSubmitting(false);
     }
   }
@@ -1060,7 +1064,7 @@ export default function App({ pathname: requestedPath }: { pathname?: string } =
 
   if (pathname === "/docs" || pathname.startsWith("/docs/"))
     return (
-      <Suspense fallback={<main className="product-screen-loading" />}>
+      <Suspense fallback={<main className="product-screen-loading"><LoadingIndicator label="Loading documentation…" centered /></main>}>
         <DocsApp pathname={pathname} />
       </Suspense>
     );
@@ -1077,19 +1081,19 @@ export default function App({ pathname: requestedPath }: { pathname?: string } =
     );
   if (pathname === "/demo")
     return (
-      <Suspense fallback={<main className="product-screen-loading" />}>
+      <Suspense fallback={<main className="product-screen-loading"><LoadingIndicator label="Loading the live demo…" centered /></main>}>
         <GitHubBotDemoScreen />
       </Suspense>
     );
   if (pathname === "/dependency-graph")
     return (
-      <Suspense fallback={<main className="product-screen-loading" />}>
+      <Suspense fallback={<main className="product-screen-loading"><LoadingIndicator label="Loading the dependency graph…" centered /></main>}>
         <DependencyGraphScreen />
       </Suspense>
     );
   if (pathname === "/deprecation-candidates")
     return (
-      <Suspense fallback={<main className="product-screen-loading" />}>
+      <Suspense fallback={<main className="product-screen-loading"><LoadingIndicator label="Loading API evidence…" centered /></main>}>
         <DeprecationCandidatesScreen />
       </Suspense>
     );
