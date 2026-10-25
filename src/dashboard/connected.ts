@@ -750,6 +750,12 @@ function renderEndpoints(): string {
     selectedEndpoint = null;
   }
   const serviceNames = new Map(s.services.map((service) => [service.id, service.name]));
+  const servicesByRepository = s.repositories
+    .map((repository) => ({
+      repository,
+      services: s.services.filter((service) => service.repositoryId === repository.id),
+    }))
+    .filter((group) => group.services.length > 0);
   const allEndpoints = s.pagination?.endpoints
     ? s.endpoints
     : s.endpoints.filter((e) =>
@@ -830,7 +836,7 @@ function renderEndpoints(): string {
       "APIs",
       "Explore APIs, filter by module, and sort evidence from the column headings.",
     ) +
-    `<section class="ig-card ig-apis-catalog-screen"><div class="ig-api-toolbar"><input data-query aria-label="Search APIs and services" placeholder="Search APIs and services" value="${escape(query)}"><details class="ig-api-module-filter" ${apiServiceFilters.size ? "open" : ""}><summary>Modules${apiServiceFilters.size ? ` (${apiServiceFilters.size})` : ""}</summary><div class="ig-api-module-menu"><label><input type="checkbox" data-api-service-all ${apiServiceFilters.size === 0 ? "checked" : ""}> All modules</label>${s.services.map((service) => `<label><input type="checkbox" data-api-service="${escape(service.id)}" ${apiServiceFilters.has(service.id) ? "checked" : ""}> ${escape(service.name)}</label>`).join("")}</div></details>${button("clear-api-filters", "Clear", "", true)}</div>${endpoints.length ? table(["Method / path", "Service", "Route type", "Handler / flow", "Static callers", "API requests", "Attributed function calls", "Open findings", "Retirement state"], apiRows, true) : noResults}<p class="ig-note">Route type is inferred from source and route metadata. It does not confirm deployment or current usage.</p>${paginationControls(page, "api")}</section>`
+    `<section class="ig-card ig-apis-catalog-screen"><div class="ig-api-toolbar"><input data-query aria-label="Search APIs and services" placeholder="Search APIs and services" value="${escape(query)}"><details class="ig-api-module-filter" ${apiServiceFilters.size ? "open" : ""}><summary>Modules${apiServiceFilters.size ? ` (${apiServiceFilters.size})` : ""}</summary><div class="ig-api-module-menu"><label><input type="checkbox" data-api-service-all ${apiServiceFilters.size === 0 ? "checked" : ""}> All modules</label>${servicesByRepository.map(({ repository, services }) => `<details class="ig-api-repository-group" ${services.some((service) => apiServiceFilters.has(service.id)) ? "open" : ""}><summary><span>${escape(repository.fullName)}</span><small>${services.length} module${services.length === 1 ? "" : "s"}</small></summary>${services.map((service) => `<label><input type="checkbox" data-api-service="${escape(service.id)}" ${apiServiceFilters.has(service.id) ? "checked" : ""}> ${escape(service.name)}</label>`).join("")}</details>`).join("")}</div></details>${button("clear-api-filters", "Clear", "", true)}</div>${endpoints.length ? table(["Method / path", "Service", "Route type", "Handler / flow", "Static callers", "API requests", "Attributed function calls", "Open findings", "Retirement state"], apiRows, true) : noResults}<p class="ig-note">Route type is inferred from source and route metadata. It does not confirm deployment or current usage.</p>${paginationControls(page, "api")}</section>`
   );
 }
 
@@ -1149,7 +1155,7 @@ function renderRepositories(): string {
       r.fullName.toLowerCase().includes(query.toLowerCase()) && (!filter || r.status === filter),
   );
   return (
-    heading(
+    `<div class="ig-repositories-page">${heading(
       "Repositories",
       "Manage GitHub App access, indexing, and parser coverage.",
       button("import", "Select repositories", writeDisabled()) +
@@ -1198,7 +1204,7 @@ function renderRepositories(): string {
             "Choose repositories from the active GitHub account or organization. Add another connection to switch repository owners.",
             button("import", "Select repositories", writeDisabled()),
           )
-    }</section>${jobs()}`
+    }</section>${jobs()}</div>`
   );
 }
 function renderSettings(): string {

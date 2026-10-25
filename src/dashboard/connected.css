@@ -3067,3 +3067,5 @@ html[data-theme="dark"] .ig-repo-chip-badge.consumer {
   background: rgba(255, 255, 255, 0.1);
   color: #94a3b8;
 }
+.ig-api-repository-group{border-top:1px solid var(--ig-border);padding:5px 0}.ig-api-repository-group summary{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:7px 5px;font-size:13px;font-weight:600;white-space:normal}.ig-api-repository-group summary small{color:var(--ig-secondary);font-weight:400;white-space:nowrap}.ig-api-repository-group label{padding-left:20px}
+.ig-repositories-page{width:100%;max-width:1680px;margin-inline:auto}.ig-repositories-page>.ig-live-heading,.ig-repositories-page>.ig-card{width:100%;max-width:none}.ig-repositories-page .ig-live-table{min-width:900px}.ig-repositories-page .ig-jobs{width:100%}@media(max-width:640px){.ig-repositories-page .ig-live-table{min-width:760px}.ig-repositories-page .ig-card{overflow-x:auto}}
