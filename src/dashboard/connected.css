@@ -1815,6 +1815,9 @@ html[data-theme="dark"] .ig-runtime-logo-datadog {
   border-radius: 10px;
   background: var(--ig-surface);
 }
+.ig-overview-findings > .ig-pagination {
+  margin: 18px 16px 16px;
+}
 .ig-overview-findings-header {
   display: flex;
   align-items: center;
