@@ -62,6 +62,7 @@ export interface WorkspaceRepository {
   indexedAt: string | null;
   serviceCount: number;
   error: string | null;
+  generation?: number;
   coverage: {
     supportedFiles: number;
     skippedFiles: number;
@@ -110,6 +111,7 @@ export interface ApiCoverageItem {
   kind: "endpoint" | "handler" | "consumer_call" | "unresolved_call" | "flow";
   method?: string;
   path?: string;
+  targetOrigin?: string;
   stages: ApiCoverageStage[];
   source: SourceReference;
   recordedAt: string;
@@ -117,6 +119,24 @@ export interface ApiCoverageItem {
   status: ApiCoverageStatus;
   lifecycle?: "current" | "removed";
   removedInCommitSha?: string;
+}
+export interface ApiCatalogManifest {
+  version: 1;
+  digest?: string;
+  entries: Array<{
+    endpointId: string;
+    repositoryId: string;
+    commitSha: string;
+    method: string;
+    path: string;
+    serverOrigins: string[];
+  }>;
+  repositories?: Array<{
+    repositoryId: string;
+    indexedSha: string | null;
+    generation?: number;
+    analysisVersion?: number;
+  }>;
 }
 export interface ApiReviewRun {
   id: string;
@@ -365,6 +385,7 @@ export interface WorkspaceSnapshot {
   snapshotId: string | null;
   generatedAt: string;
   repositories: WorkspaceRepository[];
+  apiCatalogManifest?: ApiCatalogManifest;
   groups?: WorkspaceRepositoryGroup[];
   activeGroupId?: string | null;
   services: WorkspaceService[];

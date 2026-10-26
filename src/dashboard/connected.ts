@@ -1948,6 +1948,7 @@ function showRepositoryCoverage(
         removed: number;
       };
       discoveryIncomplete: boolean;
+      catalogManifest?: WorkspaceSnapshot["apiCatalogManifest"];
       failedAttempts: WorkspaceJob[];
     }>(`${route(workspaceId)}/api-coverage?${params}`),
     api.request<{ runs: ApiReviewRun[] }>(
@@ -2009,6 +2010,7 @@ function showRepositoryCoverage(
       dialog.innerHTML = `<h2 id="dialog-title">${escape(repository.fullName)} API coverage</h2>
         <p>${details.supportedFiles} supported files · ${details.fullyParsedFiles ?? "unknown"} fully parsed · ${details.parsedWithErrorsFiles ?? 0} parsed with errors · ${details.skippedFiles} skipped files · ${details.openApiDocuments} OpenAPI documents</p>
         <p class="ig-note">Last successful commit: <code>${escape(details.lastSuccessfulCommit ?? "none")}</code></p>
+        ${apiCoverage.catalogManifest ? `<p class="ig-note">Provider catalog manifest <code>${escape(apiCoverage.catalogManifest.digest ?? "unhashed")}</code> · ${apiCoverage.catalogManifest.entries.length} endpoint records. Review evidence is tied to this catalog and its repository generations.</p>` : ""}
         <p role="status">${details.discoveryIncomplete ? "Analysis incomplete: skipped or partially analyzed files may contain APIs that were never discovered." : "No skipped files are recorded for this successful analysis; static extraction still does not prove exhaustive API discovery."}</p>
         <section><h3>Async analyzer improvement review</h3>${
           reviewResponse.runs
