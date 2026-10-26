@@ -1997,6 +1997,9 @@ function showRepositoryCoverage(
             .join("") +
           (item.suggestedAction
             ? `<p class="ig-note">${escape(item.suggestedAction)}</p>`
+            : "") +
+          (item.reviewEvidence
+            ? `<p class="ig-note">Analyzer evidence ${escape(item.reviewEvidence.id.slice(0, 20))} · schema ${item.reviewEvidence.schemaVersion} · analysis ${item.reviewEvidence.analyzer.analysisVersion ?? "unknown"} · metadata-only</p>`
             : ""),
         `<a href="${escape(url(item.source.url))}" target="_blank" rel="noopener noreferrer"><code>${escape(item.source.filePath)}:${item.source.line}</code></a>`,
         item.status === "removed" && item.removedInCommitSha

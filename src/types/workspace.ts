@@ -104,6 +104,28 @@ export interface ApiCoverageStage {
   reasonCode?: string;
   reason?: string;
 }
+export interface ApiReviewEvidence {
+  schemaVersion: 1;
+  id: string;
+  sourceAccess: "metadata_only";
+  source: SourceReference;
+  analyzer: {
+    analysisVersion: number | null;
+    capabilityDigest: string;
+  };
+  caller?: {
+    functionId: string | null;
+    functionName: string | null;
+  };
+  resolution?: {
+    targetName: string | null;
+    trace: string[];
+    candidateFunctionIds: string[];
+    candidateSetComplete: boolean | null;
+    reason: string | null;
+  };
+  budget: { partial: boolean; notes: string[] };
+}
 export interface ApiCoverageItem {
   id: string;
   repositoryId: string;
@@ -114,6 +136,7 @@ export interface ApiCoverageItem {
   targetOrigin?: string;
   stages: ApiCoverageStage[];
   source: SourceReference;
+  reviewEvidence?: ApiReviewEvidence;
   recordedAt: string;
   suggestedAction?: string;
   status: ApiCoverageStatus;
