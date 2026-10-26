@@ -3,7 +3,14 @@ import type { WorkspaceCodeSnapshot } from "./code";
 import type { RuntimeConnection, RuntimeProvider } from "./runtime";
 export type WorkspaceRole = "owner" | "admin" | "viewer";
 export type IndexStatus =
-  "selected" | "queued" | "discovering" | "indexing" | "indexed" | "partial" | "failed" | "removed";
+  | "selected"
+  | "queued"
+  | "discovering"
+  | "indexing"
+  | "indexed"
+  | "partial"
+  | "failed"
+  | "removed";
 export type RuntimeCoverage = "not_connected" | "not_observed" | "available";
 export type EvidenceSource = "static" | "runtime" | "both";
 export type RetirementEvidenceState =
@@ -65,8 +72,63 @@ export interface WorkspaceRepository {
 export interface WorkspaceRepositoryCoverageDetails {
   supportedFiles: number;
   skippedFiles: number;
+  parsedWithErrorsFiles?: number;
+  fullyParsedFiles?: number;
   openApiDocuments: number;
   notes: string[];
+  discoveryIncomplete: boolean;
+  lastSuccessfulCommit: string | null;
+  diagnostics: {
+    total: number;
+    byCode: Record<string, number>;
+    byStage: Record<string, number>;
+    records: Array<{
+      code: string;
+      stage: string;
+      filePath: string;
+      line?: number;
+      message: string;
+    }>;
+    page: number;
+    limit: number;
+    hasNext: boolean;
+  };
+  failedAttempts: WorkspaceJob[];
+  partialAttempts: WorkspaceJob[];
+}
+export type ApiCoverageStatus = "mapped" | "partial" | "unresolved" | "removed";
+export interface ApiCoverageStage {
+  stage: string;
+  status: Exclude<ApiCoverageStatus, "removed">;
+  reasonCode?: string;
+  reason?: string;
+}
+export interface ApiCoverageItem {
+  id: string;
+  repositoryId: string;
+  commitSha: string;
+  kind: "endpoint" | "handler" | "consumer_call" | "unresolved_call" | "flow";
+  method?: string;
+  path?: string;
+  stages: ApiCoverageStage[];
+  source: SourceReference;
+  recordedAt: string;
+  suggestedAction?: string;
+  status: ApiCoverageStatus;
+  lifecycle?: "current" | "removed";
+  removedInCommitSha?: string;
+}
+export interface ApiReviewRun {
+  id: string;
+  repositoryId: string;
+  commitSha: string;
+  status: string;
+  eligibleCount: number;
+  ruleCount: number;
+  modelCount: number;
+  reusedCount: number;
+  cannotTellCount: number;
+  createdAt: string;
 }
 export interface WorkspaceService {
   id: string;
@@ -130,7 +192,8 @@ export interface WorkspaceEndpoint {
   measuredFunctionWindowEnd?: string | null;
   releaseId?: string | null;
   releaseSourceSha?: string | null;
-  instrumentationCoverage?: "measured" | "partial" | "not_instrumented" | "unknown";
+  instrumentationCoverage?:
+    "measured" | "partial" | "not_instrumented" | "unknown";
   source: SourceReference;
   requestSchema: unknown | null;
   responseSchema: unknown | null;
@@ -240,7 +303,8 @@ export interface WorkspaceFinding {
 }
 export interface WorkspaceCandidate {
   endpointId: string;
-  status: "flagged" | "building_confidence" | "rare_caller" | "strong_candidate";
+  status:
+    "flagged" | "building_confidence" | "rare_caller" | "strong_candidate";
   reason: string;
   staticCallerCount: number;
   runtimeCoverage: RuntimeCoverage;
@@ -276,6 +340,10 @@ export interface WorkspaceJob {
   error: string | null;
   createdAt: string;
   updatedAt: string;
+  partialAttempt?: {
+    commitSha: string;
+    coverage: { skippedFiles: number; diagnostics?: { total: number } };
+  };
 }
 /** A named grouping of selected repositories inside one workspace. */
 export interface WorkspaceRepositoryGroup {
@@ -311,7 +379,10 @@ export interface WorkspaceSnapshot {
   code?: WorkspaceCodeSnapshot;
   runtimeConnections?: RuntimeConnection[];
   deploymentIdentity?: WorkspaceDeploymentIdentity;
-  indexCoverage?: { missingCodeRepositoryIds: string[]; missingCallSiteRepositoryIds: string[] };
+  indexCoverage?: {
+    missingCodeRepositoryIds: string[];
+    missingCallSiteRepositoryIds: string[];
+  };
   pagination?: {
     endpoints?: WorkspaceCollectionPage;
     findings?: WorkspaceCollectionPage;
@@ -330,8 +401,16 @@ export interface WorkspaceOnboardingStatus {
   version: 1;
   workspaceId: string;
   stage: WorkspaceOnboardingStage;
-  providerRepositories: Array<{ id: number; fullName: string; selected: boolean }>;
-  recommendedConsumerRepositories: Array<{ id: number; fullName: string; selected: boolean }>;
+  providerRepositories: Array<{
+    id: number;
+    fullName: string;
+    selected: boolean;
+  }>;
+  recommendedConsumerRepositories: Array<{
+    id: number;
+    fullName: string;
+    selected: boolean;
+  }>;
   firstValue: {
     ready: boolean;
     apiCount: number;

@@ -19,6 +19,7 @@ export interface GraphModule {
 
 export interface GraphRelation {
   id: string;
+  originalIds: string[];
   sourceModuleId: string;
   targetModuleId: string;
   sourceRepositoryId: string;
@@ -45,13 +46,22 @@ export interface RepositoryGraphModel {
   warnings: string[];
 }
 
-const modulePath = (service: WorkspaceService): string => service.rootPath || "/";
+const modulePath = (service: WorkspaceService): string =>
+  service.rootPath || "/";
 
 /** Adapts the current service payload into provisional repository-owned modules. */
-export function buildRepositoryGraph(snapshot: WorkspaceSnapshot): RepositoryGraphModel {
-  const repositoryIds = new Set(snapshot.repositories.map((repository) => repository.id));
-  const services = new Map(snapshot.services.map((service) => [service.id, service]));
-  const endpoints = new Map(snapshot.endpoints.map((endpoint) => [endpoint.id, endpoint]));
+export function buildRepositoryGraph(
+  snapshot: WorkspaceSnapshot,
+): RepositoryGraphModel {
+  const repositoryIds = new Set(
+    snapshot.repositories.map((repository) => repository.id),
+  );
+  const services = new Map(
+    snapshot.services.map((service) => [service.id, service]),
+  );
+  const endpoints = new Map(
+    snapshot.endpoints.map((endpoint) => [endpoint.id, endpoint]),
+  );
   const canonicalByService = new Map(
     (snapshot.modules ?? [])
       .filter((module) => module.legacyServiceId)
@@ -59,9 +69,12 @@ export function buildRepositoryGraph(snapshot: WorkspaceSnapshot): RepositoryGra
   );
   const endpointCounts = new Map<string, number>();
   for (const endpoint of snapshot.endpoints)
-    endpointCounts.set(endpoint.serviceId, (endpointCounts.get(endpoint.serviceId) ?? 0) + 1);
+    endpointCounts.set(
+      endpoint.serviceId,
+      (endpointCounts.get(endpoint.serviceId) ?? 0) + 1,
+    );
   const relationCounts = new Map<string, number>();
-  const relations: GraphRelation[] = [];
+  const relationMap = new Map<string, GraphRelation>();
   const warnings: string[] = [];
 
   for (const edge of snapshot.edges) {
@@ -72,16 +85,41 @@ export function buildRepositoryGraph(snapshot: WorkspaceSnapshot): RepositoryGra
       warnings.push(`Ignored unresolved relationship ${edge.id}.`);
       continue;
     }
-    if (!repositoryIds.has(source.repositoryId) || !repositoryIds.has(target.repositoryId)) {
-      warnings.push(`Ignored relationship ${edge.id} outside the selected repository scope.`);
+    if (
+      !repositoryIds.has(source.repositoryId) ||
+      !repositoryIds.has(target.repositoryId)
+    ) {
+      warnings.push(
+        `Ignored relationship ${edge.id} outside the selected repository scope.`,
+      );
       continue;
     }
-    const sourceModuleId = canonicalByService.get(source.id)?.id ?? `legacy-module:${source.id}`;
-    const targetModuleId = canonicalByService.get(target.id)?.id ?? `legacy-module:${target.id}`;
-    relationCounts.set(sourceModuleId, (relationCounts.get(sourceModuleId) ?? 0) + 1);
-    relationCounts.set(targetModuleId, (relationCounts.get(targetModuleId) ?? 0) + 1);
-    relations.push({
+    const sourceModuleId =
+      canonicalByService.get(source.id)?.id ?? `legacy-module:${source.id}`;
+    const targetModuleId =
+      canonicalByService.get(target.id)?.id ?? `legacy-module:${target.id}`;
+    const key = JSON.stringify([sourceModuleId, endpoint.id]);
+    const existing = relationMap.get(key);
+    if (existing) {
+      if (!existing.originalIds.includes(edge.id))
+        existing.originalIds.push(edge.id);
+      const evidence = new Set([existing.edge.evidence, edge.evidence]);
+      const references = new Map(
+        [...existing.edge.references, ...edge.references].map((reference) => [
+          JSON.stringify(reference),
+          reference,
+        ]),
+      );
+      existing.edge = {
+        ...existing.edge,
+        evidence: evidence.size > 1 ? "both" : edge.evidence,
+        references: [...references.values()],
+      };
+      continue;
+    }
+    relationMap.set(key, {
       id: edge.id,
+      originalIds: [edge.id],
       sourceModuleId,
       targetModuleId,
       sourceRepositoryId: source.repositoryId,
@@ -92,18 +130,37 @@ export function buildRepositoryGraph(snapshot: WorkspaceSnapshot): RepositoryGra
     });
   }
 
-  const modules = (snapshot.modules?.filter((module) => repositoryIds.has(module.repositoryId)).map((module) => ({
-    id: module.id,
-    repositoryId: module.repositoryId,
-    name: module.name,
-    path: module.path || "/",
-    legacyServiceId: module.legacyServiceId ?? "",
-    endpointCount: module.legacyServiceId ? endpointCounts.get(module.legacyServiceId) ?? 0 : 0,
-    relationCount: relationCounts.get(module.id) ?? 0,
-    provisional: false,
-  })) ?? []).concat(
+  const relations = [...relationMap.values()];
+  for (const relation of relations) {
+    for (const id of new Set([
+      relation.sourceModuleId,
+      relation.targetModuleId,
+    ]))
+      relationCounts.set(id, (relationCounts.get(id) ?? 0) + 1);
+  }
+
+  const modules = (
+    snapshot.modules
+      ?.filter((module) => repositoryIds.has(module.repositoryId))
+      .map((module) => ({
+        id: module.id,
+        repositoryId: module.repositoryId,
+        name: module.name,
+        path: module.path || "/",
+        legacyServiceId: module.legacyServiceId ?? "",
+        endpointCount: module.legacyServiceId
+          ? (endpointCounts.get(module.legacyServiceId) ?? 0)
+          : 0,
+        relationCount: relationCounts.get(module.id) ?? 0,
+        provisional: false,
+      })) ?? []
+  ).concat(
     snapshot.services
-      .filter((service) => repositoryIds.has(service.repositoryId) && !canonicalByService.has(service.id))
+      .filter(
+        (service) =>
+          repositoryIds.has(service.repositoryId) &&
+          !canonicalByService.has(service.id),
+      )
       .map((service) => ({
         id: `legacy-module:${service.id}`,
         repositoryId: service.repositoryId,
@@ -116,7 +173,20 @@ export function buildRepositoryGraph(snapshot: WorkspaceSnapshot): RepositoryGra
       })),
   );
 
+  return {
+    repositories: snapshot.repositories,
+    modules,
+    relations,
+    aggregates: aggregateRepositoryRelations(relations),
+    warnings,
+  };
+}
+
+function aggregateRepositoryRelations(
+  relations: GraphRelation[],
+): RepositoryAggregate[] {
   const aggregateMap = new Map<string, RepositoryAggregate>();
+  const pairs = new Map<string, Set<string>>();
   for (const relation of relations) {
     if (relation.sourceRepositoryId === relation.targetRepositoryId) continue;
     const key = `${relation.sourceRepositoryId}\0${relation.targetRepositoryId}`;
@@ -130,23 +200,27 @@ export function buildRepositoryGraph(snapshot: WorkspaceSnapshot): RepositoryGra
       evidence: [],
     };
     aggregate.relationIds.push(relation.id);
-    if (!aggregate.modulePairKeys.includes(modulePairKey)) aggregate.modulePairKeys.push(modulePairKey);
+    const modulePairs = pairs.get(key) ?? new Set<string>();
+    modulePairs.add(modulePairKey);
+    pairs.set(key, modulePairs);
     aggregate.apiRelationshipCount++;
-    if (!aggregate.evidence.includes(relation.edge.evidence)) aggregate.evidence.push(relation.edge.evidence);
+    if (!aggregate.evidence.includes(relation.edge.evidence))
+      aggregate.evidence.push(relation.edge.evidence);
     aggregateMap.set(key, aggregate);
   }
 
-  return {
-    repositories: snapshot.repositories,
-    modules,
-    relations,
-    aggregates: [...aggregateMap.values()],
-    warnings,
-  };
+  return [...aggregateMap.entries()].map(([key, aggregate]) => ({
+    ...aggregate,
+    modulePairKeys: [...pairs.get(key)!],
+  }));
 }
 
-export function repositoryModuleCount(model: RepositoryGraphModel, repositoryId: string): number {
-  return model.modules.filter((module) => module.repositoryId === repositoryId).length;
+export function repositoryModuleCount(
+  model: RepositoryGraphModel,
+  repositoryId: string,
+): number {
+  return model.modules.filter((module) => module.repositoryId === repositoryId)
+    .length;
 }
 
 export function filteredRepositoryGraph(
@@ -162,8 +236,20 @@ export function filteredRepositoryGraph(
     (evidence === "runtime" && relation.edge.evidence === "both");
   const matchingModules = new Set(
     model.modules
-      .filter((module) => !normalized || `${module.name} ${module.path}`.toLowerCase().includes(normalized))
+      .filter(
+        (module) =>
+          !normalized ||
+          `${module.name} ${module.path}`.toLowerCase().includes(normalized),
+      )
       .map((module) => module.id),
+  );
+  const matchingRepositories = new Set(
+    model.repositories
+      .filter(
+        (repository) =>
+          !normalized || repository.fullName.toLowerCase().includes(normalized),
+      )
+      .map((repository) => repository.id),
   );
   const relations = model.relations.filter(
     (relation) =>
@@ -171,44 +257,41 @@ export function filteredRepositoryGraph(
       (!normalized ||
         matchingModules.has(relation.sourceModuleId) ||
         matchingModules.has(relation.targetModuleId) ||
-        model.repositories.some(
-          (repository) =>
-            repository.fullName.toLowerCase().includes(normalized) &&
-            (repository.id === relation.sourceRepositoryId || repository.id === relation.targetRepositoryId),
-        )),
-  );
-  const repositoryIds = new Set(
-    model.repositories
-      .filter((repository) => !normalized || repository.fullName.toLowerCase().includes(normalized))
-      .map((repository) => repository.id),
+        matchingRepositories.has(relation.sourceRepositoryId) ||
+        matchingRepositories.has(relation.targetRepositoryId)),
   );
   const visibleRepositoryIds = normalized
-    ? new Set([...repositoryIds, ...relations.flatMap((relation) => [relation.sourceRepositoryId, relation.targetRepositoryId])])
+    ? new Set([
+        ...matchingRepositories,
+        ...model.modules
+          .filter((module) => matchingModules.has(module.id))
+          .map((module) => module.repositoryId),
+        ...relations.flatMap((relation) => [
+          relation.sourceRepositoryId,
+          relation.targetRepositoryId,
+        ]),
+      ])
     : new Set(model.repositories.map((repository) => repository.id));
-  const visibleRelationIds = new Set(relations.map((relation) => relation.id));
-  const aggregates = model.aggregates
-    .map((aggregate) => {
-      const relationIds = aggregate.relationIds.filter((id) => visibleRelationIds.has(id));
-      const selectedRelations = relations.filter((relation) => relationIds.includes(relation.id));
-      return {
-        ...aggregate,
-        relationIds,
-        modulePairKeys: [...new Set(selectedRelations.map((relation) => `${relation.sourceModuleId}\0${relation.targetModuleId}`))],
-        apiRelationshipCount: selectedRelations.length,
-        evidence: [...new Set(selectedRelations.map((relation) => relation.edge.evidence))],
-      };
-    })
-    .filter(
-      (aggregate) =>
-        aggregate.relationIds.length > 0 &&
-        visibleRepositoryIds.has(aggregate.sourceRepositoryId) &&
-        visibleRepositoryIds.has(aggregate.targetRepositoryId),
-    );
+  const contextModules = new Set(
+    relations.flatMap((relation) => [
+      relation.sourceModuleId,
+      relation.targetModuleId,
+    ]),
+  );
   return {
     ...model,
-    repositories: model.repositories.filter((repository) => visibleRepositoryIds.has(repository.id)),
-    modules: model.modules.filter((module) => visibleRepositoryIds.has(module.repositoryId)),
+    repositories: model.repositories.filter((repository) =>
+      visibleRepositoryIds.has(repository.id),
+    ),
+    modules: model.modules.filter(
+      (module) =>
+        visibleRepositoryIds.has(module.repositoryId) &&
+        (!normalized ||
+          matchingRepositories.has(module.repositoryId) ||
+          matchingModules.has(module.id) ||
+          contextModules.has(module.id)),
+    ),
     relations,
-    aggregates,
+    aggregates: aggregateRepositoryRelations(relations),
   };
 }

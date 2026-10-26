@@ -273,7 +273,7 @@ function buildTreeFallback(
           children: [],
         });
       } else {
-        parentNode.children.push({
+        const unresolvedNode: ApiExecutionTreeNode = {
           id: `unresolved:${call.id}`,
           name: call.targetName,
           qualifiedName: `Unresolved: ${call.targetName}`,
@@ -284,7 +284,31 @@ function buildTreeFallback(
           repeated: call.repeated,
           step: step++,
           children: [],
-        });
+        };
+        parentNode.children.push(unresolvedNode);
+        for (const candidateId of call.candidateFunctionIds ?? []) {
+          const candidate = byId.get(candidateId);
+          if (!candidate) continue;
+          const candidateNode: ApiExecutionTreeNode = {
+            id: candidate.id,
+            name: candidate.name,
+            qualifiedName: `Possible target: ${candidate.qualifiedName}`,
+            source: candidate.source,
+            kind: "function",
+            certainty: "possible",
+            execution,
+            conditional: call.conditional,
+            repeated: call.repeated,
+            step: unresolvedNode.children.length + 1,
+            children: [],
+          };
+          unresolvedNode.children.push(candidateNode);
+          if (!visited.has(candidate.id)) {
+            visited.add(candidate.id);
+            populate(candidate.id, candidateNode, depth + 1);
+            visited.delete(candidate.id);
+          }
+        }
       }
     }
   }
@@ -318,6 +342,9 @@ function renderExecutionTreeNode(node: ApiExecutionTreeNode, isRoot = true): str
     node.kind === "unresolved"
       ? '<span class="ig-tree-badge ig-badge-unres" title="Dynamic / unresolved target">Unresolved</span>'
       : "",
+    node.certainty === "possible"
+      ? '<span class="ig-tree-badge ig-badge-cond" title="Conservative possible target">Possible</span>'
+      : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -337,7 +364,7 @@ function renderExecutionTreeNode(node: ApiExecutionTreeNode, isRoot = true): str
 }
 
 function renderExecutionTreeSection(tree: ApiExecutionTreeNode): string {
-  return `<section class="ig-card ig-tree-card" aria-label="API Execution Flow Tree"><div class="ig-tree-header"><h3>API Execution Flow Tree</h3><p class="ig-note">Hierarchical execution tree showing sequential (➔) and parallel (⚡) calls, branches, and service boundaries.</p></div><div class="ig-tree-wrapper">${renderExecutionTreeNode(tree, true)}</div></section>`;
+  return `<section class="ig-card ig-tree-card" aria-label="API Execution Flow Tree"><div class="ig-tree-header"><h3>API Execution Flow Tree</h3><p class="ig-note">Hierarchical execution tree showing sequential (➔) and parallel (⚡) calls, branches, possible targets, and service boundaries.</p></div><div class="ig-tree-wrapper">${renderExecutionTreeNode(tree, true)}</div></section>`;
 }
 
 export function renderFunctionInventory(snapshot: WorkspaceSnapshot, query = "", page = 0): string {
@@ -417,7 +444,7 @@ export function renderCodeFlow(snapshot: WorkspaceSnapshot, endpoint: WorkspaceE
           ["From", "To", "Execution", "Source"],
           localCalls.map((call) => [
             `<code>${escape(byId.get(call.callerFunctionId)?.qualifiedName)}</code>`,
-            `<code>${escape(call.calleeFunctionId ? byId.get(call.calleeFunctionId)?.qualifiedName : call.targetName)}</code>${call.modeled ? '<p class="ig-note">Modeled framework or language operation</p>' : call.resolution !== "resolved" ? `<p class="ig-note">${escape(call.resolution)} boundary</p>` : ""}`,
+            `<code>${escape(call.calleeFunctionId ? byId.get(call.calleeFunctionId)?.qualifiedName : call.targetName)}</code>${call.candidateFunctionIds?.length ? `<p class="ig-note">Possible targets: ${call.candidateFunctionIds.map((id) => escape(byId.get(id)?.qualifiedName ?? id)).join(", ")}</p>` : ""}${call.modeled ? '<p class="ig-note">Modeled framework or language operation</p>' : call.resolution !== "resolved" ? `<p class="ig-note">${escape(call.resolution)} boundary</p>` : ""}`,
             escape(
               [
                 call.kind,

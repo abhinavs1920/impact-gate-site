@@ -126,7 +126,7 @@ export function overviewPanels(snapshot: WorkspaceSnapshot): string {
   const candidateDetail = `${candidates[0].count} strong · ${candidates[1].count} rare · ${candidates[2].count} building${flagged ? ` · ${flagged} flagged` : ""}`;
   const metrics = [
     metric("Repositories", snapshot.repositories.length, repositoryDetail, "repositories"),
-    metric("Services", snapshot.services.length, "Across selected repositories", "services"),
+    metric("Indexed modules", snapshot.services.length, "Across selected repositories", "services"),
     metric("APIs / Endpoints", snapshot.endpoints.length, "Discovered API inventory", "endpoints"),
     metric("Open Findings", open.length, "Current open pull request findings", "findings"),
     metric("Retirement Radar", snapshot.candidates.length, candidateDetail, "candidates"),

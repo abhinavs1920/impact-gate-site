@@ -312,7 +312,12 @@ function darkUtilities(css) {
       "2b3ac4": "adb5ff",
       "0419af": "c1c7ff",
     },
-    border: { e0e4ea: "344154", e2e5eb: "344154", c6c5d7: "64748a", a6aeba: "64748a" },
+    border: {
+      e0e4ea: "344154",
+      e2e5eb: "344154",
+      c6c5d7: "64748a",
+      a6aeba: "64748a",
+    },
   };
   const overrides = postcss.root();
   postcss.parse(css).walkRules((rule) => {
@@ -362,13 +367,24 @@ export async function buildDashboard(outDir = path.join(root, "dist")) {
     target: "es2022",
     minify: true,
     write: false,
-    outfile: "workspace.js",
+    splitting: true,
+    metafile: true,
+    outdir: assetDir,
+    entryNames: "workspace-[hash]",
+    chunkNames: "workspace-chunk-[hash]",
   });
-  const client = bundled.outputFiles.find((file) => file.path.endsWith(".js")).text;
-  const clientCSS = bundled.outputFiles.find((file) => file.path.endsWith(".css"))?.text || "";
+  const [entryPath, entryInfo] =
+    Object.entries(bundled.metafile.outputs).find(
+      ([, info]) =>
+        info.entryPoint === path.relative(root, path.join(root, "src/dashboard/connected.ts")),
+    ) ?? [];
+  if (!entryPath) throw new Error("Dashboard entry point was not generated.");
+  const clientCSS =
+    bundled.outputFiles.find((file) => file.path === path.resolve(entryInfo.cssBundle ?? ""))
+      ?.text || "";
   const hash = (value) => createHash("sha256").update(value).digest("hex").slice(0, 10);
-  const clientName = `workspace-${hash(client)}.js`;
-  await fs.writeFile(path.join(assetDir, clientName), client);
+  const clientName = path.basename(entryPath);
+  await Promise.all(bundled.outputFiles.map((file) => fs.writeFile(file.path, file.contents)));
   const connectedCSSName = `workspace-connected-${hash(clientCSS)}.css`;
   await fs.writeFile(path.join(assetDir, connectedCSSName), `${sharedCSS}\n${clientCSS}`);
   const sourceHome = await fs.readFile(

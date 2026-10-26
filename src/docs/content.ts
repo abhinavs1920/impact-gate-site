@@ -1150,7 +1150,7 @@ export const docPages: DocPage[] = [
     slug: "dependency-graph",
     title: "Explore the dependency graph",
     description:
-      "Follow service relationships, inspect endpoint references, and export a workspace snapshot.",
+      "Explore repositories and their modules, inspect dependency evidence, and export a workspace snapshot.",
     group: "Review changes",
     readingTime: 3,
     sections: [
@@ -1160,11 +1160,11 @@ export const docPages: DocPage[] = [
         blocks: [
           {
             type: "paragraph",
-            text: "Open [Dependency graph](/dashboard/dependency-graph). Each node represents a discovered service. A directed arrow goes from a caller service toward the provider service for a detected endpoint relationship.",
+            text: "Open [Dependency graph](/dashboard/dependency-graph). Each top-level node represents a selected GitHub repository. Arrows go from the caller repository toward the provider repository, with counts of distinct directed module dependencies.",
           },
           {
             type: "paragraph",
-            text: "The graph reflects the current workspace snapshot. One arrow represents each caller/provider service pair and shows how many API relationships connect them. Select that arrow to zoom in and expand it into one arrow per API relationship. Select an API arrow to inspect its evidence or open that endpoint's code flow; choose **Back to service view** to collapse it again.",
+            text: "Select a repository to open its module graph. Neighboring repositories stay collapsed, and incoming and outgoing dependencies remain visible. Select a module to inspect its APIs or an arrow to inspect the underlying API relationships and source evidence. Use the **Repositories** breadcrumb to return to the overview.",
           },
           {
             type: "callout",
@@ -1182,20 +1182,20 @@ export const docPages: DocPage[] = [
             type: "steps",
             items: [
               {
-                title: "Find a service",
-                text: "Use **Search services** to narrow the graph. The evidence filter offers static, runtime, or combined evidence; runtime filters can be empty on this deployment.",
+                title: "Find a repository or module",
+                text: "Search by repository name, module name, or path. The evidence filter offers static, runtime, or combined evidence. Static and Runtime each include relationships supported by both evidence sources.",
               },
               {
-                title: "Expand a service arrow",
-                text: "Select an arrow between services to zoom in and show its API-level arrows. Select an API arrow to see its source evidence and open the API flow. Choose **Back to service view** to collapse the relationship.",
+                title: "Open a repository",
+                text: "Select a repository card or inventory entry. The module graph uses automatic layout. Large repositories offer **Connected** and **All modules** views; every module remains available in the inventory.",
               },
               {
-                title: "Select a node",
-                text: "Select a service to inspect its root path, criticality, endpoints, and static caller counts. Select an endpoint in the inspector to open its source evidence.",
+                title: "Inspect a module",
+                text: "Select a module to see its path and defined APIs. Module selection preserves the graph layout and zoom. Select an API link to open its details and code flow.",
               },
               {
-                title: "Read the relationships table",
-                text: "Use the table below the graph for caller, target service, endpoint, evidence type, and confidence. It also provides keyboard-accessible relationship details.",
+                title: "Inspect a dependency",
+                text: "Select an arrow to see the caller and provider modules, API relationships, evidence type, confidence, and source references. Repository edge counts represent module dependencies; API counts represent distinct caller module and endpoint pairs.",
               },
               {
                 title: "Reset the view",
@@ -1211,7 +1211,7 @@ export const docPages: DocPage[] = [
         blocks: [
           {
             type: "paragraph",
-            text: "Choose **Export snapshot** to download `impact-gate-dependencies.json`. The export includes `snapshotId`, services, endpoints, and edges from the current workspace. It exports the full snapshot even when the graph view is filtered.",
+            text: "Choose **Export snapshot** to download `impact-gate-dependencies.json`. The export includes the snapshot identity, repository scope, repositories, modules, aggregate dependencies, count definitions, services, endpoints, and underlying edges. It exports the full scoped snapshot even when the graph view is filtered.",
           },
           {
             type: "paragraph",

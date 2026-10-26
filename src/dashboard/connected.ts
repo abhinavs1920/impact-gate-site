@@ -15,7 +15,10 @@ import {
 } from "./code-flow";
 import { emailHref } from "../ui/contact";
 import { providerIcon, uiIcon } from "../ui/icons";
-import { loadingFeedback, loadingIndicatorMarkup } from "../ui/loading-feedback";
+import {
+  loadingFeedback,
+  loadingIndicatorMarkup,
+} from "../ui/loading-feedback";
 import {
   runtimeConnectionsPanel,
   runtimeConnectionForm,
@@ -31,6 +34,7 @@ import {
 import type { RuntimeServiceDiscovery } from "../types/runtime";
 import type {
   InstallationRepository,
+  ApiCoverageItem,
   SessionResponse,
   SourceReference,
   WorkspaceEndpoint,
@@ -41,19 +45,19 @@ import type {
   WorkspaceOnboardingStatus,
   WorkspaceRepository,
   WorkspaceRepositoryCoverageDetails,
+  ApiReviewRun,
 } from "../types/workspace";
-import cytoscape from "cytoscape";
-import {
-  buildRepositoryGraph,
-  filteredRepositoryGraph,
-  repositoryModuleCount,
-  type RepositoryGraphModel,
-} from "./dependency-graph";
+import type cytoscape from "cytoscape";
+import type { MountedRepositoryGraph } from "./dependency-graph/mount";
 import "./connected.css";
 import "./overview.css";
 import "../ui/loading-indicator.css";
 import "../auth/auth.css";
-import { identifyAnalyticsUser, startWebsiteAnalytics, trackEvent } from "../analytics";
+import {
+  identifyAnalyticsUser,
+  startWebsiteAnalytics,
+  trackEvent,
+} from "../analytics";
 
 interface PublicConfig {
   github: { configured: boolean; installUrl: string | null };
@@ -72,18 +76,24 @@ const $ = <T extends HTMLElement = HTMLElement>(
 const escape = (value: unknown) =>
   String(value ?? "").replace(
     /[&<>"']/g,
-    (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!,
+    (char) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        char
+      ]!,
   );
 const route = (id: string) => `/api/v1/workspaces/${encodeURIComponent(id)}`;
 const badge = (value: string, attribute = "status") =>
   `<span class="ig-badge" data-${attribute}="${escape(value)}">${escape(value.replaceAll("_", " "))}</span>`;
 const productBadge = (label: string, tone = "mapped") =>
   `<span class="ig-product-badge" data-tone="${escape(tone)}">${escape(label)}</span>`;
-const date = (value: string | null) => (value ? new Date(value).toLocaleString() : "Not available");
+const date = (value: string | null) =>
+  value ? new Date(value).toLocaleString() : "Not available";
 const url = (value: string) => {
   try {
     const parsed = new URL(value);
-    return parsed.protocol === "https:" && !parsed.username && !parsed.password ? parsed.href : "#";
+    return parsed.protocol === "https:" && !parsed.username && !parsed.password
+      ? parsed.href
+      : "#";
   } catch {
     return "#";
   }
@@ -93,7 +103,7 @@ const button = (action: string, label: string, extra = "", secondary = false) =>
 const empty = (title: string, copy: string, action = "") =>
   `<div class="ig-state"><h2>${escape(title)}</h2><p>${escape(copy)}</p>${action}</div>`;
 function table(headers: string[], rows: string[][], sortable = false): string {
-  return `<div class="ig-live-table-wrap"><table class="ig-live-table"><thead><tr>${headers.map((h, i) => `<th scope="col">${sortable ? `<button type="button" class="ig-sort-heading" data-action="api-sort" data-sort="${i}" aria-label="Sort by ${escape(h)}">${escape(h)}${apiSort === String(i) ? apiSortDirection === "asc" ? " ↑" : " ↓" : ""}</button>` : escape(h)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell, i) => `<td data-label="${escape(headers[i])}"><div class="ig-table-cell">${cell}</div></td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+  return `<div class="ig-live-table-wrap"><table class="ig-live-table"><thead><tr>${headers.map((h, i) => `<th scope="col">${sortable ? `<button type="button" class="ig-sort-heading" data-action="api-sort" data-sort="${i}" aria-label="Sort by ${escape(h)}">${escape(h)}${apiSort === String(i) ? (apiSortDirection === "asc" ? " ↑" : " ↓") : ""}</button>` : escape(h)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell, i) => `<td data-label="${escape(headers[i])}"><div class="ig-table-cell">${cell}</div></td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
 function evidence(references: SourceReference[]): string {
   return references.length
@@ -117,9 +127,13 @@ function readGroupPreference(workspaceId: string): string | null {
     return null;
   }
 }
-function writeGroupPreference(workspaceId: string, groupId: string | null): void {
+function writeGroupPreference(
+  workspaceId: string,
+  groupId: string | null,
+): void {
   try {
-    if (groupId) sessionStorage.setItem(`impact-gate-group-${workspaceId}`, groupId);
+    if (groupId)
+      sessionStorage.setItem(`impact-gate-group-${workspaceId}`, groupId);
     else sessionStorage.removeItem(`impact-gate-group-${workspaceId}`);
   } catch {
     /* Preference only. */
@@ -143,19 +157,23 @@ let retirementEvidenceFilter = "";
 let retirementUsageFilter = "";
 let retirementReviewFilter = "";
 let filterRefresh: ReturnType<typeof setTimeout> | undefined;
-let selectedEndpoint: string | null = new URL(location.href).searchParams.get("endpointId");
+let selectedEndpoint: string | null = new URL(location.href).searchParams.get(
+  "endpointId",
+);
 let codeQuery = "";
 let codePage = 0;
 const reindexErrors = new Map<string, string>();
 const initialTab = new URL(location.href).searchParams.get("tab");
-let endpointTab = ["overview", "flow", "consumers", "changes", "retirement"].includes(
-  initialTab ?? "",
-)
+let endpointTab = [
+  "overview",
+  "flow",
+  "consumers",
+  "changes",
+  "retirement",
+].includes(initialTab ?? "")
   ? initialTab!
   : "overview";
-let graph: cytoscape.Core | null = null;
-let expandedServicePair: string | null = null;
-let expandedRepositoryId: string | null = new URL(location.href).searchParams.get("repo");
+let graph: MountedRepositoryGraph | null = null;
 let codeGraph: cytoscape.Core | null = null;
 let poll: ReturnType<typeof setTimeout> | undefined;
 let busy = false;
@@ -187,7 +205,8 @@ function heading(title: string, description: string, actions = ""): string {
   const displayError =
     errorMessage ||
     (["onboarding", "github-setup"].includes(page) &&
-    new URL(location.href).searchParams.get("githubError") === "authorization_denied"
+    new URL(location.href).searchParams.get("githubError") ===
+      "authorization_denied"
       ? "GitHub authorization was canceled. Connect GitHub to try again."
       : "");
   return `<div class="ig-live-heading"><div><h1>${title}</h1><p>${escape(description)}</p></div><div class="ig-actions">${actions}</div></div>${displayError ? `<div class="ig-inline-error" role="alert">${escape(displayError)} ${button("retry", "Refresh", "", true)}</div>` : ""}${workspace?.role === "viewer" ? '<div class="ig-permission">You have view access. A workspace owner or admin can select repositories and change preferences.</div>' : ""}`;
@@ -246,7 +265,9 @@ function renderShell(): void {
     footer.textContent = snapshot
       ? `Updated ${date(snapshot.generatedAt)}`
       : "Authenticated workspace";
-  for (const picker of document.querySelectorAll<HTMLSelectElement>("[data-workspace-picker]")) {
+  for (const picker of document.querySelectorAll<HTMLSelectElement>(
+    "[data-workspace-picker]",
+  )) {
     picker.hidden = session.workspaces.length < 2;
     picker.innerHTML = session.workspaces
       .map(
@@ -256,7 +277,9 @@ function renderShell(): void {
       .join("");
   }
   const groups = snapshot?.groups ?? [];
-  for (const picker of document.querySelectorAll<HTMLSelectElement>("[data-group-picker]")) {
+  for (const picker of document.querySelectorAll<HTMLSelectElement>(
+    "[data-group-picker]",
+  )) {
     picker.hidden = !groups.length;
     picker.innerHTML =
       `<option value="">All repositories</option>` +
@@ -268,15 +291,21 @@ function renderShell(): void {
         .join("");
   }
   const addWorkspace = $<HTMLButtonElement>('[data-action="add-workspace"]');
-  if (addWorkspace) addWorkspace.hidden = !config?.github.configured || !canWrite();
+  if (addWorkspace)
+    addWorkspace.hidden = !config?.github.configured || !canWrite();
   const mobileSwitcher = $("[data-workspace-switcher]");
   if (mobileSwitcher) mobileSwitcher.hidden = session.workspaces.length < 2;
 }
 function syncThemeControls(): void {
   const dark = document.documentElement.dataset.theme === "dark";
-  for (const control of document.querySelectorAll<HTMLButtonElement>('[data-action="theme"]')) {
+  for (const control of document.querySelectorAll<HTMLButtonElement>(
+    '[data-action="theme"]',
+  )) {
     control.innerHTML = uiIcon(dark ? "sun" : "moon");
-    control.setAttribute("aria-label", `Switch to ${dark ? "light" : "dark"} theme`);
+    control.setAttribute(
+      "aria-label",
+      `Switch to ${dark ? "light" : "dark"} theme`,
+    );
     control.title = `Switch to ${dark ? "light" : "dark"} theme`;
   }
 }
@@ -288,7 +317,9 @@ function jobs(): string {
 
 function coverageBanner(s: WorkspaceSnapshot): string {
   const connected =
-    s.runtimeConnections?.some((connection) => connection.status === "connected") ?? false;
+    s.runtimeConnections?.some(
+      (connection) => connection.status === "connected",
+    ) ?? false;
   const observed = s.endpoints.filter(
     (endpoint) => endpoint.runtimeCoverage === "available",
   ).length;
@@ -303,9 +334,15 @@ async function refreshDemoTraffic(container: HTMLElement): Promise<void> {
   const stopLoading = loadingFeedback.begin("Refreshing demo traffic…", 1);
   try {
     const response = await fetch("/sandbox/traffic", { cache: "no-store" });
-    if (!response.ok) throw new Error("Observed traffic is temporarily unavailable.");
+    if (!response.ok)
+      throw new Error("Observed traffic is temporarily unavailable.");
     const result = (await response.json()) as {
-      rows?: Array<{ path: string; method: string; count: number; sampleAt: string }>;
+      rows?: Array<{
+        path: string;
+        method: string;
+        count: number;
+        sampleAt: string;
+      }>;
       description?: string;
     };
     if (!rows) return;
@@ -317,11 +354,14 @@ async function refreshDemoTraffic(container: HTMLElement): Promise<void> {
           )
           .join("")
       : '<tr><td colspan="4">No current observation is available.</td></tr>';
-    if (status) status.textContent = result.description ?? "Observed counters updated.";
+    if (status)
+      status.textContent = result.description ?? "Observed counters updated.";
   } catch (error) {
     if (status)
       status.textContent =
-        error instanceof Error ? error.message : "Observed traffic is temporarily unavailable.";
+        error instanceof Error
+          ? error.message
+          : "Observed traffic is temporarily unavailable.";
     if (rows)
       rows.innerHTML =
         '<tr><td colspan="4">Connect to the demo service and refresh to retry.</td></tr>';
@@ -371,7 +411,10 @@ function evidenceState(
   candidate: WorkspaceSnapshot["candidates"][number],
   endpoint?: WorkspaceEndpoint,
 ): { label: string; tone: string; action: string } {
-  if (endpoint?.runtimeCoverage === "available" && endpoint.runtimeCallsInWindow === 0)
+  if (
+    endpoint?.runtimeCoverage === "available" &&
+    endpoint.runtimeCallsInWindow === 0
+  )
     return {
       label: "0 calls in observation window",
       tone: "possible",
@@ -386,17 +429,32 @@ function evidenceState(
       tone: "measured",
       action: "Review observation window",
     };
-  if (candidate.evidenceState === "static_callers_found" || (endpoint?.staticCallerCount ?? 0) > 0)
-    return { label: "Static callers found", tone: "mapped", action: "Review static callers" };
+  if (
+    candidate.evidenceState === "static_callers_found" ||
+    (endpoint?.staticCallerCount ?? 0) > 0
+  )
+    return {
+      label: "Static callers found",
+      tone: "mapped",
+      action: "Review static callers",
+    };
   if (endpoint?.runtimeCoverage === "not_connected")
-    return { label: "Needs runtime coverage", tone: "unknown", action: "Connect runtime data" };
+    return {
+      label: "Needs runtime coverage",
+      tone: "unknown",
+      action: "Connect runtime data",
+    };
   if (candidate.evidenceState === "no_known_caller_selected_repositories")
     return {
       label: "No known caller in selected repositories",
       tone: "unknown",
       action: "Check external consumers",
     };
-  return { label: "Unknown external usage", tone: "unknown", action: "Check external consumers" };
+  return {
+    label: "Unknown external usage",
+    tone: "unknown",
+    action: "Check external consumers",
+  };
 }
 function hasConfirmedMonthOfZeroCalls(
   s: WorkspaceSnapshot,
@@ -405,7 +463,9 @@ function hasConfirmedMonthOfZeroCalls(
 ): boolean {
   const source = endpoint.runtimeRequestSource;
   const connection = source
-    ? s.runtimeConnections?.find((item) => item.provider === source && item.status === "connected")
+    ? s.runtimeConnections?.find(
+        (item) => item.provider === source && item.status === "connected",
+      )
     : undefined;
   const windowStart = Date.parse(endpoint.runtimeWindowStart ?? "");
   const windowEnd = Date.parse(endpoint.runtimeWindowEnd ?? "");
@@ -426,10 +486,20 @@ function renderHome(): string {
   const s = snapshot!;
   const open = s.findings.filter((f) => f.status === "open");
   const details = open.map((finding) => {
-    const endpoint = s.endpoints.find((endpoint) => endpoint.id === finding.endpointId);
-    const repository = s.repositories.find((repository) => repository.id === finding.repositoryId);
-    const service = s.services.find((service) => service.id === endpoint?.serviceId);
-    return { finding, repository, name: service?.name ?? repository?.fullName ?? finding.endpoint };
+    const endpoint = s.endpoints.find(
+      (endpoint) => endpoint.id === finding.endpointId,
+    );
+    const repository = s.repositories.find(
+      (repository) => repository.id === finding.repositoryId,
+    );
+    const service = s.services.find(
+      (service) => service.id === endpoint?.serviceId,
+    );
+    return {
+      finding,
+      repository,
+      name: service?.name ?? repository?.fullName ?? finding.endpoint,
+    };
   });
   const findings = details
     .filter(
@@ -439,14 +509,20 @@ function renderHome(): string {
           .toLowerCase()
           .includes(query.toLowerCase()),
     )
-    .sort((a, b) => Date.parse(b.finding.createdAt) - Date.parse(a.finding.createdAt));
+    .sort(
+      (a, b) =>
+        Date.parse(b.finding.createdAt) - Date.parse(a.finding.createdAt),
+    );
   const overviewPage = {
     page: collectionPage,
     pageSize: 10,
     total: findings.length,
     hasNext: collectionPage * 10 < findings.length,
   };
-  const visible = findings.slice((collectionPage - 1) * 10, collectionPage * 10);
+  const visible = findings.slice(
+    (collectionPage - 1) * 10,
+    collectionPage * 10,
+  );
   const rows = visible.map(({ finding: f, repository, name }) => [
     `<button type="button" data-action="finding" data-id="${escape(f.id)}" aria-label="Review finding for ${escape(f.endpoint)}"><strong>${escape(name)}</strong></button>${repository ? `<p class="ig-note">${escape(repository.fullName)}</p>` : ""}`,
     `<span class="ig-overview-change" title="${escape(f.endpoint)}">${escape(f.changeKind.replaceAll("_", " "))}</span>`,
@@ -473,20 +549,29 @@ function renderHome(): string {
             ? ""
             : '<a class="ig-button" href="/dashboard/repositories?import=1">Import repositories</a>',
         );
-  const flowByEndpoint = new Map((s.code?.flows ?? []).map((flow) => [flow.endpointId, flow]));
+  const flowByEndpoint = new Map(
+    (s.code?.flows ?? []).map((flow) => [flow.endpointId, flow]),
+  );
   const flowCounts = {
     mapped: s.endpoints.filter((endpoint) =>
-      ["indexed", "partial"].includes(flowByEndpoint.get(endpoint.id)?.status ?? ""),
+      ["indexed", "partial"].includes(
+        flowByEndpoint.get(endpoint.id)?.status ?? "",
+      ),
     ).length,
-    partial: s.endpoints.filter((endpoint) => flowByEndpoint.get(endpoint.id)?.status === "partial")
-      .length,
+    partial: s.endpoints.filter(
+      (endpoint) => flowByEndpoint.get(endpoint.id)?.status === "partial",
+    ).length,
     noEntrypoint: s.endpoints.filter(
-      (endpoint) => flowByEndpoint.get(endpoint.id)?.status === "entrypoint_not_found",
+      (endpoint) =>
+        flowByEndpoint.get(endpoint.id)?.status === "entrypoint_not_found",
     ).length,
   };
   const fullyMapped = flowCounts.mapped - flowCounts.partial;
   const notIndexed = s.code
-    ? Math.max(0, s.endpoints.length - flowCounts.mapped - flowCounts.noEntrypoint)
+    ? Math.max(
+        0,
+        s.endpoints.length - flowCounts.mapped - flowCounts.noEntrypoint,
+      )
     : 0;
   const mappedFlows = s.code ? flowCounts.mapped : null;
   const mappingBadgeLabel =
@@ -504,7 +589,9 @@ function renderHome(): string {
         ? "measured"
         : "mapped";
   const retirementCandidates = s.candidates.flatMap((candidate) => {
-    const endpoint = s.endpoints.find((item) => item.id === candidate.endpointId);
+    const endpoint = s.endpoints.find(
+      (item) => item.id === candidate.endpointId,
+    );
     return endpoint && hasConfirmedMonthOfZeroCalls(s, candidate, endpoint)
       ? [{ candidate, endpoint }]
       : [];
@@ -515,20 +602,34 @@ function renderHome(): string {
   const zeroCallNeedingReview = retirementCandidates.length - zeroCallReviewed;
   const reviewVerb = zeroCallNeedingReview === 1 ? "needs" : "need";
   const pullRequests = new Set(
-    open.map((finding) => `${finding.repositoryId}:${finding.pullRequestNumber}`),
+    open.map(
+      (finding) => `${finding.repositoryId}:${finding.pullRequestNumber}`,
+    ),
   ).size;
   const mappingVisual = s.code
     ? workflowBar(
         `API flow mapping: ${fullyMapped} fully mapped, ${flowCounts.partial} partially mapped, ${flowCounts.noEntrypoint} without an entry point, ${notIndexed} not indexed, out of ${s.endpoints.length} APIs`,
         [
-          { label: "Mapped", count: fullyMapped, color: "var(--ig-chart-used)" },
-          { label: "Partial", count: flowCounts.partial, color: "var(--ig-chart-medium)" },
+          {
+            label: "Mapped",
+            count: fullyMapped,
+            color: "var(--ig-chart-used)",
+          },
+          {
+            label: "Partial",
+            count: flowCounts.partial,
+            color: "var(--ig-chart-medium)",
+          },
           {
             label: "No entry point",
             count: flowCounts.noEntrypoint,
             color: "var(--ig-chart-high)",
           },
-          { label: "Not indexed", count: notIndexed, color: "var(--ig-chart-unknown)" },
+          {
+            label: "Not indexed",
+            count: notIndexed,
+            color: "var(--ig-chart-unknown)",
+          },
         ],
         s.endpoints.length,
         "No APIs discovered",
@@ -537,7 +638,9 @@ function renderHome(): string {
         "API code-flow mapping is not indexed yet",
         [],
         0,
-        s.endpoints.length ? "Code-flow index unavailable" : "No APIs discovered",
+        s.endpoints.length
+          ? "Code-flow index unavailable"
+          : "No APIs discovered",
       );
   const severityCounts = [
     {
@@ -564,13 +667,23 @@ function renderHome(): string {
   const reviewVisual = workflowBar(
     `Among ${retirementCandidates.length} ${retirementCandidates.length === 1 ? "API" : "APIs"} with a complete 30-day zero-call counter, ${zeroCallNeedingReview} ${reviewVerb} review and ${zeroCallReviewed} have a current-snapshot review`,
     [
-      { label: "Needs review", count: zeroCallNeedingReview, color: "var(--ig-chart-candidate)" },
-      { label: "Reviewed now", count: zeroCallReviewed, color: "var(--ig-chart-used)" },
+      {
+        label: "Needs review",
+        count: zeroCallNeedingReview,
+        color: "var(--ig-chart-candidate)",
+      },
+      {
+        label: "Reviewed now",
+        count: zeroCallReviewed,
+        color: "var(--ig-chart-used)",
+      },
     ],
     retirementCandidates.length,
     "No confirmed 30-day zero-call APIs",
   );
-  const retirementBadgeLabel = zeroCallNeedingReview ? "Review zero-call APIs" : "No review queue";
+  const retirementBadgeLabel = zeroCallNeedingReview
+    ? "Review zero-call APIs"
+    : "No review queue";
   return `<div class="ig-overview">${heading("Overview", "API Change Intelligence across your connected repositories")}
     <div class="ig-summary-line"><strong>${s.repositories.length} repositories</strong><span>·</span><strong>${s.endpoints.length} APIs</strong><span>·</span><strong>${mappedFlows === null ? "Code flows not indexed" : `${mappedFlows} mapped flows`}</strong><span>·</span><strong>${open.length} open PR findings</strong></div>
     ${coverageBanner(s)}
@@ -618,26 +731,40 @@ function renderEndpointDetailScreen(endpoint: WorkspaceEndpoint): string {
   const service = s.services.find((svc) => svc.id === endpoint.serviceId);
   const edges = s.edges.filter((edge) => edge.endpointId === endpoint.id);
   const findings = s.findings.filter((f) => f.endpointId === endpoint.id);
-  const candidate = s.candidates.find((item) => item.endpointId === endpoint.id);
+  const candidate = s.candidates.find(
+    (item) => item.endpointId === endpoint.id,
+  );
   const state = candidate
     ? hasConfirmedMonthOfZeroCalls(s, candidate, endpoint)
-      ? { label: "0 calls in 30 days", tone: "possible", action: "Review zero-call evidence" }
+      ? {
+          label: "0 calls in 30 days",
+          tone: "possible",
+          action: "Review zero-call evidence",
+        }
       : evidenceState(candidate, endpoint)
     : { label: "Needs review", tone: "unknown", action: "Review evidence" };
   let content: string;
   if (endpointTab === "consumers")
     content = edges.length
       ? table(
-          ["Consumer", "Evidence", "Confidence", "Runtime correlation", "Source evidence"],
+          [
+            "Consumer",
+            "Evidence",
+            "Confidence",
+            "Runtime correlation",
+            "Source evidence",
+          ],
           edges.map((edge) => [
             `${escape(s.services.find((svc) => svc.id === edge.callerServiceId)?.name ?? edge.callerServiceId)}${
-              s.code?.flows.find((flow) => flow.endpointId === endpoint.id)?.inboundCalls
+              s.code?.flows.find((flow) => flow.endpointId === endpoint.id)
+                ?.inboundCalls
                 ? renderConsumerApiLinks(s, [
                     ...new Set(
                       s.code.flows
                         .find((flow) => flow.endpointId === endpoint.id)!
                         .inboundCalls!.filter(
-                          (call) => call.callerServiceId === edge.callerServiceId,
+                          (call) =>
+                            call.callerServiceId === edge.callerServiceId,
                         )
                         .flatMap((call) => call.consumerEndpointIds ?? []),
                     ),
@@ -671,7 +798,11 @@ function renderEndpointDetailScreen(endpoint: WorkspaceEndpoint): string {
   else if (endpointTab === "retirement") {
     const retirementState =
       candidate && hasConfirmedMonthOfZeroCalls(s, candidate, endpoint)
-        ? { label: "0 calls in 30 days", tone: "possible", action: "Review zero-call evidence" }
+        ? {
+            label: "0 calls in 30 days",
+            tone: "possible",
+            action: "Review zero-call evidence",
+          }
         : state;
     content = `<div class="ig-retirement-callout">${productBadge(retirementState.label, retirementState.tone)}<strong>${escape(retirementState.action)}</strong><p>Missing runtime evidence is not proof of zero usage. Review static callers, observation windows, API request counts, attributed function calls, and unknown external consumers together.</p></div>${
       candidate
@@ -686,7 +817,10 @@ function renderEndpointDetailScreen(endpoint: WorkspaceEndpoint): string {
                   ? "Unknown — runtime data not connected"
                   : endpoint.measuredFunctionEntriesInWindow.toLocaleString(),
               ],
-              ["Review state", candidate.reviewState?.replaceAll("_", " ") ?? "Not reviewed"],
+              [
+                "Review state",
+                candidate.reviewState?.replaceAll("_", " ") ?? "Not reviewed",
+              ],
               ["Snapshot", s.snapshotId ?? "Not available"],
             ],
           )
@@ -751,44 +885,63 @@ function renderEndpointDetailScreen(endpoint: WorkspaceEndpoint): string {
 
 function renderEndpoints(): string {
   const s = snapshot!;
-  const selected = selectedEndpoint ? s.endpoints.find((e) => e.id === selectedEndpoint) : null;
+  const selected = selectedEndpoint
+    ? s.endpoints.find((e) => e.id === selectedEndpoint)
+    : null;
   if (selected) {
     return renderEndpointDetailScreen(selected);
   }
   if (selectedEndpoint) {
     selectedEndpoint = null;
   }
-  const serviceNames = new Map(s.services.map((service) => [service.id, service.name]));
+  const serviceNames = new Map(
+    s.services.map((service) => [service.id, service.name]),
+  );
   const servicesByRepository = s.repositories
     .map((repository) => ({
       repository,
-      services: s.services.filter((service) => service.repositoryId === repository.id),
+      services: s.services.filter(
+        (service) => service.repositoryId === repository.id,
+      ),
     }))
     .filter((group) => group.services.length > 0);
   const allEndpoints = s.pagination?.endpoints
     ? s.endpoints
-    : s.endpoints.filter((e) =>
-        `${e.method} ${e.path} ${serviceNames.get(e.serviceId) ?? ""}`.toLowerCase().includes(query.toLowerCase()) &&
-        (!apiServiceFilters.size || apiServiceFilters.has(e.serviceId)),
+    : s.endpoints.filter(
+        (e) =>
+          `${e.method} ${e.path} ${serviceNames.get(e.serviceId) ?? ""}`
+            .toLowerCase()
+            .includes(query.toLowerCase()) &&
+          (!apiServiceFilters.size || apiServiceFilters.has(e.serviceId)),
       );
   const endpoints = s.pagination?.endpoints
     ? allEndpoints
     : allEndpoints.slice((collectionPage - 1) * 50, collectionPage * 50);
   const values = (e: WorkspaceEndpoint): Array<string | number> => {
     const candidate = s.candidates.find((item) => item.endpointId === e.id);
-    const implementation = e.implementationSources?.[0] ?? (e.definitionSource === "code" ? e.source : null);
-    return [e.method + " " + e.path, serviceNames.get(e.serviceId) ?? "", endpointRouteType(e).label,
-      implementation?.functionName ?? "", e.staticCallerCount, e.runtimeCallsInWindow ?? -1,
+    const implementation =
+      e.implementationSources?.[0] ??
+      (e.definitionSource === "code" ? e.source : null);
+    return [
+      e.method + " " + e.path,
+      serviceNames.get(e.serviceId) ?? "",
+      endpointRouteType(e).label,
+      implementation?.functionName ?? "",
+      e.staticCallerCount,
+      e.runtimeCallsInWindow ?? -1,
       e.measuredFunctionEntriesInWindow ?? -1,
-      s.findings.filter((f) => f.endpointId === e.id && f.status === "open").length,
-      candidate ? evidenceState(candidate, e).label : "Needs review"];
+      s.findings.filter((f) => f.endpointId === e.id && f.status === "open")
+        .length,
+      candidate ? evidenceState(candidate, e).label : "Needs review",
+    ];
   };
   endpoints.sort((a, b) => {
     const left = values(a)[Number(apiSort)] ?? "";
     const right = values(b)[Number(apiSort)] ?? "";
-    const comparison = typeof left === "number" && typeof right === "number"
-      ? left - right
-      : String(left).localeCompare(String(right));
+    const comparison =
+      typeof left === "number" && typeof right === "number"
+        ? left - right
+        : String(left).localeCompare(String(right));
     return comparison * (apiSortDirection === "asc" ? 1 : -1);
   });
   const noResults =
@@ -811,29 +964,36 @@ function renderEndpoints(): string {
           );
 
   const apiRows = endpoints.map((e) => {
-            const candidate = s.candidates.find((item) => item.endpointId === e.id);
-            const state = candidate
-              ? evidenceState(candidate, e)
-              : { label: "Needs review", tone: "unknown" };
-            const routeType = endpointRouteType(e);
-            const implementation =
-              e.implementationSources?.[0] ?? (e.definitionSource === "code" ? e.source : null);
-            return [
-              `<button type="button" class="ig-endpoint-btn" data-action="endpoint" data-id="${escape(e.id)}"><code><span class="ig-method-badge ig-method-${e.method.toLowerCase()}">${escape(e.method)}</span> ${escape(e.path)}</code></button>`,
-              escape(serviceNames.get(e.serviceId) ?? "Unknown service"),
-              `${productBadge(routeType.label, routeType.tone)}<p class="ig-note">${escape(routeType.reason)}</p>`,
-              implementation
-                ? `<button type="button" class="ig-endpoint-btn" data-action="endpoint" data-id="${escape(e.id)}" data-tab="flow"><strong>${escape(implementation.functionName ?? "Open code flow")}</strong></button><p class="ig-note">${escape(implementation.filePath)}:${implementation.line}</p>`
-                : `<span class="ig-note">${e.definitionSource === "contract" ? "No implementation matched" : "Handler not mapped"}</span>`,
-              String(e.staticCallerCount),
-              escape(coverage(e)),
-              e.measuredFunctionEntriesInWindow == null
-                ? productBadge("Unknown", "unknown")
-                : productBadge(e.measuredFunctionEntriesInWindow.toLocaleString(), "measured"),
-              String(s.findings.filter((f) => f.endpointId === e.id && f.status === "open").length),
-              productBadge(state.label, state.tone),
-            ];
-          });
+    const candidate = s.candidates.find((item) => item.endpointId === e.id);
+    const state = candidate
+      ? evidenceState(candidate, e)
+      : { label: "Needs review", tone: "unknown" };
+    const routeType = endpointRouteType(e);
+    const implementation =
+      e.implementationSources?.[0] ??
+      (e.definitionSource === "code" ? e.source : null);
+    return [
+      `<button type="button" class="ig-endpoint-btn" data-action="endpoint" data-id="${escape(e.id)}"><code><span class="ig-method-badge ig-method-${e.method.toLowerCase()}">${escape(e.method)}</span> ${escape(e.path)}</code></button>`,
+      escape(serviceNames.get(e.serviceId) ?? "Unknown service"),
+      `${productBadge(routeType.label, routeType.tone)}<p class="ig-note">${escape(routeType.reason)}</p>`,
+      implementation
+        ? `<button type="button" class="ig-endpoint-btn" data-action="endpoint" data-id="${escape(e.id)}" data-tab="flow"><strong>${escape(implementation.functionName ?? "Open code flow")}</strong></button><p class="ig-note">${escape(implementation.filePath)}:${implementation.line}</p>`
+        : `<span class="ig-note">${e.definitionSource === "contract" ? "No implementation matched" : "Handler not mapped"}</span>`,
+      String(e.staticCallerCount),
+      escape(coverage(e)),
+      e.measuredFunctionEntriesInWindow == null
+        ? productBadge("Unknown", "unknown")
+        : productBadge(
+            e.measuredFunctionEntriesInWindow.toLocaleString(),
+            "measured",
+          ),
+      String(
+        s.findings.filter((f) => f.endpointId === e.id && f.status === "open")
+          .length,
+      ),
+      productBadge(state.label, state.tone),
+    ];
+  });
   const page = s.pagination?.endpoints ?? {
     page: collectionPage,
     pageSize: 50,
@@ -854,7 +1014,9 @@ function endpointRouteType(endpoint: WorkspaceEndpoint): {
   tone: "mapped" | "possible" | "unknown";
   reason: string;
 } {
-  const file = (endpoint.implementationSources?.[0]?.filePath ?? endpoint.source.filePath)
+  const file = (
+    endpoint.implementationSources?.[0]?.filePath ?? endpoint.source.filePath
+  )
     .replaceAll("\\", "/")
     .toLowerCase();
   const route = endpoint.path.toLowerCase();
@@ -867,10 +1029,20 @@ function endpointRouteType(endpoint: WorkspaceEndpoint): {
       tone: "possible",
       reason: "Route is defined in a UI or demo source file.",
     };
-  if (/^\/(?:api\/)?(?:healthz|readyz|health|livez|metrics)(?:\/|$)/.test(route))
-    return { label: "System", tone: "unknown", reason: "Health or operational route." };
+  if (
+    /^\/(?:api\/)?(?:healthz|readyz|health|livez|metrics)(?:\/|$)/.test(route)
+  )
+    return {
+      label: "System",
+      tone: "unknown",
+      reason: "Health or operational route.",
+    };
   if (/^\/webhooks?(?:\/|$)/.test(route))
-    return { label: "Webhook", tone: "unknown", reason: "Inbound integration route." };
+    return {
+      label: "Webhook",
+      tone: "unknown",
+      reason: "Inbound integration route.",
+    };
   return {
     label: "API route",
     tone: "mapped",
@@ -911,7 +1083,10 @@ function renderCandidatesLegacy(): string {
         ["needs_runtime_coverage", "Needs runtime coverage"],
         ["static_callers_found", "Static callers found"],
         ["measured_usage_observed", "Measured usage observed"],
-        ["no_known_caller_selected_repositories", "No known caller in selected repositories"],
+        [
+          "no_known_caller_selected_repositories",
+          "No known caller in selected repositories",
+        ],
         ["unknown_external_usage", "Unknown external usage"],
       ],
     )}${
@@ -927,7 +1102,9 @@ function renderCandidatesLegacy(): string {
               "Next action",
             ],
             candidates.map((c) => {
-              const e = s.endpoints.find((endpoint) => endpoint.id === c.endpointId);
+              const e = s.endpoints.find(
+                (endpoint) => endpoint.id === c.endpointId,
+              );
               const state =
                 e && hasConfirmedMonthOfZeroCalls(s, c, e)
                   ? {
@@ -943,13 +1120,21 @@ function renderCandidatesLegacy(): string {
                 escape(e ? coverage(e) : c.runtimeCoverage),
                 e?.measuredFunctionEntriesInWindow == null
                   ? productBadge("Unknown", "unknown")
-                  : productBadge(e.measuredFunctionEntriesInWindow.toLocaleString(), "measured"),
+                  : productBadge(
+                      e.measuredFunctionEntriesInWindow.toLocaleString(),
+                      "measured",
+                    ),
                 c.reviewState === "reviewed_current_snapshot"
                   ? "Reviewed for this snapshot"
                   : c.reviewState === "reviewed_previous_snapshot"
                     ? "Reviewed previous snapshot"
                     : "Not reviewed",
-                button("candidate", state.action, `data-id="${escape(c.endpointId)}"`, true),
+                button(
+                  "candidate",
+                  state.action,
+                  `data-id="${escape(c.endpointId)}"`,
+                  true,
+                ),
               ];
             }),
           )
@@ -1003,7 +1188,9 @@ function renderPRImpactContentLegacy(): string {
         ? [...prs.values()]
             .map((rows) => {
               const first = rows[0]!;
-              const repository = s.repositories.find((repo) => repo.id === first.repositoryId);
+              const repository = s.repositories.find(
+                (repo) => repo.id === first.repositoryId,
+              );
               return `<article class="ig-pr-card"><header><div><a href="${escape(url(first.pullRequestUrl))}" target="_blank" rel="noopener noreferrer"><strong>${escape(repository?.fullName ?? first.repositoryId)} #${first.pullRequestNumber} ↗</strong></a><p class="ig-note">Head SHA ${escape(first.headSha.slice(0, 12))} · ${rows.length} finding${rows.length === 1 ? "" : "s"}</p></div>${productBadge(first.risk === "high" ? "Needs attention" : "Review evidence", first.risk === "high" ? "unknown" : "possible")}</header>${table(
                 ["Changed API", "Consumer", "Finding", "Evidence"],
                 rows.map((finding) => [
@@ -1047,14 +1234,22 @@ function renderCandidates(): string {
   const serviceOptions = s.services.map(
     (service) => [service.id, service.name] as [string, string],
   );
-  const methodOptions = [...new Set(s.endpoints.map((endpoint) => endpoint.method.toUpperCase()))]
+  const methodOptions = [
+    ...new Set(s.endpoints.map((endpoint) => endpoint.method.toUpperCase())),
+  ]
     .sort()
     .map((method) => [method, method]);
   const rows = candidates.map((candidate) => {
-    const endpoint = s.endpoints.find((item) => item.id === candidate.endpointId);
+    const endpoint = s.endpoints.find(
+      (item) => item.id === candidate.endpointId,
+    );
     const state =
       endpoint && hasConfirmedMonthOfZeroCalls(s, candidate, endpoint)
-        ? { label: "0 calls in 30 days", tone: "possible", action: "Review zero-call evidence" }
+        ? {
+            label: "0 calls in 30 days",
+            tone: "possible",
+            action: "Review zero-call evidence",
+          }
         : evidenceState(candidate, endpoint);
     return [
       `<button type="button" data-action="candidate" data-id="${escape(candidate.endpointId)}"><code>${escape(endpoint?.method)} ${escape(endpoint?.path ?? candidate.endpointId)}</code></button><p class="ig-note">${escape(candidate.reason)}</p>`,
@@ -1063,7 +1258,10 @@ function renderCandidates(): string {
       escape(endpoint ? coverage(endpoint) : candidate.runtimeCoverage),
       endpoint?.measuredFunctionEntriesInWindow == null
         ? productBadge("Unknown", "unknown")
-        : productBadge(endpoint.measuredFunctionEntriesInWindow.toLocaleString(), "measured"),
+        : productBadge(
+            endpoint.measuredFunctionEntriesInWindow.toLocaleString(),
+            "measured",
+          ),
       candidate.reviewState?.replaceAll("_", " ") ?? "Not reviewed",
       escape(state.action),
     ];
@@ -1132,7 +1330,9 @@ function renderPRImpactContent(): string {
         ? [...prs.values()]
             .map((rows) => {
               const first = rows[0]!;
-              const repository = s.repositories.find((repo) => repo.id === first.repositoryId);
+              const repository = s.repositories.find(
+                (repo) => repo.id === first.repositoryId,
+              );
               return `<article class="ig-pr-card"><header><div><a href="${escape(url(first.pullRequestUrl))}" target="_blank" rel="noopener noreferrer"><strong>${escape(repository?.fullName ?? first.repositoryId)} #${first.pullRequestNumber} ↗</strong></a><p class="ig-note">Head SHA ${escape(first.headSha.slice(0, 12))} · ${rows.length} finding${rows.length === 1 ? "" : "s"}</p></div>${productBadge(first.risk === "high" ? "Needs attention" : "Review evidence", first.risk === "high" ? "unknown" : "possible")}</header>${table(
                 ["Changed API", "Consumer", "Finding", "Evidence"],
                 rows.map((finding) => [
@@ -1161,7 +1361,8 @@ function renderRepositories(): string {
   const s = snapshot!;
   const repos = s.repositories.filter(
     (r) =>
-      r.fullName.toLowerCase().includes(query.toLowerCase()) && (!filter || r.status === filter),
+      r.fullName.toLowerCase().includes(query.toLowerCase()) &&
+      (!filter || r.status === filter),
   );
   return (
     `<div class="ig-repositories-page">${heading(
@@ -1169,7 +1370,12 @@ function renderRepositories(): string {
       "Manage GitHub App access, indexing, and parser coverage.",
       button("import", "Select repositories", writeDisabled()) +
         button("manage-groups", "Manage groups", `${writeDisabled()}`, true) +
-        button("add-workspace", "Add account or organization", `${writeDisabled()}`, true),
+        button(
+          "add-workspace",
+          "Add account or organization",
+          `${writeDisabled()}`,
+          true,
+        ),
     )}` +
     `<section class="ig-card">${filters("Search repositories", [
       ["indexed", "Indexed"],
@@ -1180,7 +1386,14 @@ function renderRepositories(): string {
     ])}${
       repos.length
         ? table(
-            ["Repository", "Branch", "Status", "Services", "Last index", "Actions"],
+            [
+              "Repository",
+              "Branch",
+              "Status",
+              "Services",
+              "Last index",
+              "Actions",
+            ],
             repos.map((r) => {
               const activeIndexJob = s.jobs
                 .filter(
@@ -1189,9 +1402,12 @@ function renderRepositories(): string {
                     job.type === "index_repository" &&
                     ["queued", "running"].includes(job.status),
                 )
-                .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0];
+                .sort((left, right) =>
+                  right.updatedAt.localeCompare(left.updatedAt),
+                )[0];
               const indexing =
-                ["queued", "discovering", "indexing"].includes(r.status) || Boolean(activeIndexJob);
+                ["queued", "discovering", "indexing"].includes(r.status) ||
+                Boolean(activeIndexJob);
               const progress = activeIndexJob
                 ? `Re-index job · ${escape(activeIndexJob.phase.replaceAll("_", " "))} · ${Math.round(activeIndexJob.progress)}%`
                 : indexing
@@ -1218,7 +1434,8 @@ function renderRepositories(): string {
 }
 function renderSettings(): string {
   const s = snapshot!.settings;
-  const providers = auth.currentUser?.providerData.map((p) => p.providerId) ?? [];
+  const providers =
+    auth.currentUser?.providerData.map((p) => p.providerId) ?? [];
   const methods = (["github", "google"] as const)
     .filter((method) => auth.isEnabled(method))
     .map((method) =>
@@ -1233,7 +1450,10 @@ function renderSettings(): string {
     )
     .join("");
   return (
-    heading("Settings", "Manage your workspace, sign-in methods, and connected services.") +
+    heading(
+      "Settings",
+      "Manage your workspace, sign-in methods, and connected services.",
+    ) +
     `<div class="ig-settings-grid">
     <section class="ig-card ig-settings-preferences"><h2>Workspace preferences</h2><p class="ig-note">Your changes are saved after the server confirms them.</p>${!session?.user.emailVerified ? '<p class="ig-permission">Your email must be verified before changing workspace settings. Sign in with a verified provider or use a passwordless email link.</p>' : ""}
       <form class="ig-form" data-settings-form>
@@ -1255,576 +1475,52 @@ function renderSettings(): string {
   <section class="ig-card ig-settings-help"><div><h2>Help with your account</h2><p class="ig-note">Talk to the right person about your workspace or account.</p></div><nav aria-label="Account assistance"><a href="${emailHref("support")}">${uiIcon("help")}Product support</a><a href="${emailHref("billing")}">${uiIcon("mail")}Billing & invoices</a><a href="${emailHref("privacy")}">${uiIcon("mail")}Privacy & legal</a><a href="/contact">All contact options →</a></nav></section>`
   );
 }
-function repositoryGraphSummary(model: RepositoryGraphModel, repositoryId: string): string {
-  const repository = model.repositories.find((item) => item.id === repositoryId);
-  if (!repository) return "";
-  const modules = model.modules.filter((module) => module.repositoryId === repositoryId);
-  const internal = model.relations.filter(
-    (relation) => relation.sourceRepositoryId === repositoryId && relation.targetRepositoryId === repositoryId,
-  );
-  const incoming = model.relations.filter((relation) => relation.targetRepositoryId === repositoryId && relation.sourceRepositoryId !== repositoryId);
-  const outgoing = model.relations.filter((relation) => relation.sourceRepositoryId === repositoryId && relation.targetRepositoryId !== repositoryId);
-  return `<div class="ig-graph-repository-summary"><h2>${escape(repository.fullName)}</h2><p class="ig-note">${modules.length} modules · ${internal.length} internal API relationships · ${incoming.length} incoming · ${outgoing.length} outgoing</p><div class="ig-actions">${button("graph-repository", "Open repository", `data-id="${escape(repository.id)}"`)}${button("graph-collapse-repository", "Collapse", "", true)}</div>${modules.length > 40 ? `<p class="ig-note">Showing the 40 most connected modules. ${modules.length - 40} more are available in the repository module list.</p>` : ""}</div>${table(
-    ["Module", "Path", "API relationships"],
-    modules
-      .sort((left, right) => right.relationCount - left.relationCount || left.name.localeCompare(right.name))
-      .slice(0, 40)
-      .map((module) => [
-        `<button data-action="graph-module" data-id="${escape(module.id)}">${escape(module.name)}</button>`,
-        `<code>${escape(module.path)}</code>`,
-        String(module.relationCount),
-      ]),
-  )}`;
-}
-
 function renderGraph(): string {
-  const model = buildRepositoryGraph(snapshot!);
-  const visible = filteredRepositoryGraph(model, query, filter);
-  const hasRepositories = visible.repositories.length > 0;
-  const expanded = expandedRepositoryId && model.repositories.some((repository) => repository.id === expandedRepositoryId)
-    ? expandedRepositoryId
-    : null;
-  const internalCount = expanded
-    ? model.relations.filter((relation) => relation.sourceRepositoryId === expanded && relation.targetRepositoryId === expanded).length
-    : 0;
-  const edgeLabel = (aggregate: RepositoryGraphModel["aggregates"][number]) =>
-    `${aggregate.modulePairKeys.length} module ${aggregate.modulePairKeys.length === 1 ? "dependency" : "dependencies"}`;
-  return (
-    heading(
-      expanded ? "Repository dependency graph" : "Repository dependency graph",
-      expanded
-        ? "Inspect this repository's modules and the dependencies that cross its boundary."
-        : "Each node is a GitHub repository. Open one to inspect its indexed modules.",
-    ) +
-    `<section class="ig-card">${filters("Search repositories and modules", [
-      ["static", "Static evidence"],
-      ["runtime", "Runtime evidence"],
-      ["both", "Static and runtime evidence"],
-    ])}<div class="ig-actions ig-graph-toolbar">${button("graph-fit", "Fit view", "", true)}${button("graph-export", "Export snapshot", "", true)}</div>${
-      hasRepositories
-        ? `<div class="ig-connected-graph" role="group" aria-label="Repository dependency graph"></div><div class="ig-graph-inspector" data-graph-inspector>${
-            expanded
-              ? repositoryGraphSummary(visible, expanded)
-              : '<p class="ig-note">Select a repository to see its modules. Select an edge to inspect aggregated dependency evidence.</p>'
-          }</div>`
-        : snapshot!.repositories.length
-          ? empty("No repositories match this filter", "Clear the search or evidence filter to see the selected repositories.")
-          : empty("Connect repositories to build the graph", "Choose GitHub repositories to inspect their modules and dependencies.", '<a class="ig-button" href="/onboarding">Connect repositories</a>')
-    }<p class="ig-note">${visible.repositories.length} repositories · ${visible.modules.length} modules · ${visible.aggregates.length} cross-repository dependencies${expanded ? ` · ${internalCount} internal API relationships in expanded repository` : ""}</p>${
-      !visible.aggregates.length && hasRepositories
-        ? '<p class="ig-note">No cross-repository dependencies were found in this snapshot. Open a repository to inspect its modules and coverage.</p>'
-        : visible.aggregates.length
-          ? table(
-              ["Source repository", "Target repository", "Dependency count", "API relationships", "Evidence"],
-              visible.aggregates.map((aggregate) => [
-                `<button data-action="graph-repository" data-id="${escape(aggregate.sourceRepositoryId)}">${escape(model.repositories.find((repository) => repository.id === aggregate.sourceRepositoryId)?.fullName ?? "Unknown repository")}</button>`,
-                `<button data-action="graph-repository" data-id="${escape(aggregate.targetRepositoryId)}">${escape(model.repositories.find((repository) => repository.id === aggregate.targetRepositoryId)?.fullName ?? "Unknown repository")}</button>`,
-                edgeLabel(aggregate),
-                String(aggregate.apiRelationshipCount),
-                aggregate.evidence.map((item) => badge(item)).join(" "),
-              ]),
-            )
-          : ""
-    }</section>`
-  );
-}
-
-function renderLegacyGraph(): string {
-  const s = snapshot!;
-  const servicePairCount = new Set(
-    s.edges.flatMap((edge) => {
-      const target = s.endpoints.find((endpoint) => endpoint.id === edge.endpointId)?.serviceId;
-      return target && target !== edge.callerServiceId ? [`${edge.callerServiceId}:${target}`] : [];
-    }),
-  ).size;
-  const endpointsWithCrossServiceEdges = new Set(
-    s.edges.flatMap((edge) => {
-      const endpoint = s.endpoints.find((item) => item.id === edge.endpointId);
-      return endpoint && endpoint.serviceId !== edge.callerServiceId ? [endpoint.id] : [];
-    }),
-  );
-  const routesWithoutCrossServiceEdges = s.endpoints.filter(
-    (endpoint) => !endpointsWithCrossServiceEdges.has(endpoint.id),
-  );
-  const visibleRoutesWithoutCrossServiceEdges = routesWithoutCrossServiceEdges.filter(
-    (endpoint) => {
-      const provider = s.services.find((service) => service.id === endpoint.serviceId)?.name ?? "";
-      return `${provider} ${endpoint.method} ${endpoint.path}`
-        .toLowerCase()
-        .includes(query.toLowerCase());
-    },
-  );
-  const noServices = s.repositories.length
-    ? empty(
-        "No services indexed yet",
-        "Check repository indexing and coverage to see what Impact Gate could map.",
-        '<a class="ig-button ig-button-secondary" href="/dashboard/repositories">Check repository coverage</a>',
-      )
-    : empty(
-        "Connect repositories to map your services",
-        "Choose API-owning repositories and the applications that call them to build your dependency view.",
-        '<a class="ig-button" href="/onboarding">Connect repositories</a>',
-      );
   return (
     heading(
       "Dependency graph",
-      "Each arrow starts as a service dependency. Select it to expand the API relationships and zoom in.",
+      "Explore GitHub repositories, their modules, and the relationships backed by indexed evidence.",
     ) +
-    `<section class="ig-card">${filters("Search services and API routes", [
-      ["static", "Static evidence"],
-      ["runtime", "Runtime evidence"],
-      ["both", "Static and runtime evidence"],
-    ])}<div class="ig-actions ig-graph-toolbar">${button("graph-fit", "Fit view", "", true)}${button("graph-export", "Export snapshot", "", true)}</div>${s.services.length ? '<div class="ig-connected-graph" role="group" aria-label="Service dependency graph"></div><div class="ig-graph-inspector" data-graph-inspector><p class="ig-note">Click a service arrow to expand it into API-level arrows. The table below provides keyboard accessible relationship details.</p></div>' : noServices}<p class="ig-note">${s.services.length} services · ${servicePairCount} service dependencies · ${s.edges.length} API relationships</p>${
-      s.edges.length
-        ? table(
-            [
-              "Caller",
-              "Target service",
-              "Endpoint",
-              "Evidence",
-              "Confidence",
-              "Runtime correlation",
-            ],
-            s.edges
-              .filter((edge) => !filter || edge.evidence === filter)
-              .map((edge) => {
-                const endpoint = s.endpoints.find((e) => e.id === edge.endpointId);
-                return [
-                  escape(s.services.find((service) => service.id === edge.callerServiceId)?.name),
-                  escape(s.services.find((service) => service.id === endpoint?.serviceId)?.name),
-                  `<button data-action="endpoint-dialog" data-id="${escape(edge.endpointId)}"><code>${escape(endpoint?.method)} ${escape(endpoint?.path)}</code></button>`,
-                  badge(edge.evidence),
-                  badge(edge.confidence),
-                  edge.runtimeCorrelation === "service_route"
-                    ? "Aggregate service/route; not proof of this call site"
-                    : edge.evidence === "static"
-                      ? "No runtime observation"
-                      : "Not recorded",
-                ];
-              }),
-          )
-        : '<p class="ig-note">No cross-service callers were found in the current snapshot.</p>'
-    }${
-      visibleRoutesWithoutCrossServiceEdges.length
-        ? `<h2>Defined API routes without a cross-service edge</h2><p class="ig-note">These routes were discovered in the selected repositories but have no cross-service dependency edge in this snapshot. This does not prove they are unused: callers may be outside the indexed repositories, unresolved, or represented through a different API.</p>${table(
-            ["Provider", "API route", "Status"],
-            visibleRoutesWithoutCrossServiceEdges.map((endpoint) => [
-              escape(
-                s.services.find((service) => service.id === endpoint.serviceId)?.name ??
-                  "Unknown service",
-              ),
-              `<button data-action="endpoint-dialog" data-id="${escape(endpoint.id)}"><code>${escape(endpoint.method)} ${escape(endpoint.path)}</code></button>`,
-              productBadge("No cross-service edge found", "unknown"),
-            ]),
-          )}`
-        : ""
-    }</section>`
+    '<section data-repository-graph aria-label="Repository dependency graph"></section>'
   );
 }
-function graphServiceKind(
-  service: WorkspaceSnapshot["services"][number],
-): "gateway" | "proxy" | "third-party" | "service" {
-  const value = `${service.name} ${service.rootPath}`.toLowerCase();
-  if (/gateway|edge|ingress|bff/.test(value)) return "gateway";
-  if (/proxy|adapter|bridge|client/.test(value)) return "proxy";
-  if (/stripe|twilio|auth0|sentry|datadog|github|external|vendor|third/.test(value))
-    return "third-party";
-  return "service";
+function mountGraph(): void {
+  const container = $("[data-repository-graph]");
+  if (!container || !snapshot) return;
+  container.innerHTML =
+    '<p class="ig-note" role="status">Loading repository explorer…</p>';
+  void import("./dependency-graph/mount")
+    .then(({ mountDependencyGraph }) => {
+      if (!disposed && container.isConnected && snapshot)
+        graph = mountDependencyGraph(container, snapshot);
+    })
+    .catch(() => {
+      if (container.isConnected)
+        container.innerHTML = empty(
+          "Graph could not load",
+          "Refresh to try again.",
+          button("retry", "Try again"),
+        );
+    });
 }
 function renderFunctionUsage(): string {
   return `<div class="ig-function-usage">${heading("Function usage", "Search indexed functions, API request attribution, and measured runtime entries.")}${renderFunctionInventory(snapshot!, codeQuery, codePage)}</div>`;
 }
-function mountLegacyGraph(): void {
-  const container = $(".ig-connected-graph");
-  if (!container || !snapshot) return;
-  const s = snapshot;
-  expandedServicePair = null;
-  const services = s.services.filter((service) =>
-    service.name.toLowerCase().includes(query.toLowerCase()),
-  );
-  const ids = new Set(services.map((service) => service.id));
-  container.insertAdjacentHTML(
-    "beforebegin",
-    '<div class="ig-graph-legend" aria-label="Dependency graph legend"><span><i class="ig-graph-mark ig-graph-mark-gateway">⬢</i>Gateway</span><span><i class="ig-graph-mark ig-graph-mark-proxy">◇</i>Proxy</span><span><i class="ig-graph-mark ig-graph-mark-third-party">●</i>Third-party</span><span><i class="ig-graph-mark ig-graph-mark-service">◆</i>Service</span></div>',
-  );
-  const theme = document.documentElement.dataset.theme === "dark";
-  type GraphApiRelation = { edge: WorkspaceSnapshot["edges"][number]; endpoint: WorkspaceEndpoint };
-  type GraphServicePair = {
-    key: string;
-    source: string;
-    target: string;
-    relations: GraphApiRelation[];
-  };
-  const pairMap = new Map<string, GraphServicePair>();
-  for (const edge of s.edges) {
-    const endpoint = s.endpoints.find((item) => item.id === edge.endpointId);
-    const target = endpoint?.serviceId;
-    if (
-      !endpoint ||
-      !target ||
-      target === edge.callerServiceId ||
-      !ids.has(target) ||
-      !ids.has(edge.callerServiceId) ||
-      (filter && edge.evidence !== filter)
-    )
-      continue;
-    const key = `${edge.callerServiceId}\u0000${target}`;
-    const pair = pairMap.get(key) ?? { key, source: edge.callerServiceId, target, relations: [] };
-    pair.relations.push({ edge, endpoint });
-    pairMap.set(key, pair);
-  }
-  const pairs = [...pairMap.values()];
-  const graphEdges = (expandedKey: string | null): cytoscape.ElementDefinition[] =>
-    pairs.flatMap<cytoscape.ElementDefinition>((pair) => {
-      if (pair.key === expandedKey)
-        return pair.relations.map(({ edge, endpoint }) => ({
-          data: {
-            id: `api:${edge.id}`,
-            kind: "api",
-            source: pair.source,
-            target: pair.target,
-            endpointId: endpoint.id,
-            relationshipId: edge.id,
-            label: `${endpoint.method} ${endpoint.path}`,
-            evidence: edge.evidence,
-            confidence: edge.confidence,
-          },
-        }));
-      const evidenceTypes = [...new Set(pair.relations.map((relation) => relation.edge.evidence))];
-      const evidenceType = evidenceTypes.length === 1 ? evidenceTypes[0]! : "mixed";
-      return [
-        {
-          data: {
-            id: `service:${pair.source}:${pair.target}`,
-            kind: "service-dependency",
-            pairKey: pair.key,
-            source: pair.source,
-            target: pair.target,
-            label: `${pair.relations.length} ${pair.relations.length === 1 ? "API" : "APIs"}`,
-            evidence: evidenceType,
-            apiCount: pair.relations.length,
-          },
-        },
-      ];
-    });
-  const elements: cytoscape.ElementDefinition[] = [
-    ...services.map((service) => {
-      const kind = graphServiceKind(service);
-      const mark =
-        kind === "gateway" ? "⬢" : kind === "proxy" ? "◇" : kind === "third-party" ? "●" : "◆";
-      return { data: { id: service.id, label: `${mark} ${service.name}`, kind } };
-    }),
-    ...graphEdges(null),
-  ];
-  graph = cytoscape({
-    container,
-    elements,
-    layout: {
-      name: "cose",
-      animate: false,
-      fit: true,
-      padding: 48,
-      nodeRepulsion: 7000,
-      idealEdgeLength: 150,
-      componentSpacing: 120,
-      nodeOverlap: 24,
-    },
-    minZoom: 0.2,
-    maxZoom: 2.5,
-    style: [
-      {
-        selector: "node",
-        style: {
-          "background-color": theme ? "#2b3152" : "#dfe0ff",
-          "border-color": theme ? "#adb5ff" : "#2b3ac4",
-          "border-width": 2,
-          label: "data(label)",
-          color: theme ? "#e8edf4" : "#191c1e",
-          "font-size": 12,
-          "font-family": "Hanken Grotesk",
-          "font-weight": 600,
-          "text-wrap": "wrap",
-          "text-max-width": "110px",
-          "text-valign": "center",
-          "text-halign": "center",
-          width: 108,
-          height: 52,
-          shape: "round-rectangle",
-          "overlay-opacity": 0,
-        },
-      },
-      {
-        selector: 'node[kind = "gateway"]',
-        style: {
-          "background-color": theme ? "#193b4a" : "#d9f4f1",
-          "border-color": theme ? "#58c7c0" : "#238a84",
-          shape: "hexagon",
-        },
-      },
-      {
-        selector: 'node[kind = "proxy"]',
-        style: {
-          "background-color": theme ? "#302b4c" : "#eee8ff",
-          "border-color": theme ? "#b89cf4" : "#7654b8",
-          shape: "diamond",
-        },
-      },
-      {
-        selector: 'node[kind = "third-party"]',
-        style: {
-          "background-color": theme ? "#49351d" : "#fff1cf",
-          "border-color": theme ? "#efc66f" : "#c88b19",
-          shape: "ellipse",
-        },
-      },
-      {
-        selector: "edge",
-        style: {
-          width: 2,
-          "line-color": theme ? "#64748b" : "#8896a6",
-          "target-arrow-color": theme ? "#64748b" : "#8896a6",
-          "target-arrow-shape": "triangle",
-          "curve-style": "bezier",
-          "control-point-step-size": 55,
-          "arrow-scale": 1.1,
-          label: "data(label)",
-          "font-size": 10,
-          "font-family": "Hanken Grotesk",
-          color: theme ? "#e8edf4" : "#191c1e",
-          "text-background-color": theme ? "#171a2b" : "#ffffff",
-          "text-background-opacity": 0.92,
-          "text-background-padding": "3px",
-          "text-wrap": "wrap",
-          "text-max-width": "150px",
-          "overlay-opacity": 0,
-        },
-      },
-      {
-        selector: 'edge[kind = "service-dependency"]',
-        style: { width: 3, "font-size": 11, "font-weight": 700, "arrow-scale": 1.35 },
-      },
-      {
-        selector: 'edge[kind = "api"]',
-        style: { width: 2, "text-rotation": "autorotate", "control-point-step-size": 40 },
-      },
-      {
-        selector: 'edge[evidence = "both"]',
-        style: {
-          "line-color": theme ? "#70c99a" : "#26825d",
-          "target-arrow-color": theme ? "#70c99a" : "#26825d",
-        },
-      },
-      {
-        selector: 'edge[evidence = "runtime"]',
-        style: {
-          "line-color": theme ? "#efc66f" : "#c88b19",
-          "target-arrow-color": theme ? "#efc66f" : "#c88b19",
-          "line-style": "dashed",
-        },
-      },
-      {
-        selector: 'edge[evidence = "mixed"]',
-        style: {
-          "line-color": theme ? "#a6adba" : "#596579",
-          "target-arrow-color": theme ? "#a6adba" : "#596579",
-        },
-      },
-    ],
-  });
-  const inspector = $("[data-graph-inspector]");
-  const showServicePair = (pair: GraphServicePair) => {
-    if (!graph || !inspector) return;
-    expandedServicePair = pair.key;
-    graph.batch(() => {
-      graph!.edges().remove();
-      graph!.add(graphEdges(expandedServicePair));
-    });
-    const focus = graph
-      .nodes()
-      .filter((node) => node.id() === pair.source || node.id() === pair.target);
-    graph.center(focus);
-    graph.zoom({
-      level: Math.min(graph.maxZoom(), Math.max(1.25, graph.zoom() * 1.5)),
-      renderedPosition: { x: graph.width() / 2, y: graph.height() / 2 },
-    });
-    const caller = s.services.find((item) => item.id === pair.source);
-    const target = s.services.find((item) => item.id === pair.target);
-    inspector.innerHTML = `<div class="ig-graph-inspector-heading"><div><h2>${escape(caller?.name ?? "Unknown service")} → ${escape(target?.name ?? "Unknown service")}</h2><p class="ig-note">Expanded to ${pair.relations.length} API relationship${pair.relations.length === 1 ? "" : "s"}. Each arrow is a separate endpoint relationship.</p></div>${button("graph-collapse", "Back to service view", "", true)}</div>${table(
-      ["API", "Evidence", "Confidence"],
-      pair.relations.map(({ edge, endpoint }) => [
-        `<button data-action="endpoint" data-id="${escape(endpoint.id)}" data-tab="flow"><code>${escape(endpoint.method)} ${escape(endpoint.path)}</code></button>`,
-        badge(edge.evidence),
-        badge(edge.confidence),
-      ]),
-    )}`;
-  };
-  graph.on("tap", "edge", (event) => {
-    if (!graph || !inspector) return;
-    const data = event.target.data();
-    if (data.kind === "service-dependency") {
-      const pair = pairs.find((item) => item.key === data.pairKey);
-      if (pair) showServicePair(pair);
-      return;
-    }
-    if (data.kind === "api") {
-      const relation = s.edges.find((item) => item.id === data.relationshipId);
-      const endpoint = s.endpoints.find((item) => item.id === data.endpointId);
-      const caller = s.services.find((item) => item.id === data.source);
-      const target = endpoint && s.services.find((item) => item.id === endpoint.serviceId);
-      if (!relation || !endpoint) return;
-      inspector.innerHTML = `<div class="ig-graph-inspector-heading"><div><h2>${escape(endpoint.method)} ${escape(endpoint.path)}</h2><p class="ig-note">${escape(caller?.name ?? "Unknown caller")} → ${escape(target?.name ?? "Unknown service")} · ${escape(relation.evidence)} evidence · ${escape(relation.confidence)} confidence</p></div>${button("graph-collapse", "Back to service view", "", true)}</div>${evidence(relation.references)}<button type="button" class="ig-button ig-button-secondary" data-action="endpoint" data-id="${escape(endpoint.id)}" data-tab="flow">Open API flow</button>`;
-    }
-  });
-  graph.on("tap", "node", (event) => {
-    const service = s.services.find((item) => item.id === event.target.id());
-    if (!service || !inspector) return;
-    inspector.innerHTML = `<h2>${escape(service.name)}</h2><p class="ig-note">${escape(service.rootPath)} · ${escape(service.criticality)} criticality</p>${table(
-      ["Method", "Endpoint", "Static callers"],
-      s.endpoints
-        .filter((e) => e.serviceId === service.id)
-        .map((e) => [
-          escape(e.method),
-          `<button data-action="endpoint-dialog" data-id="${escape(e.id)}">${escape(e.path)}</button>`,
-          String(e.staticCallerCount),
-        ]),
-    )}`;
-  });
-}
-function mountGraph(): void {
-  const container = $(".ig-connected-graph");
-  if (!container || !snapshot) return;
-  const model = filteredRepositoryGraph(buildRepositoryGraph(snapshot), query, filter);
-  const expanded = expandedRepositoryId && model.repositories.some((repository) => repository.id === expandedRepositoryId)
-    ? expandedRepositoryId
-    : null;
-  const repositoryIds = new Set(model.repositories.map((repository) => repository.id));
-  const elements: cytoscape.ElementDefinition[] = model.repositories.map((repository) => ({
-    data: {
-      id: `repository:${repository.id}`,
-      repositoryId: repository.id,
-      label: `${repository.fullName}\n${repositoryModuleCount(model, repository.id)} modules`,
-      kind: expanded === repository.id ? "repository-expanded" : "repository",
-    },
-  }));
-  for (const aggregate of model.aggregates) {
-    if (!repositoryIds.has(aggregate.sourceRepositoryId) || !repositoryIds.has(aggregate.targetRepositoryId)) continue;
-    elements.push({
-      data: {
-        id: `repository-edge:${aggregate.sourceRepositoryId}:${aggregate.targetRepositoryId}`,
-        source: `repository:${aggregate.sourceRepositoryId}`,
-        target: `repository:${aggregate.targetRepositoryId}`,
-        kind: "repository-dependency",
-        sourceRepositoryId: aggregate.sourceRepositoryId,
-        targetRepositoryId: aggregate.targetRepositoryId,
-        label: `${aggregate.modulePairKeys.length} modules · ${aggregate.apiRelationshipCount} APIs`,
-        relationIds: aggregate.relationIds,
-      },
-    });
-  }
-  if (expanded) {
-    const modules = model.modules.filter((module) => module.repositoryId === expanded);
-    for (const module of modules) {
-      elements.push({
-        data: {
-          id: module.id,
-          parent: `repository:${module.repositoryId}`,
-          label: `${module.name}\n${module.relationCount} relationships`,
-          kind: "module",
-        },
-      });
-    }
-    const modulePairs = new Map<string, { source: string; target: string; relationIds: string[] }>();
-    for (const relation of model.relations) {
-      if (relation.sourceRepositoryId !== expanded && relation.targetRepositoryId !== expanded) continue;
-      const key = `${relation.sourceModuleId}:${relation.targetModuleId}`;
-      const pair = modulePairs.get(key) ?? { source: relation.sourceModuleId, target: relation.targetModuleId, relationIds: [] };
-      pair.relationIds.push(relation.id);
-      modulePairs.set(key, pair);
-    }
-    for (const pair of modulePairs.values()) {
-      const source = model.modules.find((module) => module.id === pair.source);
-      const target = model.modules.find((module) => module.id === pair.target);
-      if (!source || !target) continue;
-      for (const boundary of [source, target]) {
-        if (boundary.repositoryId === expanded || elements.some((element) => element.data?.id === boundary.id)) continue;
-        elements.push({
-          data: {
-            id: boundary.id,
-            label: `${boundary.name}\n${model.repositories.find((repository) => repository.id === boundary.repositoryId)?.fullName ?? "External repository"}`,
-            kind: "boundary-module",
-          },
-        });
-      }
-      elements.push({
-        data: {
-          id: `module-edge:${pair.source}:${pair.target}`,
-          source: pair.source,
-          target: pair.target,
-          kind: "module-dependency",
-          relationIds: pair.relationIds,
-          label: `${pair.relationIds.length} APIs`,
-        },
-      });
-    }
-  }
-  const theme = document.documentElement.dataset.theme === "dark";
-  graph = cytoscape({
-    container,
-    elements,
-    layout: { name: expanded ? "cose" : "grid", fit: true, padding: 50, avoidOverlap: true },
-    style: [
-      { selector: "node", style: { label: "data(label)", "text-wrap": "wrap", "text-max-width": 150, "font-size": 12, "background-color": theme ? "#25324a" : "#ffffff", color: theme ? "#f4f7ff" : "#172033", "border-width": 2, "border-color": theme ? "#8296c5" : "#9aa8c6", padding: 14, shape: "round-rectangle", width: "label", height: "label" } },
-      { selector: 'node[kind = "module"]', style: { "background-color": theme ? "#273d34" : "#f1f8ef", "border-color": theme ? "#8bc99d" : "#79a878", "font-size": 10, padding: 9 } },
-      { selector: 'node[kind = "boundary-module"]', style: { "background-color": theme ? "#3b3030" : "#fff5f0", "border-color": theme ? "#e4a190" : "#cf876f", "font-size": 10, padding: 9 } },
-      { selector: 'node[kind = "repository-expanded"]', style: { "background-color": theme ? "#26324e" : "#eef2ff", "border-color": theme ? "#91a9ed" : "#6478c8", "padding": 22, "text-valign": "top" } },
-      { selector: "edge", style: { width: 2, "curve-style": "bezier", "target-arrow-shape": "triangle", "line-color": theme ? "#8094bd" : "#7484a8", "target-arrow-color": theme ? "#8094bd" : "#7484a8", label: "data(label)", "font-size": 9, color: theme ? "#d8e2ff" : "#3f4b66", "text-background-color": theme ? "#161e2e" : "#ffffff", "text-background-opacity": 1, "text-background-padding": 3 } },
-      { selector: 'edge[kind = "module-dependency"]', style: { width: 1.5, "line-style": "dashed" } },
-    ],
-  });
-  const inspector = $("[data-graph-inspector]");
-  graph.on("tap", "node", (event) => {
-    const data = event.target.data();
-    const repositoryId = data.repositoryId as string | undefined;
-    if (repositoryId && inspector) {
-      expandedRepositoryId = expandedRepositoryId === repositoryId ? null : repositoryId;
-      try {
-        const next = new URL(location.href);
-        if (expandedRepositoryId) next.searchParams.set("repo", expandedRepositoryId);
-        else next.searchParams.delete("repo");
-        history.pushState({ repositoryId: expandedRepositoryId }, "", next.toString());
-      } catch {
-        /* URL state is an enhancement. */
-      }
-      render();
-      return;
-    }
-    const module = model.modules.find((item) => item.id === event.target.id());
-    if (module && inspector) {
-      inspector.innerHTML = `<h2>${escape(module.name)}</h2><p class="ig-note"><code>${escape(module.path)}</code> · provisional module mapping · ${module.endpointCount} endpoints · ${module.relationCount} relationships</p>${table(["Method", "Endpoint", "Evidence"], model.relations.filter((relation) => relation.sourceModuleId === module.id || relation.targetModuleId === module.id).slice(0, 40).map((relation) => [`${escape(relation.endpoint.method)}`, `<button data-action="endpoint-dialog" data-id="${escape(relation.endpoint.id)}"><code>${escape(relation.endpoint.path)}</code></button>`, badge(relation.edge.evidence)]))}`;
-    }
-  });
-  graph.on("tap", "edge", (event) => {
-    const data = event.target.data();
-    if (!inspector) return;
-    const relationIds = (data.relationIds as string[] | undefined) ?? [];
-    const relations = model.relations.filter((relation) => relationIds.includes(relation.id));
-    inspector.innerHTML = `<h2>Dependency details</h2><p class="ig-note">${relations.length} API relationships across ${new Set(relations.map((relation) => `${relation.sourceModuleId}:${relation.targetModuleId}`)).size} module dependencies.</p>${table(["Source", "Target", "API", "Evidence"], relations.map((relation) => [escape(model.modules.find((module) => module.id === relation.sourceModuleId)?.name ?? "Unknown"), escape(model.modules.find((module) => module.id === relation.targetModuleId)?.name ?? "Unknown"), `<button data-action="endpoint-dialog" data-id="${escape(relation.endpoint.id)}"><code>${escape(relation.endpoint.method)} ${escape(relation.endpoint.path)}</code></button>`, badge(relation.edge.evidence)]))}`;
-  });
-}
-
-// Kept temporarily as a compatibility reference while existing snapshots migrate to modules.
-void renderLegacyGraph;
-void mountLegacyGraph;
 
 function focusEndpointScreen(): void {
   try {
-    if (typeof window.scrollTo === "function") window.scrollTo({ top: 0, behavior: "instant" });
+    if (typeof window.scrollTo === "function")
+      window.scrollTo({ top: 0, behavior: "instant" });
   } catch {
     /* Scroll fallback */
   }
   const runFocus = () => {
-    const backBtn = document.querySelector<HTMLElement>('[data-action="back-to-apis"]');
-    const screen = document.querySelector<HTMLElement>("[data-endpoint-detail-screen]");
+    const backBtn = document.querySelector<HTMLElement>(
+      '[data-action="back-to-apis"]',
+    );
+    const screen = document.querySelector<HTMLElement>(
+      "[data-endpoint-detail-screen]",
+    );
     (backBtn ?? screen)?.focus();
   };
   if (typeof requestAnimationFrame === "function") {
@@ -1835,7 +1531,11 @@ function focusEndpointScreen(): void {
 }
 function focusEndpointTab(tab: string): void {
   const runFocus = () => {
-    document.querySelector<HTMLElement>(`[data-action="endpoint-tab"][data-tab="${tab}"]`)?.focus();
+    document
+      .querySelector<HTMLElement>(
+        `[data-action="endpoint-tab"][data-tab="${tab}"]`,
+      )
+      ?.focus();
   };
   if (typeof requestAnimationFrame === "function") {
     requestAnimationFrame(runFocus);
@@ -1845,6 +1545,11 @@ function focusEndpointTab(tab: string): void {
 }
 function render(): void {
   if (disposed || !snapshot) return;
+  if (page === "dependency-graph" && graph) {
+    graph.update(snapshot);
+    renderShell();
+    return;
+  }
   graph?.destroy();
   graph = null;
   codeGraph?.destroy();
@@ -1878,18 +1583,28 @@ function render(): void {
   renderShell();
   if (page === "dependency-graph") mountGraph();
   const flow = $<HTMLElement>("[data-code-flow]", main);
-  if (flow) codeGraph = mountCodeFlow(snapshot, flow, $("[data-code-inspector]", main));
+  if (flow)
+    codeGraph = mountCodeFlow(snapshot, flow, $("[data-code-inspector]", main));
 }
 
 function renderOnboarding(): string {
+  if (onboardingStatus && !onboardingStatus.stage) {
+    onboardingStatus = {
+      ...onboardingStatus,
+      stage: "choose_api",
+    } as WorkspaceOnboardingStatus;
+  }
   let steps: string;
   const selectedCount = selectedRepos.size;
   const indexedRepositories =
-    snapshot?.repositories.filter((repository) => repository.status === "indexed").length ?? 0;
+    snapshot?.repositories.filter(
+      (repository) => repository.status === "indexed",
+    ).length ?? 0;
   const totalRepositories = snapshot?.repositories.length ?? 0;
   const reportAvailable = Boolean(snapshot?.findings.length);
   const providerCount = onboardingStatus?.providerRepositories.length ?? 0;
-  const consumerCount = onboardingStatus?.recommendedConsumerRepositories.length ?? 0;
+  const consumerCount =
+    onboardingStatus?.recommendedConsumerRepositories.length ?? 0;
   const availableCount = available?.length ?? 0;
   const setupSteps = `<ol class="ig-setup-steps" aria-label="Workspace setup progress">
     <li data-complete="${Boolean(workspace)}" ${workspace ? "" : 'aria-current="step"'}><strong>1. Connect GitHub</strong><span>${workspace ? `Connected to ${escape(workspace.accountLogin)}` : "Authorize the GitHub account that owns your repositories."}</span></li>
@@ -1904,22 +1619,38 @@ function renderOnboarding(): string {
           ? `Choose from ${availableCount} repositories to build your first API map.`
           : "No repositories are ready to map yet.";
 
-    const discoveryRepos: Array<{ id: number; fullName: string; isProvider: boolean }> = [];
+    const discoveryRepos: Array<{
+      id: number;
+      fullName: string;
+      isProvider: boolean;
+    }> = [];
     if (
       onboardingStatus?.providerRepositories?.length ||
       onboardingStatus?.recommendedConsumerRepositories?.length
     ) {
       for (const r of onboardingStatus.providerRepositories ?? []) {
-        discoveryRepos.push({ id: r.id, fullName: r.fullName, isProvider: true });
+        discoveryRepos.push({
+          id: r.id,
+          fullName: r.fullName,
+          isProvider: true,
+        });
       }
       for (const r of onboardingStatus.recommendedConsumerRepositories ?? []) {
         if (!discoveryRepos.some((d) => d.id === r.id)) {
-          discoveryRepos.push({ id: r.id, fullName: r.fullName, isProvider: false });
+          discoveryRepos.push({
+            id: r.id,
+            fullName: r.fullName,
+            isProvider: false,
+          });
         }
       }
     } else if (available?.length) {
       for (const r of available.slice(0, 3)) {
-        discoveryRepos.push({ id: r.githubRepositoryId, fullName: r.fullName, isProvider: true });
+        discoveryRepos.push({
+          id: r.githubRepositoryId,
+          fullName: r.fullName,
+          isProvider: true,
+        });
       }
     }
 
@@ -1956,7 +1687,8 @@ function getRecommendedRepoIds(): Set<number> {
   const ids = new Set<number>();
   if (onboardingStatus) {
     for (const r of onboardingStatus.providerRepositories ?? []) ids.add(r.id);
-    for (const r of onboardingStatus.recommendedConsumerRepositories ?? []) ids.add(r.id);
+    for (const r of onboardingStatus.recommendedConsumerRepositories ?? [])
+      ids.add(r.id);
   }
   return ids;
 }
@@ -1973,7 +1705,8 @@ function syncRecommendedRepos(): void {
     if (selectedRepos.size === 0) {
       const rec = getRecommendedRepoIds();
       for (const r of available) {
-        if (rec.has(r.githubRepositoryId)) selectedRepos.add(r.githubRepositoryId);
+        if (rec.has(r.githubRepositoryId))
+          selectedRepos.add(r.githubRepositoryId);
       }
     }
   }
@@ -1998,7 +1731,9 @@ function updateRepoListFiltering(form: HTMLFormElement): void {
     option.style.display = isVisible ? "" : "none";
     if (isVisible) visibleCount++;
   });
-  const emptyFilterEl = form.querySelector<HTMLElement>("[data-repo-empty-filter]");
+  const emptyFilterEl = form.querySelector<HTMLElement>(
+    "[data-repo-empty-filter]",
+  );
   if (emptyFilterEl) {
     emptyFilterEl.style.display = visibleCount === 0 ? "" : "none";
   }
@@ -2007,37 +1742,45 @@ function updateRepoSelectionUI(): void {
   const count = selectedRepos.size;
   const total = available?.length ?? 0;
 
-  document.querySelectorAll<HTMLFormElement>("[data-repositories-form]").forEach((form) => {
-    form.querySelectorAll<HTMLInputElement>("input[name='repositoryIds']").forEach((input) => {
-      const id = Number(input.value);
-      const isChecked = selectedRepos.has(id);
-      input.checked = isChecked;
-      const label = input.closest<HTMLElement>(".ig-repo-option");
-      if (label) {
-        label.classList.toggle("is-selected", isChecked);
-        label.dataset.selected = isChecked ? "true" : "false";
+  document
+    .querySelectorAll<HTMLFormElement>("[data-repositories-form]")
+    .forEach((form) => {
+      form
+        .querySelectorAll<HTMLInputElement>("input[name='repositoryIds']")
+        .forEach((input) => {
+          const id = Number(input.value);
+          const isChecked = selectedRepos.has(id);
+          input.checked = isChecked;
+          const label = input.closest<HTMLElement>(".ig-repo-option");
+          if (label) {
+            label.classList.toggle("is-selected", isChecked);
+            label.dataset.selected = isChecked ? "true" : "false";
+          }
+        });
+
+      const countEl = form.querySelector<HTMLElement>("[data-repo-count]");
+      if (countEl) {
+        countEl.innerHTML = `<strong>${count}</strong> of ${total} selected`;
+      }
+
+      const tabSelectedCount = form.querySelector<HTMLElement>(
+        "[data-tab-selected-count]",
+      );
+      if (tabSelectedCount) {
+        tabSelectedCount.textContent = String(count);
+      }
+
+      const submitBtn = form.querySelector<HTMLButtonElement>(
+        "button[type='submit']",
+      );
+      if (submitBtn) {
+        submitBtn.textContent = `Save selection (${count} ${count === 1 ? "repository" : "repositories"}) and start indexing`;
+      }
+
+      if (repoFilter === "selected") {
+        updateRepoListFiltering(form);
       }
     });
-
-    const countEl = form.querySelector<HTMLElement>("[data-repo-count]");
-    if (countEl) {
-      countEl.innerHTML = `<strong>${count}</strong> of ${total} selected`;
-    }
-
-    const tabSelectedCount = form.querySelector<HTMLElement>("[data-tab-selected-count]");
-    if (tabSelectedCount) {
-      tabSelectedCount.textContent = String(count);
-    }
-
-    const submitBtn = form.querySelector<HTMLButtonElement>("button[type='submit']");
-    if (submitBtn) {
-      submitBtn.textContent = `Save selection (${count} ${count === 1 ? "repository" : "repositories"}) and start indexing`;
-    }
-
-    if (repoFilter === "selected") {
-      updateRepoListFiltering(form);
-    }
-  });
 
   document
     .querySelectorAll<HTMLElement>("[data-action='toggle-discovery-repo']")
@@ -2051,7 +1794,9 @@ function updateRepoSelectionUI(): void {
       if (checkEl) checkEl.textContent = isSelected ? "✓" : "+";
     });
 
-  const quickstartBtn = document.querySelector<HTMLButtonElement>("[data-action='quickstart']");
+  const quickstartBtn = document.querySelector<HTMLButtonElement>(
+    "[data-action='quickstart']",
+  );
   if (quickstartBtn) {
     quickstartBtn.disabled = count === 0;
     quickstartBtn.textContent =
@@ -2073,7 +1818,9 @@ function repoSelection(): string {
   const providerIds = getProviderRepoIds();
   const totalCount = available.length;
   const selectedCount = selectedRepos.size;
-  const recommendedCount = available.filter((r) => recommendedIds.has(r.githubRepositoryId)).length;
+  const recommendedCount = available.filter((r) =>
+    recommendedIds.has(r.githubRepositoryId),
+  ).length;
 
   return `<form data-repositories-form class="ig-repo-form">
     <p class="ig-note">Selected repositories will be indexed on their default branch. Deselecting a repository removes it from this workspace.</p>
@@ -2140,9 +1887,14 @@ function repoSelection(): string {
 }
 function modal(title: string, contents: string): HTMLDialogElement {
   const dialog = $<HTMLDialogElement>(".ig-dialog")!;
-  overlayFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  overlayFocus =
+    document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
   dialog.innerHTML = `<h2 id="dialog-title">${escape(title)}</h2>${contents}<div class="ig-dialog-actions">${button("close-dialog", "Close", "", true)}</div>`;
-  const runtimeForm = dialog.querySelector<HTMLFormElement>("[data-runtime-form]");
+  const runtimeForm = dialog.querySelector<HTMLFormElement>(
+    "[data-runtime-form]",
+  );
   if (runtimeForm) {
     const actions = document.createElement("div");
     actions.className = "ig-runtime-form-actions";
@@ -2154,23 +1906,140 @@ function modal(title: string, contents: string): HTMLDialogElement {
   dialog.showModal();
   return dialog;
 }
-function repositoryCoverageMarkup(
+function showRepositoryCoverage(
   repository: WorkspaceRepository,
-  details: WorkspaceRepositoryCoverageDetails,
-): string {
-  return `<h2 id="dialog-title">${escape(repository.fullName)}</h2><p>${badge(repository.status)} · ${escape(repository.defaultBranch)}</p><p>${details.supportedFiles} supported files · ${details.skippedFiles} skipped files · ${details.openApiDocuments} OpenAPI documents</p>${details.notes.length ? `<ul>${details.notes.map((note) => `<li>${escape(note)}</li>`).join("")}</ul>` : '<p class="ig-note">No additional coverage notes.</p>'}${repository.error ? `<p>${escape(repository.error)}</p>` : ""}<p class="ig-note">Indexed commit ${escape(repository.indexedSha ?? "not indexed")}</p><div class="ig-dialog-actions">${button("close-dialog", "Close", "", true)}</div>`;
-}
-function showRepositoryCoverage(repository: WorkspaceRepository): void {
+  pageNumber = 1,
+  diagnosticPage = 1,
+  statusFilter = "",
+  reasonFilter = "",
+): void {
   if (!workspace) return;
   const workspaceId = workspace.id;
-  const dialog = modal(repository.fullName, '<p role="status">Loading coverage details…</p>');
-  void api
-    .request<{ coverage: WorkspaceRepositoryCoverageDetails }>(
-      `${route(workspaceId)}/repositories/${encodeURIComponent(repository.id)}/coverage`,
-    )
-    .then(({ coverage: details }) => {
+  const dialog = modal(
+    repository.fullName,
+    '<p role="status">Loading coverage details…</p>',
+  );
+  const params = new URLSearchParams({
+    page: String(pageNumber),
+    limit: "20",
+    repo: repository.id,
+  });
+  if (statusFilter) params.set("status", statusFilter);
+  if (reasonFilter) params.set("reason", reasonFilter);
+  const diagnosticParams = new URLSearchParams({
+    page: String(diagnosticPage),
+    limit: "20",
+  });
+  void Promise.allSettled([
+    api.request<{ coverage: WorkspaceRepositoryCoverageDetails }>(
+      `${route(workspaceId)}/repositories/${encodeURIComponent(repository.id)}/coverage?${diagnosticParams}`,
+    ),
+    api.request<{
+      items: ApiCoverageItem[];
+      pagination: {
+        page: number;
+        limit: number;
+        total: number;
+        hasNext: boolean;
+      };
+      counts: {
+        byStatus: Record<string, number>;
+        byReason: Record<string, number>;
+        removed: number;
+      };
+      discoveryIncomplete: boolean;
+      failedAttempts: WorkspaceJob[];
+    }>(`${route(workspaceId)}/api-coverage?${params}`),
+    api.request<{ runs: ApiReviewRun[] }>(
+      `${route(workspaceId)}/api-reviews?limit=20`,
+    ),
+  ])
+    .then(([detailsResult, coverageResult, reviewResult]) => {
+      if (detailsResult.status !== "fulfilled" || coverageResult.status !== "fulfilled") {
+        throw detailsResult.status === "rejected"
+          ? detailsResult.reason
+          : coverageResult.status === "rejected"
+            ? coverageResult.reason
+            : new Error("Coverage response was unavailable");
+      }
+      const { coverage: details } = detailsResult.value;
+      const apiCoverage = coverageResult.value;
+      const reviewResponse = reviewResult.status === "fulfilled" ? reviewResult.value : { runs: [] as ApiReviewRun[] };
       if (!dialog.open || workspace?.id !== workspaceId) return;
-      dialog.innerHTML = repositoryCoverageMarkup(repository, details);
+      const rows = apiCoverage.items.map((item) => [
+        `${item.status === "removed" ? "Removed · " : ""}${escape(item.method ?? item.kind)} ${escape(item.path ?? "")}`,
+        item.stages
+          .map(
+            (stage) =>
+              `${escape(stage.stage.replaceAll("_", " "))}: ${badge(stage.status)}`,
+          )
+          .join("<br>") +
+          item.stages
+            .filter((stage) => stage.reason)
+            .map((stage) => `<p class="ig-note">${escape(stage.reason)}</p>`)
+            .join("") +
+          (item.suggestedAction
+            ? `<p class="ig-note">${escape(item.suggestedAction)}</p>`
+            : ""),
+        `<a href="${escape(url(item.source.url))}" target="_blank" rel="noopener noreferrer"><code>${escape(item.source.filePath)}:${item.source.line}</code></a>`,
+        item.status === "removed" && item.removedInCommitSha
+          ? `${escape(item.commitSha.slice(0, 12))} → ${escape(item.removedInCommitSha.slice(0, 12))}`
+          : escape(item.commitSha.slice(0, 12)),
+      ]);
+      const reasons = Object.entries(apiCoverage.counts.byReason)
+        .sort((a, b) => b[1] - a[1])
+        .map(
+          ([reason, count]) =>
+            `<option value="${escape(reason)}" ${reasonFilter === reason ? "selected" : ""}>${escape(reason.replaceAll("_", " "))} (${count})</option>`,
+        )
+        .join("");
+      const failedAttempts = apiCoverage.failedAttempts
+        .filter((job) => job.repositoryId === repository.id)
+        .map(
+          (job) =>
+            `<li>${escape(job.phase)} · ${escape(job.error ?? "Index attempt failed")} · ${escape(date(job.updatedAt))}</li>`,
+        )
+        .join("");
+      const partialAttempts = details.partialAttempts
+        .map(
+          (job) =>
+            `<li>Partial attempt at <code>${escape(job.partialAttempt?.commitSha || "unknown commit")}</code> · ${job.partialAttempt?.coverage.skippedFiles ?? 0} skipped files · ${job.partialAttempt?.coverage.diagnostics?.total ?? 0} diagnostics · ${escape(date(job.updatedAt))}</li>`,
+        )
+        .join("");
+      dialog.innerHTML = `<h2 id="dialog-title">${escape(repository.fullName)} API coverage</h2>
+        <p>${details.supportedFiles} supported files · ${details.fullyParsedFiles ?? "unknown"} fully parsed · ${details.parsedWithErrorsFiles ?? 0} parsed with errors · ${details.skippedFiles} skipped files · ${details.openApiDocuments} OpenAPI documents</p>
+        <p class="ig-note">Last successful commit: <code>${escape(details.lastSuccessfulCommit ?? "none")}</code></p>
+        <p role="status">${details.discoveryIncomplete ? "Analysis incomplete: skipped or partially analyzed files may contain APIs that were never discovered." : "No skipped files are recorded for this successful analysis; static extraction still does not prove exhaustive API discovery."}</p>
+        <section><h3>Async analyzer improvement review</h3>${
+          reviewResponse.runs
+            .filter((run) => run.repositoryId === repository.id)
+            .map(
+              (run) =>
+                `<p><strong>${escape(run.status)}</strong> · commit <code>${escape(run.commitSha.slice(0, 12))}</code> · ${run.eligibleCount} eligible · ${run.ruleCount} deterministic · ${run.modelCount} model · ${run.reusedCount} reused · ${run.cannotTellCount} cannot tell</p>`,
+            )
+            .join("") ||
+          "<p>No review run is recorded. Enable API improvement reviews for future completed indexes.</p>"
+        }<p class="ig-note">Advisory metadata only; coverage statuses and source code are never changed automatically.</p></section>
+        <section><h3>Discovered API items</h3><p>Mapped ${apiCoverage.counts.byStatus.mapped ?? 0} · Partial ${apiCoverage.counts.byStatus.partial ?? 0} · Unresolved ${apiCoverage.counts.byStatus.unresolved ?? 0}. Counts are current items by their least-resolved stage. ${apiCoverage.counts.removed} removed items are historical and excluded from current counts.</p>
+        <div class="ig-filters"><select data-api-coverage-status data-id="${escape(repository.id)}" aria-label="Filter API status"><option value="">All current statuses</option>${["mapped", "partial", "unresolved", "removed"].map((value) => `<option value="${value}" ${statusFilter === value ? "selected" : ""}>${value}</option>`).join("")}</select><select data-api-coverage-reason data-id="${escape(repository.id)}" aria-label="Filter API reason"><option value="">All reasons</option>${reasons}</select></div>
+        ${rows.length ? table(["API item", "Stage status and reason", "Location", "Commit"], rows) : "<p>No stored API coverage records match this filter.</p>"}
+        <p>Showing page ${apiCoverage.pagination.page} · ${apiCoverage.pagination.total} matching records</p>${button("api-coverage-page", "Previous items", `data-id="${escape(repository.id)}" data-page="${Math.max(1, pageNumber - 1)}" data-diagnostic-page="${diagnosticPage}" data-status="${escape(statusFilter)}" data-reason="${escape(reasonFilter)}" ${pageNumber <= 1 ? "disabled" : ""}`, true)} ${button("api-coverage-page", "Next items", `data-id="${escape(repository.id)}" data-page="${pageNumber + 1}" data-diagnostic-page="${diagnosticPage}" data-status="${escape(statusFilter)}" data-reason="${escape(reasonFilter)}" ${apiCoverage.pagination.hasNext ? "" : "disabled"}`, true)}</section>
+        <section><h3>File analysis diagnostics</h3><p>${details.diagnostics.total} file-level diagnostic records. Skipped files remain diagnostics; they are not counted as unresolved APIs.</p>${
+          details.diagnostics.records.length
+            ? table(
+                ["Reason", "Stage", "File / location", "Detail"],
+                details.diagnostics.records.map((item) => [
+                  escape(item.code.replaceAll("_", " ")),
+                  escape(item.stage.replaceAll("_", " ")),
+                  `${escape(item.filePath)}${item.line ? `:${item.line}` : ""}`,
+                  escape(item.message),
+                ]),
+              )
+            : "<p>No file diagnostics are recorded.</p>"
+        }${button("api-coverage-page", "Previous file diagnostics", `data-id="${escape(repository.id)}" data-page="${pageNumber}" data-diagnostic-page="${Math.max(1, diagnosticPage - 1)}" data-status="${escape(statusFilter)}" data-reason="${escape(reasonFilter)}" ${diagnosticPage <= 1 ? "disabled" : ""}`, true)} ${button("api-coverage-page", "Next file diagnostics", `data-id="${escape(repository.id)}" data-page="${pageNumber}" data-diagnostic-page="${diagnosticPage + 1}" data-status="${escape(statusFilter)}" data-reason="${escape(reasonFilter)}" ${details.diagnostics.hasNext ? "" : "disabled"}`, true)}</section>
+        ${failedAttempts ? `<section><h3>Failed latest attempts</h3><ul>${failedAttempts}</ul><p class="ig-note">Failed attempts do not replace the last successful commit.</p></section>` : ""}
+        ${partialAttempts ? `<section><h3>Partial indexing attempts</h3><ul>${partialAttempts}</ul><p class="ig-note">Partial attempts remain separate from current coverage.</p></section>` : ""}
+        <div class="ig-dialog-actions">${button("close-dialog", "Close", "", true)}</div>`;
     })
     .catch((error) => {
       if (dialog.open && workspace?.id === workspaceId) {
@@ -2181,12 +2050,14 @@ function showRepositoryCoverage(repository: WorkspaceRepository): void {
 }
 async function loadAvailable(): Promise<void> {
   if (!workspace) return;
-  const response = await api.request<{ repositories: InstallationRepository[] }>(
-    `${route(workspace.id)}/repositories/available`,
-  );
+  const response = await api.request<{
+    repositories: InstallationRepository[];
+  }>(`${route(workspace.id)}/repositories/available`);
   available = response.repositories;
   selectedRepos = new Set(
-    available.filter((repo) => repo.selected).map((repo) => repo.githubRepositoryId),
+    available
+      .filter((repo) => repo.selected)
+      .map((repo) => repo.githubRepositoryId),
   );
   syncRecommendedRepos();
 }
@@ -2231,11 +2102,14 @@ async function discoverRuntimeServices(form: HTMLFormElement): Promise<void> {
   }
   if (status)
     status.textContent = `${result.autoMatchedCount} matches ready · ${result.suggestedCount + result.unmatchedCount} to review. Nothing is saved until you connect.`;
-  if (result.services.length) $<HTMLButtonElement>("[data-runtime-primary]", form)?.focus();
+  if (result.services.length)
+    $<HTMLButtonElement>("[data-runtime-primary]", form)?.focus();
 }
 function snapshotView(): string {
   if (page === "api-usage") {
-    return selectedEndpoint && endpointTab === "flow" ? "api-flow" : "api-usage";
+    return selectedEndpoint && endpointTab === "flow"
+      ? "api-flow"
+      : "api-usage";
   }
   if (page === "function-usage") return "function-usage";
   if (page === "deprecation-candidates") return "retirement";
@@ -2251,7 +2125,8 @@ function snapshotPageParams(search: URLSearchParams): void {
     search.set("page", String(collectionPage));
     search.set("limit", "50");
     if (query) search.set("q", query);
-    if (apiServiceFilters.size) search.set("services", [...apiServiceFilters].join(","));
+    if (apiServiceFilters.size)
+      search.set("services", [...apiServiceFilters].join(","));
   } else if (page === "pr-impact") {
     search.set("page", String(collectionPage));
     search.set("limit", "10");
@@ -2263,7 +2138,8 @@ function snapshotPageParams(search: URLSearchParams): void {
     if (query) search.set("q", query);
     if (retirementServiceFilter) search.set("service", retirementServiceFilter);
     if (retirementMethodFilter) search.set("method", retirementMethodFilter);
-    if (retirementEvidenceFilter) search.set("evidence", retirementEvidenceFilter);
+    if (retirementEvidenceFilter)
+      search.set("evidence", retirementEvidenceFilter);
     if (retirementUsageFilter) search.set("usage", retirementUsageFilter);
     if (retirementReviewFilter) search.set("review", retirementReviewFilter);
   }
@@ -2275,19 +2151,30 @@ async function refresh(renderView = true, showLoading = true): Promise<void> {
   const search = new URLSearchParams({ view: snapshotView() });
   if (activeGroupId) search.set("group", activeGroupId);
   snapshotPageParams(search);
-  const load = () => api.request<WorkspaceSnapshot>(`${route(workspaceId)}/snapshot?${search}`, { loading: showLoading });
+  const load = () =>
+    api.request<WorkspaceSnapshot>(`${route(workspaceId)}/snapshot?${search}`, {
+      loading: showLoading,
+    });
   let next: WorkspaceSnapshot;
   try {
     next = await load();
   } catch (error) {
     // A remembered group may have been deleted; fall back to the full workspace.
-    if (activeGroupId && error instanceof WorkspaceApiError && error.status === 404) {
+    if (
+      activeGroupId &&
+      error instanceof WorkspaceApiError &&
+      error.status === 404
+    ) {
       activeGroupId = null;
       writeGroupPreference(workspaceId, null);
       next = await load();
     } else throw error;
   }
-  if (next.version !== 1 || next.workspaceId !== workspace.id || !Array.isArray(next.endpoints))
+  if (
+    next.version !== 1 ||
+    next.workspaceId !== workspace.id ||
+    !Array.isArray(next.endpoints)
+  )
     throw new Error("The workspace response is incompatible.");
   const previous = snapshot;
   snapshot = next;
@@ -2326,7 +2213,9 @@ async function refresh(renderView = true, showLoading = true): Promise<void> {
         }
         void refresh(true, false).catch(handleError);
       },
-      next.jobs.some((job) => ["queued", "running"].includes(job.status)) ? 5000 : 30000,
+      next.jobs.some((job) => ["queued", "running"].includes(job.status))
+        ? 5000
+        : 30000,
     );
 }
 
@@ -2372,7 +2261,11 @@ function schedulePoll(): void {
     }, 5000);
 }
 function handleError(error: unknown): void {
-  if (disposed || (error instanceof DOMException && error.name === "AbortError")) return;
+  if (
+    disposed ||
+    (error instanceof DOMException && error.name === "AbortError")
+  )
+    return;
   trackEvent("workspace_error", {
     error_type:
       error instanceof WorkspaceApiError
@@ -2387,11 +2280,17 @@ function handleError(error: unknown): void {
     clearSession();
     state("Your session needs attention", "Sign in again to continue.", true);
     window.location.assign(
-      signInDestination(`${location.pathname}${location.search}`, location.origin),
+      signInDestination(
+        `${location.pathname}${location.search}`,
+        location.origin,
+      ),
     );
     return;
   }
-  errorMessage = error instanceof Error ? error.message : "The workspace could not be loaded.";
+  errorMessage =
+    error instanceof Error
+      ? error.message
+      : "The workspace could not be loaded.";
   if (snapshot) {
     toast(errorMessage);
     schedulePoll();
@@ -2431,7 +2330,9 @@ function chooseWorkspace(): void {
     /* Server membership remains authoritative. */
   }
   workspace =
-    session?.workspaces.find((w) => w.id === requested || w.id === remembered) ??
+    session?.workspaces.find(
+      (w) => w.id === requested || w.id === remembered,
+    ) ??
     session?.workspaces[0] ??
     null;
   if (workspace) {
@@ -2461,21 +2362,20 @@ async function bootstrap(): Promise<void> {
     return;
   }
   if (["onboarding", "github-setup"].includes(page)) {
-    const [availableResult, snapshotResult, statusResult] = await Promise.allSettled([
-      loadAvailable(),
-      refresh(false),
-      api.request<WorkspaceOnboardingStatus>(`${route(workspace.id)}/onboarding`),
-    ]);
-    if (availableResult.status === "rejected") throw availableResult.reason;
-    if (snapshotResult.status === "rejected") throw snapshotResult.reason;
-    if (statusResult.status === "fulfilled") onboardingStatus = statusResult.value;
+    await loadAvailable();
+    await refresh(false);
+    onboardingStatus = await api.request<WorkspaceOnboardingStatus>(
+      `${route(workspace.id)}/onboarding`,
+    );
     syncRecommendedRepos();
     render();
-    if (statusResult.status === "rejected") throw statusResult.reason;
   } else {
     await refresh();
   }
-  if (new URL(location.href).searchParams.has("import") && page === "repositories")
+  if (
+    new URL(location.href).searchParams.has("import") &&
+    page === "repositories"
+  )
     await importRepositories();
 }
 async function chooseInstallation(flow: string): Promise<void> {
@@ -2532,7 +2432,10 @@ async function mutate(
 ): Promise<boolean> {
   if (busy) return false;
   busy = true;
-  const stopLoading = loadingFeedback.begin(success ? "Saving your changes…" : "Working on it…", 2);
+  const stopLoading = loadingFeedback.begin(
+    success ? "Saving your changes…" : "Working on it…",
+    2,
+  );
   const controls = [
     ...document.querySelectorAll<HTMLButtonElement | HTMLInputElement>(
       "[data-settings-form] button,[data-repositories-form] button,[data-action=confirm-review],[data-action=reindex],[data-runtime-form] button,button[data-provider]",
@@ -2554,7 +2457,8 @@ async function mutate(
       $<HTMLDialogElement>(".ig-dialog")?.open ? $(".ig-dialog")! : main,
     );
     if (status)
-      status.textContent = error instanceof Error ? error.message : "The change was not saved.";
+      status.textContent =
+        error instanceof Error ? error.message : "The change was not saved.";
     return false;
   } finally {
     stopLoading();
@@ -2574,12 +2478,16 @@ document.addEventListener("input", (event) => {
     runtimeConnectionChanged(runtimeForm, event.target);
     return;
   }
-  if (event.target instanceof HTMLInputElement && event.target.matches("[data-code-query]")) {
+  if (
+    event.target instanceof HTMLInputElement &&
+    event.target.matches("[data-code-query]")
+  ) {
     codeQuery = event.target.value;
     codePage = 0;
     const position = event.target.selectionStart;
     const card = event.target.closest(".ig-card");
-    if (card && snapshot) card.outerHTML = renderFunctionInventory(snapshot, codeQuery);
+    if (card && snapshot)
+      card.outerHTML = renderFunctionInventory(snapshot, codeQuery);
     const field = $<HTMLInputElement>("[data-code-query]");
     field?.focus();
     field?.setSelectionRange(position, position);
@@ -2623,7 +2531,10 @@ document.addEventListener("change", (event) => {
     return;
   }
   const select = event.target;
-  if (event.target instanceof HTMLInputElement && event.target.matches("[data-api-service], [data-api-service-all]")) {
+  if (
+    event.target instanceof HTMLInputElement &&
+    event.target.matches("[data-api-service], [data-api-service-all]")
+  ) {
     const checkbox = event.target;
     if (checkbox.matches("[data-api-service-all]")) apiServiceFilters.clear();
     else if (checkbox.dataset.apiService) {
@@ -2635,6 +2546,32 @@ document.addEventListener("change", (event) => {
     return;
   }
   if (!(select instanceof HTMLSelectElement)) return;
+  if (
+    select.matches("[data-api-coverage-status], [data-api-coverage-reason]")
+  ) {
+    const repository = snapshot?.repositories.find(
+      (item) => item.id === select.dataset.id,
+    );
+    if (repository)
+      showRepositoryCoverage(
+        repository,
+        1,
+        1,
+        select.matches("[data-api-coverage-status]")
+          ? select.value
+          : ($<HTMLSelectElement>(
+              "[data-api-coverage-status]",
+              select.closest("dialog")!,
+            )?.value ?? ""),
+        select.matches("[data-api-coverage-reason]")
+          ? select.value
+          : ($<HTMLSelectElement>(
+              "[data-api-coverage-reason]",
+              select.closest("dialog")!,
+            )?.value ?? ""),
+      );
+    return;
+  }
   if (select.matches("[data-filter]")) {
     collectionPage = 1;
     if (page === "api-usage") {
@@ -2704,22 +2641,33 @@ document.addEventListener("change", (event) => {
 });
 document.addEventListener("submit", (event) => {
   const groupForm = event.target;
-  if (groupForm instanceof HTMLFormElement && groupForm.matches("[data-group-create]")) {
+  if (
+    groupForm instanceof HTMLFormElement &&
+    groupForm.matches("[data-group-create]")
+  ) {
     event.preventDefault();
     if (!groupForm.reportValidity() || !workspace || !canWrite()) return;
     const name = String(new FormData(groupForm).get("name") ?? "").trim();
     void mutate(async () => {
-      await api.request(`${route(workspace!.id)}/groups`, { method: "POST", body: { name } });
+      await api.request(`${route(workspace!.id)}/groups`, {
+        method: "POST",
+        body: { name },
+      });
       await refresh();
       await manageGroups();
     }, "Group created.");
     return;
   }
-  if (groupForm instanceof HTMLFormElement && groupForm.matches("[data-group-form]")) {
+  if (
+    groupForm instanceof HTMLFormElement &&
+    groupForm.matches("[data-group-form]")
+  ) {
     event.preventDefault();
     if (!workspace || !canWrite()) return;
     const groupId = groupForm.dataset.id!;
-    const repositoryIds = new FormData(groupForm).getAll("repositoryIds").map(String);
+    const repositoryIds = new FormData(groupForm)
+      .getAll("repositoryIds")
+      .map(String);
     void mutate(async () => {
       await api.request(
         `${route(workspace!.id)}/groups/${encodeURIComponent(groupId)}/repositories`,
@@ -2738,22 +2686,25 @@ document.addEventListener("submit", (event) => {
     if (!form.reportValidity() || !workspace || !canWrite()) return;
     const fields = new FormData(form);
     const repositoryId = String(fields.get("repositoryId"));
-    const selected = [...form.querySelectorAll<HTMLOptionElement>("option")].find(
-      (option) => option.value === repositoryId,
-    );
+    const selected = [
+      ...form.querySelectorAll<HTMLOptionElement>("option"),
+    ].find((option) => option.value === repositoryId);
     const githubRepositoryId = Number(selected?.dataset.githubId);
     void mutate(async () => {
-      await api.request(`${route(workspace!.id)}/deployment-identity/artifacts`, {
-        method: "POST",
-        body: {
-          repositoryId,
-          githubRepositoryId,
-          commitSha: fields.get("commitSha"),
-          imageDigest: fields.get("imageDigest"),
-          componentPath: fields.get("componentPath") || null,
-          artifactReference: fields.get("artifactReference") || null,
+      await api.request(
+        `${route(workspace!.id)}/deployment-identity/artifacts`,
+        {
+          method: "POST",
+          body: {
+            repositoryId,
+            githubRepositoryId,
+            commitSha: fields.get("commitSha"),
+            imageDigest: fields.get("imageDigest"),
+            componentPath: fields.get("componentPath") || null,
+            artifactReference: fields.get("artifactReference") || null,
+          },
         },
-      });
+      );
       $<HTMLDialogElement>(".ig-dialog")?.close();
       await refresh();
       toast("Build provenance saved.");
@@ -2793,17 +2744,20 @@ document.addEventListener("submit", (event) => {
       .filter(Boolean);
     const bearerToken = String(fields.get("bearerToken") ?? "");
     void mutate(async () => {
-      await api.request(`${route(workspace!.id)}/deployment-identity/kubernetes`, {
-        method: "POST",
-        body: {
-          clusterId: fields.get("clusterId"),
-          displayName: fields.get("displayName"),
-          apiServerUrl: fields.get("apiServerUrl"),
-          environment: fields.get("environment"),
-          namespaces,
-          bearerToken,
+      await api.request(
+        `${route(workspace!.id)}/deployment-identity/kubernetes`,
+        {
+          method: "POST",
+          body: {
+            clusterId: fields.get("clusterId"),
+            displayName: fields.get("displayName"),
+            apiServerUrl: fields.get("apiServerUrl"),
+            environment: fields.get("environment"),
+            namespaces,
+            bearerToken,
+          },
         },
-      });
+      );
       form.querySelector<HTMLInputElement>("[name=bearerToken]")!.value = "";
       $<HTMLDialogElement>(".ig-dialog")?.close();
       await refresh();
@@ -2817,19 +2771,24 @@ document.addEventListener("submit", (event) => {
     void mutate(async () => {
       if (
         form.dataset.runtimePhase !== "review" &&
-        !Object.keys(runtimeConnectionBody(form, true).config.serviceMappings).length
+        !Object.keys(runtimeConnectionBody(form, true).config.serviceMappings)
+          .length
       ) {
         await discoverRuntimeServices(form);
         return;
       }
       const connectionBody = runtimeConnectionBody(form);
-      await api.request(`${route(workspace!.id)}/runtime/${form.dataset.provider}`, {
-        method: "PUT",
-        body: connectionBody,
-      });
+      await api.request(
+        `${route(workspace!.id)}/runtime/${form.dataset.provider}`,
+        {
+          method: "PUT",
+          body: connectionBody,
+        },
+      );
       trackEvent("runtime_connection_saved", {
         provider: form.dataset.provider,
-        service_count: Object.keys(connectionBody.config.serviceMappings).length,
+        service_count: Object.keys(connectionBody.config.serviceMappings)
+          .length,
       });
       $<HTMLDialogElement>(".ig-dialog")?.close();
       await refresh();
@@ -2839,7 +2798,8 @@ document.addEventListener("submit", (event) => {
   }
   if (form.matches("[data-settings-form]")) {
     event.preventDefault();
-    if (!form.reportValidity() || !workspace || !snapshot || !canWrite()) return;
+    if (!form.reportValidity() || !workspace || !snapshot || !canWrite())
+      return;
     const fields = new FormData(form);
     const body = {
       version: snapshot.settings.version,
@@ -2854,10 +2814,13 @@ document.addEventListener("submit", (event) => {
       retentionDays: Number(fields.get("retentionDays")),
     };
     void mutate(async () => {
-      const saved = await api.request<WorkspaceSettings>(`${route(workspace!.id)}/settings`, {
-        method: "PATCH",
-        body,
-      });
+      const saved = await api.request<WorkspaceSettings>(
+        `${route(workspace!.id)}/settings`,
+        {
+          method: "PATCH",
+          body,
+        },
+      );
       snapshot!.settings = saved;
       trackEvent("workspace_settings_saved");
       render();
@@ -2869,11 +2832,16 @@ document.addEventListener("submit", (event) => {
     const formIds = [...new FormData(form).getAll("repositoryIds")].map(Number);
     const repositoryIds = formIds.length ? formIds : [...selectedRepos];
     void mutate(async () => {
-      snapshot = await api.request<WorkspaceSnapshot>(`${route(workspace!.id)}/repositories`, {
-        method: "PUT",
-        body: { repositoryIds },
+      snapshot = await api.request<WorkspaceSnapshot>(
+        `${route(workspace!.id)}/repositories`,
+        {
+          method: "PUT",
+          body: { repositoryIds },
+        },
+      );
+      trackEvent("repository_selection_saved", {
+        repository_count: repositoryIds.length,
       });
-      trackEvent("repository_selection_saved", { repository_count: repositoryIds.length });
       await loadAvailable();
       $<HTMLDialogElement>(".ig-dialog")?.close();
       render();
@@ -2883,7 +2851,9 @@ document.addEventListener("submit", (event) => {
 });
 document.addEventListener("click", (event) => {
   const link =
-    event.target instanceof Element ? event.target.closest<HTMLAnchorElement>("a") : null;
+    event.target instanceof Element
+      ? event.target.closest<HTMLAnchorElement>("a")
+      : null;
   if (link && page === "api-usage" && selectedEndpoint) {
     try {
       const targetUrl = new URL(link.href, location.origin);
@@ -2910,7 +2880,9 @@ document.addEventListener("click", (event) => {
         if (prevId) {
           const restoreFocus = () => {
             document
-              .querySelector<HTMLElement>(`[data-action="endpoint"][data-id="${prevId}"]`)
+              .querySelector<HTMLElement>(
+                `[data-action="endpoint"][data-id="${prevId}"]`,
+              )
               ?.focus();
           };
           if (typeof requestAnimationFrame === "function") {
@@ -2926,10 +2898,25 @@ document.addEventListener("click", (event) => {
     }
   }
   const trigger =
-    event.target instanceof Element ? event.target.closest<HTMLElement>("[data-action]") : null;
-  if (!trigger || (trigger instanceof HTMLButtonElement && trigger.disabled)) return;
+    event.target instanceof Element
+      ? event.target.closest<HTMLElement>("[data-action]")
+      : null;
+  if (!trigger || (trigger instanceof HTMLButtonElement && trigger.disabled))
+    return;
   const action = trigger.dataset.action;
   const id = trigger.dataset.id;
+  if (action === "api-coverage-page" && id) {
+    const repository = snapshot?.repositories.find((item) => item.id === id);
+    if (repository)
+      showRepositoryCoverage(
+        repository,
+        Number(trigger.dataset.page ?? 1),
+        Number(trigger.dataset.diagnosticPage ?? 1),
+        trigger.dataset.status ?? "",
+        trigger.dataset.reason ?? "",
+      );
+    return;
+  }
   if (action === "kubernetes-connect" && workspace && canWrite()) {
     modal("Connect Kubernetes", kubernetesConnectionForm());
     return;
@@ -2984,15 +2971,22 @@ document.addEventListener("click", (event) => {
     }, "Kubernetes cluster disconnected.");
     return;
   }
-  if (action === "runtime-apply-suggestions" || action === "runtime-fill-names") {
+  if (
+    action === "runtime-apply-suggestions" ||
+    action === "runtime-fill-names"
+  ) {
     const form = trigger.closest<HTMLFormElement>("[data-runtime-form]");
     if (!form || !canWrite() || busy) return;
     if (action === "runtime-apply-suggestions") {
-      for (const select of form.querySelectorAll<HTMLSelectElement>("[data-runtime-source]"))
+      for (const select of form.querySelectorAll<HTMLSelectElement>(
+        "[data-runtime-source]",
+      ))
         if (!select.value && select.dataset.suggestedService)
           select.value = select.dataset.suggestedService;
     } else {
-      for (const input of form.querySelectorAll<HTMLInputElement>("[data-runtime-service]"))
+      for (const input of form.querySelectorAll<HTMLInputElement>(
+        "[data-runtime-service]",
+      ))
         if (!input.value) input.value = input.dataset.serviceName ?? "";
     }
     updateRuntimeConnectButton(form);
@@ -3007,17 +3001,23 @@ document.addEventListener("click", (event) => {
   if (action === "api-sort") {
     const requested = trigger.dataset.sort;
     if (requested && /^\d+$/.test(requested)) {
-      if (apiSort === requested) apiSortDirection = apiSortDirection === "asc" ? "desc" : "asc";
-      else { apiSort = requested; apiSortDirection = "asc"; }
+      if (apiSort === requested)
+        apiSortDirection = apiSortDirection === "asc" ? "desc" : "asc";
+      else {
+        apiSort = requested;
+        apiSortDirection = "asc";
+      }
       render();
     }
     return;
   }
   if (action === "function-page" && snapshot) {
     codePage = Math.max(0, Number(trigger.dataset.page) || 0);
-    const direction = trigger.dataset.direction === "previous" ? "previous" : "next";
+    const direction =
+      trigger.dataset.direction === "previous" ? "previous" : "next";
     const card = trigger.closest(".ig-card");
-    if (card) card.outerHTML = renderFunctionInventory(snapshot, codeQuery, codePage);
+    if (card)
+      card.outerHTML = renderFunctionInventory(snapshot, codeQuery, codePage);
     const next = $<HTMLButtonElement>(
       `[data-action="function-page"][data-direction="${direction}"]`,
     );
@@ -3068,9 +3068,12 @@ document.addEventListener("click", (event) => {
     }
     if (action === "runtime-sync") {
       void mutate(async () => {
-        await api.request(`${route(workspace!.id)}/runtime/${runtimeProvider}/sync`, {
-          method: "POST",
-        });
+        await api.request(
+          `${route(workspace!.id)}/runtime/${runtimeProvider}/sync`,
+          {
+            method: "POST",
+          },
+        );
         trackEvent("runtime_sync_completed", { provider: runtimeProvider });
         await refresh();
       }, "Runtime evidence refreshed.");
@@ -3085,9 +3088,12 @@ document.addEventListener("click", (event) => {
     }
     if (action === "confirm-runtime-disconnect") {
       void mutate(async () => {
-        await api.request(`${route(workspace!.id)}/runtime/${runtimeProvider}`, {
-          method: "DELETE",
-        });
+        await api.request(
+          `${route(workspace!.id)}/runtime/${runtimeProvider}`,
+          {
+            method: "DELETE",
+          },
+        );
         trackEvent("runtime_connection_removed", { provider: runtimeProvider });
         $<HTMLDialogElement>(".ig-dialog")?.close();
         await refresh();
@@ -3096,7 +3102,8 @@ document.addEventListener("click", (event) => {
     }
   }
   if (action === "theme") {
-    const theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    const theme =
+      document.documentElement.dataset.theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = theme;
     syncThemeControls();
     try {
@@ -3104,11 +3111,7 @@ document.addEventListener("click", (event) => {
     } catch {
       /* Theme remains usable. */
     }
-    if (graph) {
-      graph.destroy();
-      graph = null;
-      mountGraph();
-    }
+    // The graph observes theme changes without resetting its viewport.
     return;
   }
   if (action === "menu") {
@@ -3165,18 +3168,26 @@ document.addEventListener("click", (event) => {
   }
   if (action === "connect-github" || action === "add-workspace") {
     void mutate(async () => {
-      const installation = new URL(location.href).searchParams.get("installation_id");
-      const result = await api.request<{ url: string }>("/api/v1/github/connect/start", {
-        method: "POST",
-        body: {
-          returnTo: "/onboarding",
-          ...(installation && /^\d+$/.test(installation)
-            ? { installationId: Number(installation) }
-            : {}),
+      const installation = new URL(location.href).searchParams.get(
+        "installation_id",
+      );
+      const result = await api.request<{ url: string }>(
+        "/api/v1/github/connect/start",
+        {
+          method: "POST",
+          body: {
+            returnTo: "/onboarding",
+            ...(installation && /^\d+$/.test(installation)
+              ? { installationId: Number(installation) }
+              : {}),
+          },
         },
-      });
+      );
       const destination = new URL(result.url);
-      if (destination.protocol !== "https:" || destination.hostname !== "github.com")
+      if (
+        destination.protocol !== "https:" ||
+        destination.hostname !== "github.com"
+      )
         throw new Error("The GitHub authorization URL is invalid.");
       trackEvent("github_connection_start", { provider: "github" });
       location.assign(destination.href);
@@ -3187,7 +3198,10 @@ document.addEventListener("click", (event) => {
     void mutate(async () => {
       const result = await api.request<{ workspace: WorkspaceMembership }>(
         "/api/v1/github/connect/finish",
-        { method: "POST", body: { flow: trigger.dataset.flow, installationId: Number(id) } },
+        {
+          method: "POST",
+          body: { flow: trigger.dataset.flow, installationId: Number(id) },
+        },
       );
       try {
         sessionStorage.setItem("impact-gate-workspace", result.workspace.id);
@@ -3210,9 +3224,12 @@ document.addEventListener("click", (event) => {
   }
   if (action === "group-delete" && id) {
     void mutate(async () => {
-      await api.request(`${route(workspace!.id)}/groups/${encodeURIComponent(id)}`, {
-        method: "DELETE",
-      });
+      await api.request(
+        `${route(workspace!.id)}/groups/${encodeURIComponent(id)}`,
+        {
+          method: "DELETE",
+        },
+      );
       if (activeGroupId === id) {
         activeGroupId = null;
         writeGroupPreference(workspace!.id, null);
@@ -3225,7 +3242,8 @@ document.addEventListener("click", (event) => {
   if (action === "repo-select-all") {
     const form = trigger.closest<HTMLFormElement>("[data-repositories-form]");
     if (form) {
-      const isFiltered = Boolean(repoSearchQuery.trim()) || repoFilter !== "all";
+      const isFiltered =
+        Boolean(repoSearchQuery.trim()) || repoFilter !== "all";
       form.querySelectorAll<HTMLElement>(".ig-repo-option").forEach((opt) => {
         if (!isFiltered || opt.style.display !== "none") {
           const id = Number(opt.dataset.repoId);
@@ -3241,7 +3259,8 @@ document.addEventListener("click", (event) => {
   if (action === "repo-deselect-all") {
     const form = trigger.closest<HTMLFormElement>("[data-repositories-form]");
     if (form) {
-      const isFiltered = Boolean(repoSearchQuery.trim()) || repoFilter !== "all";
+      const isFiltered =
+        Boolean(repoSearchQuery.trim()) || repoFilter !== "all";
       if (isFiltered) {
         form.querySelectorAll<HTMLElement>(".ig-repo-option").forEach((opt) => {
           if (opt.style.display !== "none") {
@@ -3265,7 +3284,8 @@ document.addEventListener("click", (event) => {
     return;
   }
   if (action === "repo-filter") {
-    const requestedFilter = trigger.dataset.filter as "all" | "selected" | "recommended";
+    const requestedFilter = trigger.dataset.filter as
+      "all" | "selected" | "recommended";
     if (["all", "selected", "recommended"].includes(requestedFilter)) {
       repoFilter = requestedFilter;
       const form = trigger.closest<HTMLFormElement>("[data-repositories-form]");
@@ -3292,7 +3312,9 @@ document.addEventListener("click", (event) => {
     if (recIds.size) {
       recIds.forEach((id) => selectedRepos.add(id));
     } else if (available) {
-      available.slice(0, 3).forEach((r) => selectedRepos.add(r.githubRepositoryId));
+      available
+        .slice(0, 3)
+        .forEach((r) => selectedRepos.add(r.githubRepositoryId));
     }
     updateRepoSelectionUI();
     return;
@@ -3361,15 +3383,21 @@ document.addEventListener("click", (event) => {
   if (action === "endpoint" && id) {
     $<HTMLDialogElement>(".ig-dialog")?.close();
     if (page !== "api-usage") {
-      const tabParam = trigger.dataset.tab ? `&tab=${encodeURIComponent(trigger.dataset.tab)}` : "";
-      location.assign(`/dashboard/api-usage?endpointId=${encodeURIComponent(id)}${tabParam}`);
+      const tabParam = trigger.dataset.tab
+        ? `&tab=${encodeURIComponent(trigger.dataset.tab)}`
+        : "";
+      location.assign(
+        `/dashboard/api-usage?endpointId=${encodeURIComponent(id)}${tabParam}`,
+      );
       return;
     }
     selectedEndpoint = id;
     const requestedTab = trigger.dataset.tab;
     if (
       requestedTab &&
-      ["overview", "flow", "consumers", "changes", "retirement"].includes(requestedTab)
+      ["overview", "flow", "consumers", "changes", "retirement"].includes(
+        requestedTab,
+      )
     ) {
       endpointTab = requestedTab;
     } else {
@@ -3379,9 +3407,14 @@ document.addEventListener("click", (event) => {
       const nextUrl = new URL(location.href);
       nextUrl.pathname = "/dashboard/api-usage";
       nextUrl.searchParams.set("endpointId", id);
-      if (endpointTab !== "overview") nextUrl.searchParams.set("tab", endpointTab);
+      if (endpointTab !== "overview")
+        nextUrl.searchParams.set("tab", endpointTab);
       else nextUrl.searchParams.delete("tab");
-      history.pushState({ endpointId: id, tab: endpointTab }, "", nextUrl.toString());
+      history.pushState(
+        { endpointId: id, tab: endpointTab },
+        "",
+        nextUrl.toString(),
+      );
     } catch {
       /* Navigation fallback */
     }
@@ -3395,7 +3428,8 @@ document.addEventListener("click", (event) => {
     endpointTab = trigger.dataset.tab ?? "overview";
     try {
       const nextUrl = new URL(location.href);
-      if (endpointTab !== "overview") nextUrl.searchParams.set("tab", endpointTab);
+      if (endpointTab !== "overview")
+        nextUrl.searchParams.set("tab", endpointTab);
       else nextUrl.searchParams.delete("tab");
       history.replaceState(
         { endpointId: selectedEndpoint, tab: endpointTab },
@@ -3425,7 +3459,8 @@ document.addEventListener("click", (event) => {
     }
     render();
     try {
-      if (typeof window.scrollTo === "function") window.scrollTo({ top: 0, behavior: "instant" });
+      if (typeof window.scrollTo === "function")
+        window.scrollTo({ top: 0, behavior: "instant" });
     } catch {
       /* Scroll fallback */
     }
@@ -3454,44 +3489,7 @@ document.addEventListener("click", (event) => {
       );
     return;
   }
-  if (action === "graph-collapse" && page === "dependency-graph") {
-    expandedServicePair = null;
-    render();
-    return;
-  }
-  if (action === "graph-repository" && id && page === "dependency-graph") {
-    expandedRepositoryId = id;
-    try {
-      const next = new URL(location.href);
-      next.searchParams.set("repo", id);
-      history.pushState({ repositoryId: id }, "", next.toString());
-    } catch {
-      /* URL state is an enhancement. */
-    }
-    render();
-    return;
-  }
-  if (action === "graph-collapse-repository" && page === "dependency-graph") {
-    expandedRepositoryId = null;
-    try {
-      const next = new URL(location.href);
-      next.searchParams.delete("repo");
-      history.pushState({ repositoryId: null }, "", next.toString());
-    } catch {
-      /* URL state is an enhancement. */
-    }
-    render();
-    return;
-  }
-  if (action === "graph-module" && id && page === "dependency-graph") {
-    const model = snapshot ? buildRepositoryGraph(snapshot) : null;
-    const module = model?.modules.find((item) => item.id === id);
-    const inspector = $("[data-graph-inspector]");
-    if (module && inspector && model) {
-      inspector.innerHTML = `<h2>${escape(module.name)}</h2><p class="ig-note"><code>${escape(module.path)}</code> · ${module.endpointCount} endpoints · ${module.relationCount} relationships</p>${table(["Method", "Endpoint", "Evidence"], model.relations.filter((relation) => relation.sourceModuleId === module.id || relation.targetModuleId === module.id).map((relation) => [escape(relation.endpoint.method), `<button data-action="endpoint-dialog" data-id="${escape(relation.endpoint.id)}"><code>${escape(relation.endpoint.path)}</code></button>`, badge(relation.edge.evidence)]))}`;
-    }
-    return;
-  }
+
   if (action === "finding" && id) {
     const finding = snapshot?.findings.find((f) => f.id === id);
     if (finding)
@@ -3522,11 +3520,15 @@ document.addEventListener("click", (event) => {
         `${route(workspace!.id)}/candidates/${encodeURIComponent(id)}/review?view=retirement`,
         {
           method: "POST",
-          body: { snapshotId: snapshot!.snapshotId, reviewed: trigger.dataset.reviewed === "true" },
+          body: {
+            snapshotId: snapshot!.snapshotId,
+            reviewed: trigger.dataset.reviewed === "true",
+          },
         },
       );
       trackEvent("evidence_review_saved", {
-        action: trigger.dataset.reviewed === "true" ? "reviewed" : "needs_review",
+        action:
+          trigger.dataset.reviewed === "true" ? "reviewed" : "needs_review",
       });
       $<HTMLDialogElement>(".ig-dialog")?.close();
       render();
@@ -3549,7 +3551,9 @@ document.addEventListener("click", (event) => {
           result.job.repositoryId !== id ||
           !["queued", "running"].includes(result.job.status)
         )
-          throw new Error("The server did not confirm the repository indexing job.");
+          throw new Error(
+            "The server did not confirm the repository indexing job.",
+          );
         trackEvent("repository_reindex_requested");
       },
       "Indexing job queued.",
@@ -3582,40 +3586,27 @@ document.addEventListener("click", (event) => {
     }, "Sign-in method connected.");
     return;
   }
-  if (action === "graph-fit") {
-    graph?.fit(undefined, 35);
-    return;
-  }
-  if ((action === "graph-export" || action === "code-export") && snapshot) {
+  if (action === "code-export" && snapshot) {
     const flow =
-      action === "code-export" ? snapshot.code?.flows.find((flow) => flow.endpointId === id) : null;
+      action === "code-export"
+        ? snapshot.code?.flows.find((flow) => flow.endpointId === id)
+        : null;
     const functions = flow
-      ? snapshot.code?.functions.filter((fn) => flow.functionIds.includes(fn.id))
+      ? snapshot.code?.functions.filter((fn) =>
+          flow.functionIds.includes(fn.id),
+        )
       : snapshot.code?.functions;
     const calls = flow
       ? snapshot.code?.calls.filter((call) => flow.callIds.includes(call.id))
       : snapshot.code?.calls;
-    const repositoryGraph = action === "graph-export" ? buildRepositoryGraph(snapshot) : null;
-    const data =
-      action === "code-export"
-        ? { snapshotId: snapshot.snapshotId, flow, functions, calls }
-        : {
-            snapshotId: snapshot.snapshotId,
-            repositories: snapshot.repositories,
-            modules: repositoryGraph?.modules ?? [],
-            repositoryDependencies: repositoryGraph?.aggregates ?? [],
-            services: snapshot.services,
-            endpoints: snapshot.endpoints,
-            edges: snapshot.edges,
-            code: snapshot.code,
-          };
+
+    const data = { snapshotId: snapshot.snapshotId, flow, functions, calls };
     const download = document.createElement("a");
     const blob = URL.createObjectURL(
       new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
     );
     download.href = blob;
-    download.download =
-      action === "code-export" ? "impact-gate-code-flow.json" : "impact-gate-dependencies.json";
+    download.download = "impact-gate-code-flow.json";
     download.click();
     setTimeout(() => URL.revokeObjectURL(blob), 1000);
     return;
@@ -3623,12 +3614,15 @@ document.addEventListener("click", (event) => {
   if (action === "notifications") {
     modal(
       "Recent jobs",
-      snapshot?.jobs.length ? jobs() : "<p>No analysis jobs have been recorded yet.</p>",
+      snapshot?.jobs.length
+        ? jobs()
+        : "<p>No analysis jobs have been recorded yet.</p>",
     );
   }
 });
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && document.body.dataset.navOpen === "true") closeNavigation();
+  if (event.key === "Escape" && document.body.dataset.navOpen === "true")
+    closeNavigation();
   if (event.key !== "Tab" || document.body.dataset.navOpen !== "true") return;
   const focusable = [
     ...document.querySelectorAll<HTMLElement>(
@@ -3667,17 +3661,31 @@ async function start(): Promise<void> {
   const stopConfigLoading = loadingFeedback.begin("Starting Impact Gate…", 1);
   let response: Response;
   try {
-    response = await fetch("/api/v1/config", { cache: "no-store", credentials: "same-origin" });
+    response = await fetch("/api/v1/config", {
+      cache: "no-store",
+      credentials: "same-origin",
+    });
   } finally {
     stopConfigLoading();
   }
-  if (!response.ok) throw new Error("Authentication is unavailable. Please try again shortly.");
+  if (!response.ok)
+    throw new Error("Authentication is unavailable. Please try again shortly.");
   const publicConfig: unknown = await response.json();
   config = publicConfig as PublicConfig;
-  auth = new ImpactGateAuthClient(parseAuthConfig(publicConfig, location.origin));
-  api = new WorkspaceApi(auth, () => loadingFeedback.begin("Loading your data…", 1));
-  if (page === "sign-in" && new URLSearchParams(location.search).get("demo") === "1") {
-    state("Opening the live demo", "Signing you in to a read-only demo workspace.");
+  auth = new ImpactGateAuthClient(
+    parseAuthConfig(publicConfig, location.origin),
+  );
+  api = new WorkspaceApi(auth, () =>
+    loadingFeedback.begin("Loading your data…", 1),
+  );
+  if (
+    page === "sign-in" &&
+    new URLSearchParams(location.search).get("demo") === "1"
+  ) {
+    state(
+      "Opening the live demo",
+      "Signing you in to a read-only demo workspace.",
+    );
     const stopDemoLoading = loadingFeedback.begin("Opening the live demo…", 2);
     let demo: Response;
     try {
@@ -3690,7 +3698,9 @@ async function start(): Promise<void> {
       stopDemoLoading();
     }
     if (!demo.ok)
-      throw new Error("The live demo is unavailable right now. Please try again shortly.");
+      throw new Error(
+        "The live demo is unavailable right now. Please try again shortly.",
+      );
     const { token } = (await demo.json()) as { token: string };
     await auth.ready;
     await auth.signInWithDemoToken(token);
@@ -3718,7 +3728,10 @@ async function start(): Promise<void> {
       clearSession();
       if (!attemptingDemo && !["onboarding", "github-setup"].includes(page)) {
         attemptingDemo = true;
-        const stopDemoLoading = loadingFeedback.begin("Opening the live demo…", 2);
+        const stopDemoLoading = loadingFeedback.begin(
+          "Opening the live demo…",
+          2,
+        );
         try {
           state("Opening the live demo", "Loading read-only demo workspace.");
           const demo = await fetch("/api/v1/demo/session", {
@@ -3738,34 +3751,42 @@ async function start(): Promise<void> {
         }
       }
       location.replace(
-        signInDestination(`${location.pathname}${location.search}`, location.origin),
+        signInDestination(
+          `${location.pathname}${location.search}`,
+          location.origin,
+        ),
       );
     } else if (current.status === "error") {
       clearSession();
       state("Authentication unavailable", current.error.message, true);
-    } else if (current.status === "signed-in" && current.user.uid !== loadingUid) {
+    } else if (
+      current.status === "signed-in" &&
+      current.user.uid !== loadingUid
+    ) {
       loadingUid = current.user.uid;
       clearSession();
-      state("Loading your workspace", "Fetching your authorized GitHub workspace.");
+      state(
+        "Loading your workspace",
+        "Fetching your authorized GitHub workspace.",
+      );
       void bootstrap().catch(handleError);
     }
   });
   await auth.ready;
 }
 window.addEventListener("popstate", () => {
-  if (page === "dependency-graph") {
-    expandedRepositoryId = new URL(location.href).searchParams.get("repo");
-    render();
-    return;
-  }
   if (page === "api-usage") {
     try {
       const params = new URL(location.href).searchParams;
       const newEndpointId = params.get("endpointId");
       const rawTab = params.get("tab");
-      const newTab = ["overview", "flow", "consumers", "changes", "retirement"].includes(
-        rawTab ?? "",
-      )
+      const newTab = [
+        "overview",
+        "flow",
+        "consumers",
+        "changes",
+        "retirement",
+      ].includes(rawTab ?? "")
         ? rawTab!
         : "overview";
       if (newEndpointId !== selectedEndpoint || newTab !== endpointTab) {
@@ -3781,7 +3802,9 @@ window.addEventListener("popstate", () => {
         } else if (returningToList && prevId) {
           const restoreFocus = () => {
             document
-              .querySelector<HTMLElement>(`[data-action="endpoint"][data-id="${prevId}"]`)
+              .querySelector<HTMLElement>(
+                `[data-action="endpoint"][data-id="${prevId}"]`,
+              )
               ?.focus();
           };
           if (typeof requestAnimationFrame === "function") {
@@ -3809,7 +3832,9 @@ void start().catch((error) => {
   const info = describeAuthError(error);
   state(
     "Sign-in unavailable",
-    info.code === "auth/unknown" && error instanceof Error ? error.message : info.message,
+    info.code === "auth/unknown" && error instanceof Error
+      ? error.message
+      : info.message,
     true,
   );
 });

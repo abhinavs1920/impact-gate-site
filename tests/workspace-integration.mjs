@@ -161,6 +161,10 @@ try {
         name: "browser-auth-fixture",
         setup(b) {
           b.onResolve({ filter: /^\.\.\/auth$/ }, () => ({ path: "auth", namespace: "fixture" }));
+          b.onResolve({ filter: /^\.\/dependency-graph\/mount$/ }, () => ({ path: "repository-graph", namespace: "graph-mount" }));
+          b.onLoad({ filter: /.*/, namespace: "graph-mount" }, () => ({
+            contents: 'export function mountDependencyGraph(container, snapshot) { globalThis.repositoryGraphSnapshot = snapshot; return { update(next) { globalThis.repositoryGraphSnapshot = next; }, destroy() { globalThis.repositoryGraphDisposed = true; } }; }',
+          }));
           b.onResolve({ filter: /^cytoscape$/ }, () => ({ path: "graph", namespace: "fixture" }));
           b.onLoad({ filter: /.*/, namespace: "fixture" }, (args) => ({
             contents:
@@ -229,6 +233,13 @@ try {
         criticality: "medium",
         nameSource: "package",
       };
+      serverSnapshot.repositories.push({
+        ...serverSnapshot.repositories[0],
+        id: "r2",
+        githubRepositoryId: 2,
+        fullName: "impact-gate/checkout-service",
+        serviceCount: 1,
+      });
       serverSnapshot.services.push(caller);
       serverSnapshot.endpoints.push({
         ...serverSnapshot.endpoints[0],
@@ -601,6 +612,15 @@ try {
                   ]
                 : [],
           });
+        if (endpoint.endsWith("/onboarding"))
+          return Response.json({
+            version: 1, workspaceId: "w1", stage: "choose_api",
+            providerRepositories: [{ id: 101, fullName: "impact-gate/customer-api", selected: true }],
+            recommendedConsumerRepositories: [],
+            firstValue: { ready: false, apiCount: 1, flowCount: 0, staticCallerCount: 0, unresolvedBoundaryCount: 0 },
+            runtime: { connected: false, functionMetricsDetected: false },
+            deployment: { platform: "unknown", confidence: "unknown" }, nextAction: "Choose repositories",
+          });
         if (endpoint.endsWith("/repositories") && request.method === "PUT") {
           repoSaves.push(JSON.parse(request.body));
           return Response.json(serverSnapshot);
@@ -736,8 +756,10 @@ try {
       },
     };
     vm.runInNewContext(script, context);
-    await delay();
-    await delay();
+    for (let attempt = 0; attempt < 100 && !document.querySelector("h1"); attempt++) await delay();
+    for (let attempt = 0; attempt < 100 && document.querySelector("h1")?.textContent === "Loading your workspace"; attempt++) await delay();
+    if (screen === "dependency-graph")
+      for (let attempt = 0; attempt < 100 && !context.repositoryGraphSnapshot; attempt++) await delay();
     const content = document.querySelector("main").textContent;
     assert.ok(
       requested.some((path) => path.startsWith("/api/v1/workspaces/w1/snapshot")),
@@ -949,19 +971,9 @@ try {
     }
     if (screen === "settings") assert.match(content, /Save preferences/);
     if (screen === "dependency-graph") {
-      assert.match(context.graphFixture.elements[0].data.label, /impact-gate\/customer-api/);
-      const repositoryEdges = context.graphFixture.elements.filter(
-        (element) => element.data.kind === "repository-dependency",
-      );
-      assert.equal(repositoryEdges.length, 1, "multiple API relationships collapse into one repository arrow");
-      assert.equal(repositoryEdges[0].data.label, "1 modules · 2 APIs");
-      const tapEdge = context.graphState.handlers.find(
-        (handler) => handler.event === "tap" && handler.selector === "edge",
-      ).handler;
-      tapEdge({ target: { data: () => repositoryEdges[0].data } });
-      assert.match(document.querySelector("[data-graph-inspector]").textContent, /2 API relationships/);
-      assert.match(document.querySelector("[data-graph-inspector]").textContent, /GET \/customer\/v1\/orders/);
-      assert.match(document.querySelector("[data-graph-inspector]").textContent, /POST \/customer\/v1\/orders/);
+      assert.ok(document.querySelector("[data-repository-graph]"), "workspace mounts the repository graph feature");
+      assert.equal(context.repositoryGraphSnapshot.repositories.length, 2);
+      assert.equal(context.repositoryGraphSnapshot.edges.length, 2, "persisted relationships reach the renderer");
     }
     if (screen === "function-usage") assert.match(content, /Function usage/);
     if (screen === "settings") {

@@ -21,6 +21,8 @@ export interface IndexedFunctionCall {
   callerFunctionId: string;
   /** Null preserves external, dynamic and ambiguous calls as visible boundaries. */
   calleeFunctionId: string | null;
+  /** Conservative possible targets for an ambiguous dispatch. These are may-edges. */
+  candidateFunctionIds?: string[];
   targetName: string;
   source: SourceReference;
   resolution: "resolved" | "external" | "unresolved";
@@ -46,6 +48,14 @@ export interface RepositoryCodeIndex {
   entryPoints: IndexedApiEntryPoint[];
   partial: boolean;
   notes: string[];
+  analysisVersion?: number;
+  diagnostics?: Array<{
+    code: string;
+    stage: string;
+    filePath?: string;
+    line?: number;
+    message: string;
+  }>;
 }
 
 export interface FunctionRequestAttribution {
@@ -113,6 +123,8 @@ export interface ApiExecutionTreeNode {
   qualifiedName: string;
   source: SourceReference;
   kind: "entrypoint" | "function" | "external" | "modeled" | "outbound_api" | "unresolved";
+  /** Possible-target children preserve uncertainty from ambiguous dispatch. */
+  certainty?: "definite" | "possible";
   execution: "sequential" | "parallel";
   conditional: boolean;
   repeated: boolean;
@@ -130,6 +142,8 @@ export interface WorkspaceApiFlow {
   inboundCalls?: WorkspaceStaticApiDependency[];
   status: "indexed" | "partial" | "entrypoint_not_found";
   notes: string[];
+  executionTreeTruncated?: boolean;
+  executionTreeNotes?: string[];
   executionTree?: ApiExecutionTreeNode | null;
   pathAnalysis?: WorkspaceConditionalAnalysis;
 }

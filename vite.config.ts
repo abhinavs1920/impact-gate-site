@@ -60,7 +60,7 @@ export default defineConfig(({ mode }) => ({
           }
           const page = pages.find(([, slug]) => pathname === `/dashboard${slug ? `/${slug}` : ""}`);
           const account = accountPages.find(([route]) => pathname === `/${route}`);
-          const asset = /^\/assets\/workspace-[a-z0-9-]+\.(css|js)$/.test(pathname);
+          const asset = /^\/assets\/workspace-[a-zA-Z0-9-]+\.(css|js)$/.test(pathname);
           if (!page && !account && !asset) {
             next();
             return;
