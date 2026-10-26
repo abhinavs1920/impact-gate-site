@@ -46,6 +46,7 @@ import type {
   WorkspaceRepository,
   WorkspaceRepositoryCoverageDetails,
   ApiReviewRun,
+  ApiReviewCase,
 } from "../types/workspace";
 import type cytoscape from "cytoscape";
 import type { MountedRepositoryGraph } from "./dependency-graph/mount";
@@ -1912,6 +1913,8 @@ function showRepositoryCoverage(
   diagnosticPage = 1,
   statusFilter = "",
   reasonFilter = "",
+  reviewRunOffset = 0,
+  reviewCaseOffset = 0,
 ): void {
   if (!workspace) return;
   const workspaceId = workspace.id;
@@ -1951,11 +1954,11 @@ function showRepositoryCoverage(
       catalogManifest?: WorkspaceSnapshot["apiCatalogManifest"];
       failedAttempts: WorkspaceJob[];
     }>(`${route(workspaceId)}/api-coverage?${params}`),
-    api.request<{ runs: ApiReviewRun[] }>(
-      `${route(workspaceId)}/api-reviews?limit=20`,
+    api.request<{ runs: ApiReviewRun[]; total: number; hasNext: boolean; limit: number; offset: number }>(
+      `${route(workspaceId)}/api-reviews?limit=20&offset=${reviewRunOffset}&repo=${encodeURIComponent(repository.id)}`,
     ),
   ])
-    .then(([detailsResult, coverageResult, reviewResult]) => {
+    .then(async ([detailsResult, coverageResult, reviewResult]) => {
       if (detailsResult.status !== "fulfilled" || coverageResult.status !== "fulfilled") {
         throw detailsResult.status === "rejected"
           ? detailsResult.reason
@@ -1965,7 +1968,20 @@ function showRepositoryCoverage(
       }
       const { coverage: details } = detailsResult.value;
       const apiCoverage = coverageResult.value;
-      const reviewResponse = reviewResult.status === "fulfilled" ? reviewResult.value : { runs: [] as ApiReviewRun[] };
+      const reviewResponse = reviewResult.status === "fulfilled"
+        ? reviewResult.value
+        : { runs: [] as ApiReviewRun[], total: 0, hasNext: false, limit: 20, offset: reviewRunOffset };
+      const selectedRun = reviewResponse.runs[0];
+      let caseResponse: { cases: ApiReviewCase[]; total: number; hasNext: boolean } | null = null;
+      if (selectedRun) {
+        try {
+          caseResponse = await api.request(
+            `${route(workspaceId)}/api-reviews/${encodeURIComponent(selectedRun.id)}/cases?limit=20&offset=${reviewCaseOffset}`,
+          );
+        } catch {
+          caseResponse = null;
+        }
+      }
       if (!dialog.open || workspace?.id !== workspaceId) return;
       const rows = apiCoverage.items.map((item) => [
         `${item.status === "removed" ? "Removed · " : ""}${escape(item.method ?? item.kind)} ${escape(item.path ?? "")}`,
@@ -2014,14 +2030,13 @@ function showRepositoryCoverage(
         <p role="status">${details.discoveryIncomplete ? "Analysis incomplete: skipped or partially analyzed files may contain APIs that were never discovered." : "No skipped files are recorded for this successful analysis; static extraction still does not prove exhaustive API discovery."}</p>
         <section><h3>Async analyzer improvement review</h3>${
           reviewResponse.runs
-            .filter((run) => run.repositoryId === repository.id)
             .map(
               (run) =>
                 `<p><strong>${escape(run.status)}</strong> · commit <code>${escape(run.commitSha.slice(0, 12))}</code> · ${run.eligibleCount} eligible · ${run.ruleCount} deterministic · ${run.modelCount} model · ${run.reusedCount} reused · ${run.cannotTellCount} cannot tell</p>`,
             )
             .join("") ||
           "<p>No review run is recorded. Enable API improvement reviews for future completed indexes.</p>"
-        }<p class="ig-note">Advisory metadata only; coverage statuses and source code are never changed automatically.</p></section>
+        }${reviewResponse.total > reviewResponse.limit || reviewRunOffset > 0 ? `<p>Review runs ${reviewRunOffset + 1}–${Math.min(reviewRunOffset + reviewResponse.limit, reviewResponse.total)} of ${reviewResponse.total}</p>${button("api-review-page", "Previous review runs", `data-id="${escape(repository.id)}" data-review-run-offset="${Math.max(0, reviewRunOffset - reviewResponse.limit)}" data-review-case-offset="0" ${reviewRunOffset <= 0 ? "disabled" : ""}`, true)} ${button("api-review-page", "Next review runs", `data-id="${escape(repository.id)}" data-review-run-offset="${reviewRunOffset + reviewResponse.limit}" data-review-case-offset="0" ${reviewResponse.hasNext ? "" : "disabled"}`, true)}` : ""}${selectedRun && caseResponse ? `<h4>Cases for run <code>${escape(selectedRun.id.slice(0, 12))}</code></h4>${caseResponse.cases.length ? table(["Case", "Outcome", "Stage / reason", "Evidence", "Suggestion"], caseResponse.cases.map((item) => [escape(item.itemId.slice(0, 12)), badge(item.outcome), `${escape(item.stage)} · ${escape(item.reasonCode)}`, `<code>${escape(JSON.stringify(item.evidence))}</code>`, item.suggestion ? `<code>${escape(JSON.stringify(item.suggestion))}</code>` : "—"])) : "<p>No cases recorded for this run.</p>"}<p>Cases ${reviewCaseOffset + 1}–${Math.min(reviewCaseOffset + 20, caseResponse.total)} of ${caseResponse.total}</p>${button("api-review-case-page", "Previous cases", `data-id="${escape(repository.id)}" data-review-run-offset="${reviewRunOffset}" data-review-case-offset="${Math.max(0, reviewCaseOffset - 20)}" ${reviewCaseOffset <= 0 ? "disabled" : ""}`, true)} ${button("api-review-case-page", "Next cases", `data-id="${escape(repository.id)}" data-review-run-offset="${reviewRunOffset}" data-review-case-offset="${reviewCaseOffset + 20}" ${caseResponse.hasNext ? "" : "disabled"}`, true)}` : ""}<p class="ig-note">Advisory metadata only; coverage statuses and source code are never changed automatically.</p></section>
         <section><h3>Discovered API items</h3><p>Mapped ${apiCoverage.counts.byStatus.mapped ?? 0} · Partial ${apiCoverage.counts.byStatus.partial ?? 0} · Unresolved ${apiCoverage.counts.byStatus.unresolved ?? 0}. Counts are current items by their least-resolved stage. ${apiCoverage.counts.removed} removed items are historical and excluded from current counts.</p>
         <div class="ig-filters"><select data-api-coverage-status data-id="${escape(repository.id)}" aria-label="Filter API status"><option value="">All current statuses</option>${["mapped", "partial", "unresolved", "removed"].map((value) => `<option value="${value}" ${statusFilter === value ? "selected" : ""}>${value}</option>`).join("")}</select><select data-api-coverage-reason data-id="${escape(repository.id)}" aria-label="Filter API reason"><option value="">All reasons</option>${reasons}</select></div>
         ${rows.length ? table(["API item", "Stage status and reason", "Location", "Commit"], rows) : "<p>No stored API coverage records match this filter.</p>"}
@@ -2916,6 +2931,20 @@ document.addEventListener("click", (event) => {
         Number(trigger.dataset.diagnosticPage ?? 1),
         trigger.dataset.status ?? "",
         trigger.dataset.reason ?? "",
+      );
+    return;
+  }
+  if ((action === "api-review-page" || action === "api-review-case-page") && id) {
+    const repository = snapshot?.repositories.find((item) => item.id === id);
+    if (repository)
+      showRepositoryCoverage(
+        repository,
+        Number(trigger.dataset.page ?? 1),
+        Number(trigger.dataset.diagnosticPage ?? 1),
+        trigger.dataset.status ?? "",
+        trigger.dataset.reason ?? "",
+        Number(trigger.dataset.reviewRunOffset ?? 0),
+        Number(trigger.dataset.reviewCaseOffset ?? 0),
       );
     return;
   }

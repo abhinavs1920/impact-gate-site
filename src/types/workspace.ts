@@ -150,6 +150,19 @@ export interface ApiReviewRun {
   cannotTellCount: number;
   createdAt: string;
 }
+export interface ApiReviewCase {
+  caseId: string;
+  itemId: string;
+  filePath: string;
+  line: number;
+  stage: string;
+  reasonCode: string;
+  target: string;
+  evidence: unknown;
+  outcome: string;
+  suggestion?: Record<string, unknown> | null;
+  attempts: number;
+}
 export interface WorkspaceService {
   id: string;
   repositoryId: string;
