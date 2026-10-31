@@ -7,20 +7,30 @@ import type {
   IndexedFunctionCall,
   WorkspaceOutboundCall,
 } from "../types/code";
-import type { SourceReference, WorkspaceEndpoint, WorkspaceSnapshot } from "../types/workspace";
+import type {
+  SourceReference,
+  WorkspaceEndpoint,
+  WorkspaceSnapshot,
+} from "../types/workspace";
 
 const escape = (value: unknown) =>
   String(value ?? "").replace(
     /[&<>"']/g,
-    (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]!,
+    (char) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[
+        char
+      ]!,
   );
 const count = (value: number | null | undefined) =>
-  value == null ? "Unknown" : value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  value == null
+    ? "Unknown"
+    : value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 function source(ref: SourceReference): string {
   let href = "#";
   try {
     const parsed = new URL(ref.url);
-    if (parsed.protocol === "https:" && !parsed.username && !parsed.password) href = parsed.href;
+    if (parsed.protocol === "https:" && !parsed.username && !parsed.password)
+      href = parsed.href;
   } catch {
     /* Keep malformed evidence inert. */
   }
@@ -48,28 +58,40 @@ function staticEvidence(call: WorkspaceOutboundCall): string {
   return (
     escape(
       call.resolution === "matched"
-        ? call.matchBasis === "server_origin"
-          ? "Static server origin + route match"
-          : "Possible static route match"
-        : call.resolution,
-    ) + (call.targetOrigin ? `<p class="ig-note">${escape(call.targetOrigin)}</p>` : "")
+        ? call.provenance?.origin === "ai" ||
+          call.provenance?.origin === "mixed"
+          ? `${call.provenance.origin === "ai" ? "AI" : "Mixed"} accepted API mapping${call.matchBasis === "route_only" ? " · deployment host unverified" : ""}`
+          : call.matchBasis === "server_origin"
+            ? "Static server origin + route match"
+            : "Possible static route match"
+        : call.resolution === "external"
+          ? `Known external ${call.boundary?.service ?? "API"} boundary`
+          : call.resolution,
+    ) +
+    (call.targetOrigin
+      ? `<p class="ig-note">${escape(call.targetOrigin)}</p>`
+      : "")
   );
 }
-function renderInboundApis(snapshot: WorkspaceSnapshot, flow: WorkspaceApiFlow): string {
+function renderInboundApis(
+  snapshot: WorkspaceSnapshot,
+  flow: WorkspaceApiFlow,
+): string {
   if (!flow.inboundCalls?.length) return "";
   const functions = new Map(snapshot.code?.functions.map((fn) => [fn.id, fn]));
-  return `<h3>Consumer APIs and call sites</h3><p class="ig-note">These API flows can reach the HTTP caller statically. Runtime service/route traffic does not prove execution of this call site.</p>${table(
+  return `<h3>Consumer APIs and call sites</h3><p class="ig-note">These API flows can reach the HTTP caller through indexed relationships. Runtime service/route traffic does not prove execution of this call site.</p>${table(
     [
       "Consumer service / function",
       "Possible affected APIs",
-      "Static evidence",
+      "Mapping evidence",
       "Runtime relationship",
       "Call site",
     ],
     flow.inboundCalls.map((call) => {
       const edge = snapshot.edges?.find(
         (edge) =>
-          edge.callerServiceId === call.callerServiceId && edge.endpointId === flow.endpointId,
+          edge.callerServiceId === call.callerServiceId &&
+          edge.endpointId === flow.endpointId,
       );
       return [
         `${escape(snapshot.services.find((service) => service.id === call.callerServiceId)?.name)}<p><code>${escape(functions.get(call.callerFunctionId)?.qualifiedName ?? call.source.functionName)}</code></p>`,
@@ -83,12 +105,19 @@ function renderInboundApis(snapshot: WorkspaceSnapshot, flow: WorkspaceApiFlow):
     }),
   )}`;
 }
-function renderConditionalAnalysis(snapshot: WorkspaceSnapshot, flow: WorkspaceApiFlow): string {
+function renderConditionalAnalysis(
+  snapshot: WorkspaceSnapshot,
+  flow: WorkspaceApiFlow,
+): string {
   const analysis = flow.pathAnalysis;
   if (!analysis) return "";
   const functions = new Map(snapshot.code?.functions.map((fn) => [fn.id, fn]));
   const origins = (
-    values: Array<{ entryFunctionId: string; parameterIndex: number; accessPath: string[] }>,
+    values: Array<{
+      entryFunctionId: string;
+      parameterIndex: number;
+      accessPath: string[];
+    }>,
   ) =>
     values.length
       ? values
@@ -130,7 +159,10 @@ function renderConditionalAnalysis(snapshot: WorkspaceSnapshot, flow: WorkspaceA
       : ""
   }${conditions.length > 100 || analysis.valuePaths.length > 100 ? '<p class="ig-note">Showing the first 100 facts in each table. Export the flow for all recorded facts.</p>' : ""}`;
 }
-function renderStaticDependencyInventory(snapshot: WorkspaceSnapshot, query: string): string {
+function renderStaticDependencyInventory(
+  snapshot: WorkspaceSnapshot,
+  query: string,
+): string {
   const calls = snapshot.code?.apiDependencies?.filter((call) =>
     `${call.method} ${call.path} ${call.source.filePath} ${call.source.functionName ?? ""}`
       .toLowerCase()
@@ -138,7 +170,7 @@ function renderStaticDependencyInventory(snapshot: WorkspaceSnapshot, query: str
   );
   if (!calls?.length) return "";
   return `<section class="ig-card" id="static-api-dependencies"><h2>Static HTTP dependencies</h2><p class="ig-note">${calls.length} HTTP call sites. Showing the first ${Math.min(calls.length, 100)}. Includes callers with no discovered API entrypoint; telemetry is optional.</p>${table(
-    ["Caller", "Enclosing APIs", "Provider API", "Static evidence", "Source"],
+    ["Caller", "Enclosing APIs", "Provider API", "Mapping evidence", "Source"],
     calls
       .slice(0, 100)
       .map((call) => [
@@ -152,10 +184,15 @@ function renderStaticDependencyInventory(snapshot: WorkspaceSnapshot, query: str
       ]),
   )}</section>`;
 }
-function contributions(fn: WorkspaceCodeFunction, snapshot: WorkspaceSnapshot): string {
+function contributions(
+  fn: WorkspaceCodeFunction,
+  snapshot: WorkspaceSnapshot,
+): string {
   return `<details><summary>${fn.attributions.length} API flow${fn.attributions.length === 1 ? "" : "s"}</summary>${fn.attributions
     .map((row) => {
-      const endpoint = snapshot.endpoints.find((endpoint) => endpoint.id === row.endpointId);
+      const endpoint = snapshot.endpoints.find(
+        (endpoint) => endpoint.id === row.endpointId,
+      );
       return `<p><a href="/dashboard/api-usage?endpointId=${encodeURIComponent(row.endpointId)}&amp;tab=flow" data-action="endpoint" data-id="${escape(row.endpointId)}" data-tab="flow">${escape(endpoint?.method)} ${escape(endpoint?.path)}</a> · ${count(row.requestsInWindow)} attributed requests</p><p class="ig-note">${escape(row.source ?? "No current telemetry")} · ${escape(row.windowStart ?? "Unknown window")} → ${escape(row.windowEnd ?? "Unknown window")}${row.partial ? " · Partial source coverage" : ""}</p>`;
     })
     .join("")}</details>`;
@@ -179,14 +216,18 @@ function buildTreeFallback(
   const outgoing = new Map<string, IndexedFunctionCall[]>();
   for (const call of code.calls) {
     if (!flow.callIds.includes(call.id)) continue;
-    outgoing.set(call.callerFunctionId, [...(outgoing.get(call.callerFunctionId) ?? []), call]);
+    outgoing.set(call.callerFunctionId, [
+      ...(outgoing.get(call.callerFunctionId) ?? []),
+      call,
+    ]);
   }
   const rootId = flow.entryFunctionIds[0] ?? flow.functionIds[0] ?? endpoint.id;
   const rootFn = byId.get(rootId);
   const rootNode: ApiExecutionTreeNode = {
     id: rootId,
     name: `${endpoint.method} ${endpoint.path}`,
-    qualifiedName: rootFn?.qualifiedName ?? `${endpoint.method} ${endpoint.path}`,
+    qualifiedName:
+      rootFn?.qualifiedName ?? `${endpoint.method} ${endpoint.path}`,
     source: rootFn?.source ?? endpoint.source,
     kind: "entrypoint",
     execution: "sequential",
@@ -197,7 +238,11 @@ function buildTreeFallback(
   };
 
   const visited = new Set<string>([rootId]);
-  function populate(parentId: string, parentNode: ApiExecutionTreeNode, depth: number) {
+  function populate(
+    parentId: string,
+    parentNode: ApiExecutionTreeNode,
+    depth: number,
+  ) {
     if (depth > 8) return;
     const calls = outgoing.get(parentId) ?? [];
     let step = 1;
@@ -219,7 +264,11 @@ function buildTreeFallback(
           name: `${outboundMatch.method} ${outboundMatch.path}`,
           qualifiedName: `Outbound API: ${outboundMatch.method} ${outboundMatch.path}`,
           source: call.source,
-          kind: "outbound_api",
+          kind:
+            outboundMatch.resolution === "external"
+              ? "external"
+              : "outbound_api",
+          evidenceOrigin: outboundMatch.provenance?.origin,
           execution,
           conditional: call.conditional,
           repeated: call.repeated,
@@ -234,6 +283,7 @@ function buildTreeFallback(
           qualifiedName: callee.qualifiedName,
           source: callee.source,
           kind: "function",
+          evidenceOrigin: call.provenance?.origin,
           execution,
           conditional: call.conditional,
           repeated: call.repeated,
@@ -316,7 +366,10 @@ function buildTreeFallback(
   return rootNode;
 }
 
-function renderExecutionTreeNode(node: ApiExecutionTreeNode, isRoot = true): string {
+function renderExecutionTreeNode(
+  node: ApiExecutionTreeNode,
+  isRoot = true,
+): string {
   const executionBadge = !isRoot
     ? node.execution === "parallel"
       ? '<span class="ig-tree-badge ig-badge-parallel" title="Executed concurrently in parallel (e.g. Promise.all)">⚡ Parallel</span>'
@@ -349,12 +402,24 @@ function renderExecutionTreeNode(node: ApiExecutionTreeNode, isRoot = true): str
     .filter(Boolean)
     .join(" ");
 
-  const stepBadge = node.step > 0 ? `<span class="ig-tree-step">#${node.step}</span>` : "";
+  const stepBadge =
+    node.step > 0 ? `<span class="ig-tree-step">#${node.step}</span>` : "";
   const sourceRef = node.source?.filePath
     ? `<span class="ig-tree-file"><code>${escape(node.source.filePath)}:${node.source.line}</code></span>`
     : "";
 
-  const title = `<div class="ig-tree-node-row">${stepBadge}<span class="ig-tree-name"><code>${escape(node.name)}</code></span>${executionBadge}${modifiers}${sourceRef}</div>`;
+  const origin =
+    node.evidenceOrigin === "ai"
+      ? "AI"
+      : node.evidenceOrigin === "mixed"
+        ? "Mixed"
+        : node.evidenceOrigin === "static"
+          ? "Static"
+          : node.evidenceOrigin === "runtime"
+            ? "Runtime"
+            : "Origin unspecified";
+  const originBadge = `<span class="ig-tree-badge" title="Evidence origin; accepted AI and static links have equal impact weight">${origin}</span>`;
+  const title = `<div class="ig-tree-node-row">${stepBadge}<span class="ig-tree-name"><code>${escape(node.name)}</code></span>${executionBadge}${modifiers}${originBadge}${sourceRef}</div>`;
 
   if (!node.children || node.children.length === 0) {
     return `<div class="ig-tree-leaf">${title}</div>`;
@@ -367,7 +432,11 @@ function renderExecutionTreeSection(tree: ApiExecutionTreeNode): string {
   return `<section class="ig-card ig-tree-card" aria-label="API Execution Flow Tree"><div class="ig-tree-header"><h3>API Execution Flow Tree</h3><p class="ig-note">Hierarchical execution tree showing sequential (➔) and parallel (⚡) calls, branches, possible targets, and service boundaries.</p></div><div class="ig-tree-wrapper">${renderExecutionTreeNode(tree, true)}</div></section>`;
 }
 
-export function renderFunctionInventory(snapshot: WorkspaceSnapshot, query = "", page = 0): string {
+export function renderFunctionInventory(
+  snapshot: WorkspaceSnapshot,
+  query = "",
+  page = 0,
+): string {
   const code = snapshot.code;
   if (!code)
     return '<section class="ig-card" id="function-usage" aria-labelledby="function-usage-title"><h2 id="function-usage-title">Function usage</h2><p class="ig-note">Reindex repositories after the code observability update to populate function flows.</p></section>';
@@ -381,9 +450,15 @@ export function renderFunctionInventory(snapshot: WorkspaceSnapshot, query = "",
   const pageSize = 25;
   const currentPage = Math.max(
     0,
-    Math.min(Math.trunc(page), Math.max(0, Math.ceil(functions.length / pageSize) - 1)),
+    Math.min(
+      Math.trunc(page),
+      Math.max(0, Math.ceil(functions.length / pageSize) - 1),
+    ),
   );
-  const visible = functions.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+  const visible = functions.slice(
+    currentPage * pageSize,
+    (currentPage + 1) * pageSize,
+  );
   const pagination = `<div class="ig-code-summary"><span>Showing ${functions.length ? currentPage * pageSize + 1 : 0}–${currentPage * pageSize + visible.length} of ${functions.length}</span><button type="button" class="ig-button ig-button-secondary" data-action="function-page" data-direction="previous" data-page="${currentPage - 1}" ${currentPage === 0 ? "disabled" : ""}>Previous</button><button type="button" class="ig-button ig-button-secondary" data-action="function-page" data-direction="next" data-page="${currentPage + 1}" ${(currentPage + 1) * pageSize >= functions.length ? "disabled" : ""}>Next</button></div>`;
   return `<section class="ig-card" id="function-usage" aria-labelledby="function-usage-title"><h2 id="function-usage-title">Function usage</h2><p class="ig-note">Static indexing maps possible function flows and HTTP dependencies without runtime connections. Connected telemetry adds API request counts; measured function entries require instrumentation.</p><div class="ig-filters"><input data-code-query aria-label="Search functions and source files" placeholder="Search functions and source files" value="${escape(query)}"></div><p class="ig-note">${functions.length} functions match${code.missingRepositoryIds.length ? ` · ${code.missingRepositoryIds.length} repositories need reindexing` : ""}</p>${pagination}${table(
     [
@@ -396,7 +471,9 @@ export function renderFunctionInventory(snapshot: WorkspaceSnapshot, query = "",
     ],
     visible.map((fn) => [
       `<code>${escape(fn.qualifiedName)}</code>`,
-      escape(snapshot.services.find((service) => service.id === fn.serviceId)?.name),
+      escape(
+        snapshot.services.find((service) => service.id === fn.serviceId)?.name,
+      ),
       total(fn),
       measured(fn),
       contributions(fn, snapshot),
@@ -405,7 +482,10 @@ export function renderFunctionInventory(snapshot: WorkspaceSnapshot, query = "",
   )}</section>${renderStaticDependencyInventory(snapshot, query)}`;
 }
 
-export function renderCodeFlow(snapshot: WorkspaceSnapshot, endpoint: WorkspaceEndpoint): string {
+export function renderCodeFlow(
+  snapshot: WorkspaceSnapshot,
+  endpoint: WorkspaceEndpoint,
+): string {
   const code = snapshot.code;
   const flow = code?.flows.find((flow) => flow.endpointId === endpoint.id);
   if (!code || !flow)
@@ -416,7 +496,10 @@ export function renderCodeFlow(snapshot: WorkspaceSnapshot, endpoint: WorkspaceE
   const calls = new Set(flow.callIds);
   const localCalls = code.calls.filter((call) => calls.has(call.id));
   const perApi = (fn: WorkspaceCodeFunction) =>
-    count(fn.attributions.find((row) => row.endpointId === endpoint.id)?.requestsInWindow);
+    count(
+      fn.attributions.find((row) => row.endpointId === endpoint.id)
+        ?.requestsInWindow,
+    );
   const tree = flow.executionTree ?? buildTreeFallback(flow, code, endpoint);
   const treeHtml = renderExecutionTreeSection(tree);
   return `<div class="ig-code-summary"><strong>${functions.length} reachable functions</strong><span>${count(endpoint.runtimeCallsInWindow)} ${endpoint.runtimeRequestSource === "datadog" ? "indexed spans" : "API requests"} in the observation window</span><span>${escape(flow.status.replaceAll("_", " "))}</span><button type="button" class="ig-button ig-button-secondary" data-action="code-export" data-id="${escape(endpoint.id)}">Export code flow</button></div><p class="ig-note">Every reachable function receives this API's request count once. Branches, loops and callbacks describe possible execution; these are attributed requests, not measured function invocations.</p>${flow.notes.length ? `<ul class="ig-code-notes">${flow.notes.map((note) => `<li>${escape(note)}</li>`).join("")}</ul>` : ""}${renderInboundApis(snapshot, flow)}${renderConditionalAnalysis(snapshot, flow)}${treeHtml}${
@@ -480,7 +563,10 @@ export function renderCodeFlow(snapshot: WorkspaceSnapshot, endpoint: WorkspaceE
           flow.callerFunctionIds
             .map((id) => byId.get(id))
             .filter((fn): fn is WorkspaceCodeFunction => !!fn)
-            .map((fn) => [`<code>${escape(fn.qualifiedName)}</code>`, source(fn.source)]),
+            .map((fn) => [
+              `<code>${escape(fn.qualifiedName)}</code>`,
+              source(fn.source),
+            ]),
         )}`
       : ""
   }`;
@@ -495,14 +581,22 @@ export function mountCodeFlow(
   const flow: WorkspaceApiFlow | undefined = code?.flows.find(
     (flow) => flow.endpointId === container.dataset.codeFlow,
   );
-  const endpoint = snapshot.endpoints.find((endpoint) => endpoint.id === flow?.endpointId);
+  const endpoint = snapshot.endpoints.find(
+    (endpoint) => endpoint.id === flow?.endpointId,
+  );
   if (!code || !flow || !endpoint) return null;
   const byId = new Map(code.functions.map((fn) => [fn.id, fn]));
   const selected = flow.functionIds.slice(0, 250);
   const ids = new Set(selected);
   const apiId = `api:${endpoint.id}`;
   const elements: cytoscape.ElementDefinition[] = [
-    { data: { id: apiId, label: `${endpoint.method} ${endpoint.path}`, kind: "api" } },
+    {
+      data: {
+        id: apiId,
+        label: `${endpoint.method} ${endpoint.path}`,
+        kind: "api",
+      },
+    },
     ...selected.map((id) => ({
       data: {
         id,
@@ -512,7 +606,10 @@ export function mountCodeFlow(
     })),
   ];
   for (const id of flow.entryFunctionIds)
-    if (ids.has(id)) elements.push({ data: { id: `${apiId}:${id}`, source: apiId, target: id } });
+    if (ids.has(id))
+      elements.push({
+        data: { id: `${apiId}:${id}`, source: apiId, target: id },
+      });
   const callIds = new Set(flow.callIds);
   const httpByCall = new Map(
     flow.outboundCalls
@@ -564,7 +661,12 @@ export function mountCodeFlow(
   const graph = cytoscape({
     container,
     elements,
-    layout: { name: "breadthfirst", directed: true, roots: [apiId], padding: 40 },
+    layout: {
+      name: "breadthfirst",
+      directed: true,
+      roots: [apiId],
+      padding: 40,
+    },
     minZoom: 0.15,
     maxZoom: 3,
     style: [
@@ -575,7 +677,10 @@ export function mountCodeFlow(
           "text-wrap": "wrap",
           "text-max-width": "150px",
           "background-color": "#2b3ac4",
-          color: document.documentElement.dataset.theme === "dark" ? "#e8edf4" : "#191c1e",
+          color:
+            document.documentElement.dataset.theme === "dark"
+              ? "#e8edf4"
+              : "#191c1e",
           "font-size": 11,
           "text-valign": "bottom",
           "text-margin-y": 10,
@@ -585,7 +690,11 @@ export function mountCodeFlow(
       },
       {
         selector: 'node[kind = "api"]',
-        style: { "background-color": "#26825d", shape: "round-rectangle", width: 45 },
+        style: {
+          "background-color": "#26825d",
+          shape: "round-rectangle",
+          width: 45,
+        },
       },
       {
         selector: 'node[kind = "boundary"]',
@@ -603,9 +712,16 @@ export function mountCodeFlow(
       },
       {
         selector: 'edge[parallel = "yes"]',
-        style: { "line-style": "dashed", "line-color": "#06b6d4", "target-arrow-color": "#06b6d4" },
+        style: {
+          "line-style": "dashed",
+          "line-color": "#06b6d4",
+          "target-arrow-color": "#06b6d4",
+        },
       },
-      { selector: 'edge[conditional = "yes"]', style: { "line-style": "dashed" } },
+      {
+        selector: 'edge[conditional = "yes"]',
+        style: { "line-style": "dashed" },
+      },
     ],
   });
   graph.on("tap", "node", (event) => {
