@@ -41,7 +41,11 @@ export interface SessionResponse {
   version: 1;
   user: WorkspaceIdentity;
   workspaces: WorkspaceMembership[];
-  capabilities: { externalModels: boolean; runtimeTelemetry: boolean };
+  capabilities: {
+    externalModels: boolean;
+    runtimeTelemetry: boolean;
+    postIndexAnalysis?: boolean;
+  };
 }
 export interface InstallationRepository {
   githubRepositoryId: number;
@@ -172,6 +176,55 @@ export interface ApiReviewRun {
   reusedCount: number;
   cannotTellCount: number;
   createdAt: string;
+  resolutionSummary?: Record<string, unknown> | null;
+}
+export interface CallResolutionCase {
+  id: string;
+  status: string;
+  observation: {
+    origin?: "static" | "ai" | "mixed" | "runtime" | "unspecified";
+    source: SourceReference;
+    reason: string;
+    kind: string;
+    staticCall?: { targetName: string };
+    apiItem?: { method?: string; path?: string };
+  };
+  decision?: {
+    status: "inferred" | "unresolved" | "external";
+    reason: string;
+    targetIds: string[];
+    targetSetComplete: boolean;
+    uncertainty: string;
+    neededEvidence: string[];
+    evidence: Array<{ evidenceId: string; quote: string }>;
+    relationship: { explanation: string };
+    sourceReview?: {
+      version: "source-review-v1";
+      claimDigest: string;
+      verdict: "supported" | "rejected";
+      rationale: string;
+      evidence: Array<{ evidenceId: string; quote: string }>;
+      relationshipKind:
+        | "binding"
+        | "factory"
+        | "registration"
+        | "dispatch"
+        | "http"
+        | "unknown";
+      relationshipExplanation: string;
+      linkEvidenceIds: string[];
+    };
+  } | null;
+  error?: string | null;
+  attempts: number;
+  inputTokens: string | number;
+  outputTokens: string | number;
+  evidence?: Array<{
+    id: string;
+    source: SourceReference;
+    text: string;
+    truncated: boolean;
+  }>;
 }
 export interface ApiReviewCase {
   caseId: string;
@@ -185,6 +238,7 @@ export interface ApiReviewCase {
   outcome: string;
   suggestion?: Record<string, unknown> | null;
   attempts: number;
+  error?: string | null;
 }
 export interface WorkspaceService {
   id: string;
@@ -337,7 +391,31 @@ export interface WorkspaceDeploymentIdentity {
     evidence: string[];
   }>;
 }
+export interface ImplementationImpactPath {
+  view: "base" | "head";
+  endpointId: string;
+  endpoint: string;
+  endpointSource: SourceReference;
+  changedFunction: {
+    name: string;
+    before: SourceReference | null;
+    after: SourceReference[];
+    match: "modified" | "missing_or_unmatched" | "ambiguous" | "added";
+  };
+  calls: Array<{
+    id: string;
+    targetName: string;
+    source: SourceReference;
+    origin: "static" | "ai" | "mixed" | "runtime" | "unspecified";
+    possible: boolean;
+  }>;
+  evidenceOrigin: "static" | "ai" | "mixed" | "runtime" | "unspecified";
+  possibleTargets: boolean;
+  truncated: boolean;
+}
 export interface WorkspaceFinding {
+  evidenceOrigin?: "static" | "ai" | "mixed" | "runtime" | "unspecified";
+  implementationPaths?: ImplementationImpactPath[];
   id: string;
   analysisId: string;
   repositoryId: string;
@@ -380,6 +458,10 @@ export interface WorkspaceSettings {
   analysisMode: "deterministic";
   externalModelsEnabled: boolean;
   aiSummaryEnabled: boolean;
+  apiReviewEnabled?: boolean;
+  postIndexAnalysisEnabled?: boolean;
+  sourceEvidencePolicy?: "metadata_only" | "source_excerpts";
+  impactEvidencePolicy?: "legacy" | "equal_weight";
   syncDefaultBranch: boolean;
   prCommentsEnabled: boolean;
   retentionDays: number;
@@ -527,6 +609,10 @@ export const DEFAULT_WORKSPACE_SETTINGS: WorkspaceSettings = {
   analysisMode: "deterministic",
   externalModelsEnabled: false,
   aiSummaryEnabled: false,
+  apiReviewEnabled: false,
+  postIndexAnalysisEnabled: false,
+  sourceEvidencePolicy: "metadata_only",
+  impactEvidencePolicy: "equal_weight",
   syncDefaultBranch: true,
   prCommentsEnabled: true,
   retentionDays: 90,

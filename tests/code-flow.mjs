@@ -272,6 +272,9 @@ assert.ok(
     (element) => element.data.id === "dynamic" && element.data.target === "provider:checkout",
   ),
 );
+snapshot.code.calls[0].provenance = { origin: "ai", acceptance: "accepted", policyVersion: "equal-weight-v1" };
+const originDocument = parseHTML(`<html><body>${renderCodeFlow(snapshot, endpoint)}</body></html>`).document;
+assert.ok([...originDocument.querySelectorAll(".ig-tree-badge")].some((badge) => badge.textContent === "AI"));
 delete globalThis.document;
 delete globalThis.codeGraphOptions;
 console.log(

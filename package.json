@@ -12,7 +12,7 @@
     "test:code-flow": "node tests/code-flow.mjs",
     "test:graph": "node tests/dependency-graph.mjs",
     "test:graph:browser": "node tests/graph-browser.mjs",
-    "verify:site": "pnpm build && pnpm typecheck && node tests/content-scan.mjs && node tests/waitlist-api.mjs && node tests/workspace-integration.mjs && node tests/code-flow.mjs && pnpm test:graph && pnpm test:graph:browser && node scripts/verify-site.mjs",
+    "verify:site": "pnpm build && pnpm typecheck && node tests/content-scan.mjs && node tests/waitlist-api.mjs && node tests/workspace-integration.mjs && node tests/code-flow.mjs && node tests/post-index.mjs && pnpm test:graph && pnpm test:graph:browser && node scripts/verify-site.mjs",
     "deploy:cloudflare": "pnpm verify:site && wrangler deploy"
   },
   "dependencies": {

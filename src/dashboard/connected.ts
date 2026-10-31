@@ -7,6 +7,8 @@ import {
 } from "../auth";
 import { describeAuthError } from "../auth/errors";
 import { WorkspaceApi, WorkspaceApiError } from "./api";
+import { mountCallResolutions, renderPostIndexSettings } from "./post-index";
+import { renderImplementationPaths } from "./impact-evidence";
 import {
   mountCodeFlow,
   renderCodeFlow,
@@ -47,6 +49,7 @@ import type {
   WorkspaceRepositoryCoverageDetails,
   ApiReviewRun,
   ApiReviewCase,
+  ImplementationImpactPath,
 } from "../types/workspace";
 import type cytoscape from "cytoscape";
 import type { MountedRepositoryGraph } from "./dependency-graph/mount";
@@ -106,10 +109,16 @@ const empty = (title: string, copy: string, action = "") =>
 function table(headers: string[], rows: string[][], sortable = false): string {
   return `<div class="ig-live-table-wrap"><table class="ig-live-table"><thead><tr>${headers.map((h, i) => `<th scope="col">${sortable ? `<button type="button" class="ig-sort-heading" data-action="api-sort" data-sort="${i}" aria-label="Sort by ${escape(h)}">${escape(h)}${apiSort === String(i) ? (apiSortDirection === "asc" ? " ↑" : " ↓") : ""}</button>` : escape(h)}</th>`).join("")}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((cell, i) => `<td data-label="${escape(headers[i])}"><div class="ig-table-cell">${cell}</div></td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
 }
-function evidence(references: SourceReference[]): string {
-  return references.length
-    ? `<ul class="ig-evidence">${references.map((ref) => `<li><a href="${escape(url(ref.url))}" target="_blank" rel="noopener noreferrer"><code>${escape(ref.filePath)}:${ref.line}</code></a>${ref.functionName ? `<p>${escape(ref.functionName)}</p>` : ""}<p class="ig-note">Commit ${escape(ref.sha.slice(0, 12))}</p></li>`).join("")}</ul>`
-    : `<p class="ig-note">No source references were recorded for this finding.</p>`;
+function evidence(
+  references: SourceReference[],
+  implementationPaths?: ImplementationImpactPath[],
+): string {
+  return (
+    renderImplementationPaths(implementationPaths) +
+    (references.length
+      ? `<ul class="ig-evidence">${references.map((ref) => `<li><a href="${escape(url(ref.url))}" target="_blank" rel="noopener noreferrer"><code>${escape(ref.filePath)}:${ref.line}</code></a>${ref.functionName ? `<p>${escape(ref.functionName)}</p>` : ""}<p class="ig-note">Commit ${escape(ref.sha.slice(0, 12))}</p></li>`).join("")}</ul>`
+      : `<p class="ig-note">No source references were recorded for this finding.</p>`)
+  );
 }
 
 const main = $("#workspace-content") ?? $("#auth-root") ?? document.body;
@@ -792,7 +801,7 @@ function renderEndpointDetailScreen(endpoint: WorkspaceEndpoint): string {
       ? findings
           .map(
             (f) =>
-              `<div class="ig-card"><strong>${escape(f.changeKind)} · ${escape(f.verdict)}</strong><p>${escape(f.explanation)}</p><a href="${escape(url(f.pullRequestUrl))}" target="_blank" rel="noopener noreferrer">PR #${f.pullRequestNumber} ↗</a>${evidence(f.evidence)}</div>`,
+              `<div class="ig-card"><strong>${escape(f.changeKind)} · ${escape(f.verdict)}</strong><p>${escape(f.explanation)}</p><a href="${escape(url(f.pullRequestUrl))}" target="_blank" rel="noopener noreferrer">PR #${f.pullRequestNumber} ↗</a>${evidence(f.evidence, f.implementationPaths)}</div>`,
           )
           .join("")
       : '<p class="ig-note">No analyzed contract changes have been recorded for this endpoint.</p>';
@@ -1197,8 +1206,8 @@ function renderPRImpactContentLegacy(): string {
                 rows.map((finding) => [
                   `<code>${escape(finding.endpoint)}</code><p class="ig-note">${escape(finding.changeKind.replaceAll("_", " "))}</p>`,
                   `${escape(finding.consumerName)}${renderConsumerApiLinks(s, finding.consumerEndpointIds)}`,
-                  `${badge(finding.risk, "risk")}<p>${escape(finding.explanation)}</p>`,
-                  evidence(finding.evidence),
+                  `${badge(finding.risk, "risk")} ${badge(finding.evidenceOrigin === "ai" ? "AI" : finding.evidenceOrigin === "mixed" ? "Mixed Static/AI" : finding.evidenceOrigin === "static" ? "Static" : "Origin unspecified")}<p>${escape(finding.explanation)}</p>`,
+                  `${evidence(finding.evidence, finding.implementationPaths)}`,
                 ]),
               )}<footer><span>Coverage gaps remain visible; unresolved or unindexed consumers may be unknown.</span><a href="${escape(url(first.pullRequestUrl))}" target="_blank" rel="noopener noreferrer">Open GitHub report ↗</a></footer></article>`;
             })
@@ -1339,8 +1348,8 @@ function renderPRImpactContent(): string {
                 rows.map((finding) => [
                   `<code>${escape(finding.endpoint)}</code><p class="ig-note">${escape(finding.changeKind.replaceAll("_", " "))}</p>`,
                   `${escape(finding.consumerName)}${renderConsumerApiLinks(s, finding.consumerEndpointIds)}`,
-                  `${badge(finding.risk, "risk")}<p>${escape(finding.explanation)}</p>`,
-                  evidence(finding.evidence),
+                  `${badge(finding.risk, "risk")} ${badge(finding.evidenceOrigin === "ai" ? "AI" : finding.evidenceOrigin === "mixed" ? "Mixed Static/AI" : finding.evidenceOrigin === "static" ? "Static" : "Origin unspecified")}<p>${escape(finding.explanation)}</p>`,
+                  `${evidence(finding.evidence, finding.implementationPaths)}`,
                 ]),
               )}<footer><span>Coverage gaps remain visible; unresolved or unindexed consumers may be unknown.</span><a href="${escape(url(first.pullRequestUrl))}" target="_blank" rel="noopener noreferrer">Open PR #${first.pullRequestNumber} ↗</a></footer></article>`;
             })
@@ -1465,6 +1474,7 @@ function renderSettings(): string {
          <label class="ig-checkbox"><input type="checkbox" name="aiSummaryEnabled" ${s.aiSummaryEnabled ? "checked" : ""} ${!session?.capabilities.externalModels ? "disabled" : writeDisabled()}> Add optional model summary to PR comments</label>
          ${!session?.capabilities.externalModels ? `${button("external-model-info", "Why is this unavailable?", "", true)}<p class="ig-note">External model analysis is unavailable on this deployment; deterministic analysis remains active.</p>` : ""}
          ${session?.capabilities.externalModels ? '<p class="ig-note">Optional model summaries explain the deterministic report only. They cannot change the tier, findings, or evidence.</p>' : ""}
+         ${renderPostIndexSettings(s, !!(session?.capabilities.postIndexAnalysis ?? session?.capabilities.externalModels), writeDisabled())}
         <label>History retention in days<input type="number" name="retentionDays" min="7" max="365" required value="${s.retentionDays}" ${writeDisabled()}></label>
         <p class="ig-note">Applies to job and pull request history and reviews. Current repository snapshots remain while selected.</p>
         <button class="ig-button" type="submit" ${writeDisabled()}>Save preferences</button><p data-save-status role="status" aria-live="polite"></p>
@@ -1886,7 +1896,9 @@ function repoSelection(): string {
     <p data-save-status role="status"></p>
   </form>`;
 }
+let modalGeneration = 0;
 function modal(title: string, contents: string): HTMLDialogElement {
+  modalGeneration++;
   const dialog = $<HTMLDialogElement>(".ig-dialog")!;
   overlayFocus =
     document.activeElement instanceof HTMLElement
@@ -1922,6 +1934,7 @@ function showRepositoryCoverage(
     repository.fullName,
     '<p role="status">Loading coverage details…</p>',
   );
+  const coverageGeneration = modalGeneration;
   const params = new URLSearchParams({
     page: String(pageNumber),
     limit: "20",
@@ -1954,12 +1967,21 @@ function showRepositoryCoverage(
       catalogManifest?: WorkspaceSnapshot["apiCatalogManifest"];
       failedAttempts: WorkspaceJob[];
     }>(`${route(workspaceId)}/api-coverage?${params}`),
-    api.request<{ runs: ApiReviewRun[]; total: number; hasNext: boolean; limit: number; offset: number }>(
+    api.request<{
+      runs: ApiReviewRun[];
+      total: number;
+      hasNext: boolean;
+      limit: number;
+      offset: number;
+    }>(
       `${route(workspaceId)}/api-reviews?limit=20&offset=${reviewRunOffset}&repo=${encodeURIComponent(repository.id)}`,
     ),
   ])
     .then(async ([detailsResult, coverageResult, reviewResult]) => {
-      if (detailsResult.status !== "fulfilled" || coverageResult.status !== "fulfilled") {
+      if (
+        detailsResult.status !== "fulfilled" ||
+        coverageResult.status !== "fulfilled"
+      ) {
         throw detailsResult.status === "rejected"
           ? detailsResult.reason
           : coverageResult.status === "rejected"
@@ -1968,11 +1990,22 @@ function showRepositoryCoverage(
       }
       const { coverage: details } = detailsResult.value;
       const apiCoverage = coverageResult.value;
-      const reviewResponse = reviewResult.status === "fulfilled"
-        ? reviewResult.value
-        : { runs: [] as ApiReviewRun[], total: 0, hasNext: false, limit: 20, offset: reviewRunOffset };
+      const reviewResponse =
+        reviewResult.status === "fulfilled"
+          ? reviewResult.value
+          : {
+              runs: [] as ApiReviewRun[],
+              total: 0,
+              hasNext: false,
+              limit: 20,
+              offset: reviewRunOffset,
+            };
       const selectedRun = reviewResponse.runs[0];
-      let caseResponse: { cases: ApiReviewCase[]; total: number; hasNext: boolean } | null = null;
+      let caseResponse: {
+        cases: ApiReviewCase[];
+        total: number;
+        hasNext: boolean;
+      } | null = null;
       if (selectedRun) {
         try {
           caseResponse = await api.request(
@@ -1982,7 +2015,12 @@ function showRepositoryCoverage(
           caseResponse = null;
         }
       }
-      if (!dialog.open || workspace?.id !== workspaceId) return;
+      if (
+        !dialog.open ||
+        workspace?.id !== workspaceId ||
+        coverageGeneration !== modalGeneration
+      )
+        return;
       const rows = apiCoverage.items.map((item) => [
         `${item.status === "removed" ? "Removed · " : ""}${escape(item.method ?? item.kind)} ${escape(item.path ?? "")}`,
         item.stages
@@ -2039,7 +2077,36 @@ function showRepositoryCoverage(
             )
             .join("") ||
           "<p>No review run is recorded. Enable API improvement reviews for future completed indexes.</p>"
-        }${reviewResponse.total > reviewResponse.limit || reviewRunOffset > 0 ? `<p>Review runs ${reviewRunOffset + 1}–${Math.min(reviewRunOffset + reviewResponse.limit, reviewResponse.total)} of ${reviewResponse.total}</p>${button("api-review-page", "Previous review runs", `data-id="${escape(repository.id)}" data-review-run-offset="${Math.max(0, reviewRunOffset - reviewResponse.limit)}" data-review-case-offset="0" ${reviewRunOffset <= 0 ? "disabled" : ""}`, true)} ${button("api-review-page", "Next review runs", `data-id="${escape(repository.id)}" data-review-run-offset="${reviewRunOffset + reviewResponse.limit}" data-review-case-offset="0" ${reviewResponse.hasNext ? "" : "disabled"}`, true)}` : ""}${selectedRun && caseResponse ? `<h4>Cases for run <code>${escape(selectedRun.id.slice(0, 12))}</code></h4>${caseResponse.cases.length ? table(["Case", "Outcome", "Stage / reason", "Evidence", "Suggestion"], caseResponse.cases.map((item) => [escape(item.itemId.slice(0, 12)), badge(item.outcome), `${escape(item.stage)} · ${escape(item.reasonCode)}`, `<code>${escape(JSON.stringify(item.evidence))}</code>`, item.suggestion ? `<code>${escape(JSON.stringify(item.suggestion))}</code>` : "—"])) : "<p>No cases recorded for this run.</p>"}<p>Cases ${reviewCaseOffset + 1}–${Math.min(reviewCaseOffset + 20, caseResponse.total)} of ${caseResponse.total}</p>${button("api-review-case-page", "Previous cases", `data-id="${escape(repository.id)}" data-review-run-offset="${reviewRunOffset}" data-review-case-offset="${Math.max(0, reviewCaseOffset - 20)}" ${reviewCaseOffset <= 0 ? "disabled" : ""}`, true)} ${button("api-review-case-page", "Next cases", `data-id="${escape(repository.id)}" data-review-run-offset="${reviewRunOffset}" data-review-case-offset="${reviewCaseOffset + 20}" ${caseResponse.hasNext ? "" : "disabled"}`, true)}` : ""}<p class="ig-note">Advisory metadata only; coverage statuses and source code are never changed automatically.</p></section>
+        }${reviewResponse.total > reviewResponse.limit || reviewRunOffset > 0 ? `<p>Review runs ${reviewRunOffset + 1}–${Math.min(reviewRunOffset + reviewResponse.limit, reviewResponse.total)} of ${reviewResponse.total}</p>${button("api-review-page", "Previous review runs", `data-id="${escape(repository.id)}" data-review-run-offset="${Math.max(0, reviewRunOffset - reviewResponse.limit)}" data-review-case-offset="0" ${reviewRunOffset <= 0 ? "disabled" : ""}`, true)} ${button("api-review-page", "Next review runs", `data-id="${escape(repository.id)}" data-review-run-offset="${reviewRunOffset + reviewResponse.limit}" data-review-case-offset="0" ${reviewResponse.hasNext ? "" : "disabled"}`, true)}` : ""}${
+          selectedRun && caseResponse
+            ? `<h4>Cases for run <code>${escape(selectedRun.id.slice(0, 12))}</code></h4>${
+                caseResponse.cases.length
+                  ? table(
+                      [
+                        "Case",
+                        "Outcome",
+                        "Stage / reason",
+                        "Evidence",
+                        "Suggestion",
+                      ],
+                      caseResponse.cases.map((item) => [
+                        escape(item.itemId.slice(0, 12)),
+                        badge(item.outcome) +
+                          (item.error
+                            ? `<p class="ig-note">${escape(item.error.replaceAll("_", " "))}</p>`
+                            : ""),
+                        `${escape(item.stage)} · ${escape(item.reasonCode)}`,
+                        `<code>${escape(JSON.stringify(item.evidence))}</code>`,
+                        item.suggestion
+                          ? `<code>${escape(JSON.stringify(item.suggestion))}</code>`
+                          : "—",
+                      ]),
+                    )
+                  : "<p>No cases recorded for this run.</p>"
+              }<p>Cases ${reviewCaseOffset + 1}–${Math.min(reviewCaseOffset + 20, caseResponse.total)} of ${caseResponse.total}</p>${button("api-review-case-page", "Previous cases", `data-id="${escape(repository.id)}" data-review-run-offset="${reviewRunOffset}" data-review-case-offset="${Math.max(0, reviewCaseOffset - 20)}" ${reviewCaseOffset <= 0 ? "disabled" : ""}`, true)} ${button("api-review-case-page", "Next cases", `data-id="${escape(repository.id)}" data-review-run-offset="${reviewRunOffset}" data-review-case-offset="${reviewCaseOffset + 20}" ${caseResponse.hasNext ? "" : "disabled"}`, true)}`
+            : ""
+        }<p class="ig-note">These advisory metadata suggestions are separate from accepted call mappings.</p></section>
+        ${selectedRun ? "<section data-call-resolutions></section>" : ""}
         <section><h3>Discovered API items</h3><p>Mapped ${apiCoverage.counts.byStatus.mapped ?? 0} · Partial ${apiCoverage.counts.byStatus.partial ?? 0} · Unresolved ${apiCoverage.counts.byStatus.unresolved ?? 0}. Counts are current items by their least-resolved stage. ${apiCoverage.counts.removed} removed items are historical and excluded from current counts.</p>
         <div class="ig-filters"><select data-api-coverage-status data-id="${escape(repository.id)}" aria-label="Filter API status"><option value="">All current statuses</option>${["mapped", "partial", "unresolved", "removed"].map((value) => `<option value="${value}" ${statusFilter === value ? "selected" : ""}>${value}</option>`).join("")}</select><select data-api-coverage-reason data-id="${escape(repository.id)}" aria-label="Filter API reason"><option value="">All reasons</option>${reasons}</select></div>
         ${rows.length ? table(["API item", "Stage status and reason", "Location", "Commit"], rows) : "<p>No stored API coverage records match this filter.</p>"}
@@ -2060,8 +2127,14 @@ function showRepositoryCoverage(
         ${failedAttempts ? `<section><h3>Failed latest attempts</h3><ul>${failedAttempts}</ul><p class="ig-note">Failed attempts do not replace the last successful commit.</p></section>` : ""}
         ${partialAttempts ? `<section><h3>Partial indexing attempts</h3><ul>${partialAttempts}</ul><p class="ig-note">Partial attempts remain separate from current coverage.</p></section>` : ""}
         <div class="ig-dialog-actions">${button("close-dialog", "Close", "", true)}</div>`;
+      const resolutions = dialog.querySelector<HTMLElement>(
+        "[data-call-resolutions]",
+      );
+      if (resolutions && selectedRun)
+        mountCallResolutions(resolutions, api, workspaceId, selectedRun);
     })
     .catch((error) => {
+      if (coverageGeneration !== modalGeneration) return;
       if (dialog.open && workspace?.id === workspaceId) {
         dialog.innerHTML = `<h2 id="dialog-title">${escape(repository.fullName)}</h2><p role="alert">Coverage details could not be loaded. Close this dialog and try again.</p><div class="ig-dialog-actions">${button("close-dialog", "Close", "", true)}</div>`;
       }
@@ -2821,6 +2894,21 @@ document.addEventListener("submit", (event) => {
     if (!form.reportValidity() || !workspace || !snapshot || !canWrite())
       return;
     const fields = new FormData(form);
+    const postIndexAvailable = !!(
+      session?.capabilities.postIndexAnalysis ??
+      session?.capabilities.externalModels
+    );
+    if (
+      postIndexAvailable &&
+      fields.has("postIndexAnalysisEnabled") &&
+      !fields.has("shareResolutionSource")
+    ) {
+      const status = form.querySelector<HTMLElement>("[data-save-status]");
+      if (status)
+        status.textContent =
+          "Allow relevant source excerpts before enabling unresolved-call investigation.";
+      return;
+    }
     const body = {
       version: snapshot.settings.version,
       syncDefaultBranch: fields.has("syncDefaultBranch"),
@@ -2832,6 +2920,18 @@ document.addEventListener("submit", (event) => {
         ? fields.has("aiSummaryEnabled")
         : snapshot.settings.aiSummaryEnabled,
       retentionDays: Number(fields.get("retentionDays")),
+      ...(postIndexAvailable
+        ? {
+            postIndexAnalysisEnabled: fields.has("postIndexAnalysisEnabled"),
+            sourceEvidencePolicy: fields.has("shareResolutionSource")
+              ? "source_excerpts"
+              : "metadata_only",
+            impactEvidencePolicy: fields.has("postIndexAnalysisEnabled")
+              ? "equal_weight"
+              : (snapshot.settings.impactEvidencePolicy ?? "equal_weight"),
+            apiReviewEnabled: fields.has("apiReviewEnabled"),
+          }
+        : {}),
     };
     void mutate(async () => {
       const saved = await api.request<WorkspaceSettings>(
@@ -2937,7 +3037,10 @@ document.addEventListener("click", (event) => {
       );
     return;
   }
-  if ((action === "api-review-page" || action === "api-review-case-page") && id) {
+  if (
+    (action === "api-review-page" || action === "api-review-case-page") &&
+    id
+  ) {
     const repository = snapshot?.repositories.find((item) => item.id === id);
     if (repository)
       showRepositoryCoverage(
@@ -3529,7 +3632,7 @@ document.addEventListener("click", (event) => {
     if (finding)
       modal(
         finding.endpoint,
-        `<p>${badge(finding.risk, "risk")} ${escape(finding.verdict)}</p><p>${escape(finding.explanation)}</p><p><a href="${escape(url(finding.pullRequestUrl))}" target="_blank" rel="noopener noreferrer">Open pull request #${finding.pullRequestNumber} ↗</a></p>${finding.consumerEndpointIds ? `<h3>Possible affected consumer APIs</h3>${renderConsumerApiLinks(snapshot!, finding.consumerEndpointIds)}` : ""}${evidence(finding.evidence)}`,
+        `<p>${badge(finding.risk, "risk")} ${escape(finding.verdict)}</p><p>${escape(finding.explanation)}</p><p><a href="${escape(url(finding.pullRequestUrl))}" target="_blank" rel="noopener noreferrer">Open pull request #${finding.pullRequestNumber} ↗</a></p>${finding.consumerEndpointIds ? `<h3>Possible affected consumer APIs</h3>${renderConsumerApiLinks(snapshot!, finding.consumerEndpointIds)}` : ""}${evidence(finding.evidence, finding.implementationPaths)}`,
       );
     return;
   }

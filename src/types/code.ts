@@ -1,5 +1,15 @@
 import type { RuntimeProvider } from "./runtime.js";
 import type { SourceReference } from "./workspace.js";
+export type EvidenceOrigin =
+  "static" | "ai" | "mixed" | "runtime" | "unspecified";
+export interface EvidenceProvenance {
+  origin: EvidenceOrigin;
+  acceptance: "accepted";
+  policyVersion: "equal-weight-v1";
+  observationId?: string;
+  reason?: string;
+  references?: SourceReference[];
+}
 
 /** Immutable static code evidence saved with a repository's indexed commit. */
 export interface IndexedCodeFunction {
@@ -17,6 +27,7 @@ export interface IndexedCodeFunction {
 }
 
 export interface IndexedFunctionCall {
+  provenance?: EvidenceProvenance;
   id: string;
   callerFunctionId: string;
   /** Null preserves external, dynamic and ambiguous calls as visible boundaries. */
@@ -59,6 +70,7 @@ export interface RepositoryCodeIndex {
 }
 
 export interface FunctionRequestAttribution {
+  evidenceOrigin?: EvidenceOrigin;
   endpointId: string;
   requestsInWindow: number | null;
   source: RuntimeProvider | null;
@@ -79,7 +91,11 @@ export interface WorkspaceCodeFunction extends IndexedCodeFunction {
 }
 
 export type ObservationQuality =
-  "complete" | "partial" | "estimated_boundary" | "unmapped_release" | "unknown";
+  | "complete"
+  | "partial"
+  | "estimated_boundary"
+  | "unmapped_release"
+  | "unknown";
 
 export interface FunctionMeasuredUsage {
   functionId: string;
@@ -100,12 +116,19 @@ export interface FunctionMeasuredUsage {
 }
 
 export interface WorkspaceOutboundCall {
+  provenance?: EvidenceProvenance;
   callerFunctionId: string;
   endpointId: string | null;
   method: string;
   path: string;
   source: SourceReference;
-  resolution: "matched" | "unresolved" | "ambiguous";
+  resolution: "matched" | "unresolved" | "ambiguous" | "external";
+  boundary?: {
+    kind: "workspace" | "external" | "unknown";
+    basis: string;
+    origin: string | null;
+    service?: string;
+  };
   functionCallId?: string | null;
   targetOrigin?: string;
   matchBasis?: "server_origin" | "route_only";
@@ -118,11 +141,18 @@ export interface WorkspaceStaticApiDependency extends WorkspaceOutboundCall {
 }
 
 export interface ApiExecutionTreeNode {
+  evidenceOrigin?: EvidenceOrigin;
   id: string;
   name: string;
   qualifiedName: string;
   source: SourceReference;
-  kind: "entrypoint" | "function" | "external" | "modeled" | "outbound_api" | "unresolved";
+  kind:
+    | "entrypoint"
+    | "function"
+    | "external"
+    | "modeled"
+    | "outbound_api"
+    | "unresolved";
   /** Possible-target children preserve uncertainty from ambiguous dispatch. */
   certainty?: "definite" | "possible";
   execution: "sequential" | "parallel";
@@ -133,6 +163,7 @@ export interface ApiExecutionTreeNode {
 }
 
 export interface WorkspaceApiFlow {
+  evidenceOrigin?: EvidenceOrigin;
   endpointId: string;
   entryFunctionIds: string[];
   callerFunctionIds: string[];
