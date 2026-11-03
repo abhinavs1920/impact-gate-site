@@ -1,11 +1,5 @@
 import "./learn.css";
 
-const stats = [
-  { num: "22", lbl: "Threads reviewed" },
-  { num: "21", lbl: "Substantive replies" },
-  { num: "17 Oct - 1 Nov", lbl: "Research window, 2026" },
-];
-
 export default function LearnDetailsPage() {
   return (
     <main id="main-content" tabIndex={-1}>
@@ -21,26 +15,16 @@ export default function LearnDetailsPage() {
             The full findings<span className="period">.</span>
           </h1>
           <p className="lede">
-            Between 17 October and 1 November 2026 we asked engineers one question in one-on-one
-            conversations: when an API contract changes, how does your team find the real
-            downstream consumers and coordinate their owners before merge - and do your current
-            workflows actually solve it?
+            Over the last few weeks we asked engineers one question in one-on-one conversations:
+            when an API contract changes, how does your team find the real downstream consumers
+            and coordinate their owners before merge - and do your current workflows actually
+            solve it?
           </p>
           <p className="support">
-            We reviewed 22 conversation threads; 21 had substantive replies (two threads were
-            deleted by their owners and are not counted). This is the detailed version of{" "}
-            <a href="/learn">the summary</a>: every mechanism, pain point and pushback we heard,
-            paraphrased and anonymized. Roles and employers are withheld; these were personal
-            conversations, never company positions.
+            This is the detailed version of <a href="/learn">the summary</a>: every mechanism,
+            pain point and pushback we heard, paraphrased and anonymized. Roles and employers are
+            withheld; these were personal conversations, never company positions.
           </p>
-          <div className="learn-stats">
-            {stats.map((stat) => (
-              <div className="learn-stat" key={stat.lbl}>
-                <div className="num">{stat.num}</div>
-                <div className="lbl">{stat.lbl}</div>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -274,9 +258,10 @@ export default function LearnDetailsPage() {
             </p>
           </div>
           <p className="learn-note">
-            Method note: 22 conversation threads reviewed, 21 substantive replies, 17 October to
-            1 November 2026. One-on-one conversations from the founder&rsquo;s own network,
-            self-selected, paraphrased and anonymized. Directional signal, not market statistics.
+            Method note: these findings come from one-on-one conversations with engineers, held
+            between 17 October and 2 November 2026. The set is small, self-selected and drawn from
+            the founder&rsquo;s own network. Replies are paraphrased and anonymized; messages
+            their authors later deleted are not used. Directional signal, not market statistics.
           </p>
         </div>
       </section>
