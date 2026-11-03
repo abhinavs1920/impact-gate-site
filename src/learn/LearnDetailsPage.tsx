@@ -39,8 +39,8 @@ export default function LearnDetailsPage() {
               <span className="tag">Confirmed pain</span>
               <h3>The problem is real</h3>
               <p>
-                Five engineers told us, from their own experience, that the blast radius of an API
-                contract change is still a real, unsolved problem for their teams.
+                Five replies described a real pain point or gap in handling API changes, from
+                missed downstream impact to testing coverage and human error.
               </p>
             </div>
             <div className="learn-card">
