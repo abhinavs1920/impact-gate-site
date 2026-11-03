@@ -79,7 +79,7 @@
 }
 .learn-chart .bar-row {
   display: grid;
-  grid-template-columns: 11rem 1fr 4.5rem;
+  grid-template-columns: 14rem 1fr 4.5rem;
   align-items: center;
   gap: 1rem;
   padding: 0.55rem 0;
@@ -191,7 +191,7 @@
   padding: 2rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  background: var(--color-navy);
+  background: #0d1e38;
 }
 .learn-cta-box h2 {
   margin: 0 0 0.4rem;
@@ -231,9 +231,9 @@
   transform: translateY(-2px);
 }
 .learn-cta-box .button.primary {
-  background: var(--color-action);
-  border-color: var(--color-action);
-  color: var(--color-navy);
+  background: #26ba66;
+  border-color: #26ba66;
+  color: #0d1e38;
 }
 .learn-cta-box .button.secondary {
   background: #1a2c4e;
@@ -241,8 +241,8 @@
   color: #fff;
 }
 .learn-cta-box .button.secondary:hover {
-  border-color: var(--color-action);
-  color: var(--color-action);
+  border-color: #26ba66;
+  color: #26ba66;
   box-shadow: none;
 }
 @media (max-width: 520px) {
