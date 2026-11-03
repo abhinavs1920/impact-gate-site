@@ -3,15 +3,15 @@ import heroImage from "./heroImage";
 
 const replyBars = [
   { label: "Pain or gap confirmed", value: "6 of 21", width: "75%", accent: true },
-  { label: "Have a working process, gaps remain", value: "8 of 21", width: "100%", accent: false },
-  { label: "Engaged, mixed view", value: "4 of 21", width: "50%", accent: false },
-  { label: "Not a problem for them", value: "3 of 21", width: "37.5%", accent: false },
+  { label: "Working process described", value: "8 of 21", width: "100%", accent: false },
+  { label: "Engaged or mixed", value: "4 of 21", width: "50%", accent: false },
+  { label: "Little or no pain", value: "3 of 21", width: "37.5%", accent: false },
 ];
 
 const stats = [
   { num: "22", lbl: "Threads reviewed" },
   { num: "21", lbl: "Replies" },
-  { num: "18", lbl: "Deal with this in their workflow" },
+  { num: "6", lbl: "Confirmed pain or gap" },
 ];
 
 export default function LearnPage() {
@@ -63,14 +63,14 @@ export default function LearnPage() {
           <div className="section-heading">
             <h2>Replies by outcome</h2>
             <p>
-              Eighteen of twenty-one replies described this problem in their own workflow. Six
-              confirmed the pain or the exact gap we work on: finding the real downstream
-              consumers of a change, and knowing when it is safe to retire an old version. Others
-              have a process that works for known consumers and still leave an edge open.
+              Six of twenty-one replies confirmed the pain or the exact gap we work on: finding the
+              real downstream consumers of a change, and knowing when it is safe to retire an old
+              version. Eight described a working process, four were engaged with a mixed view, and
+              three saw little or no pain.
             </p>
           </div>
           <div className="learn-chart">
-            <h3>What 21 replies said: 18 deal with this today</h3>
+            <h3>What 21 replies said</h3>
             {replyBars.map((bar) => (
               <div className="bar-row" key={bar.label}>
                 <span className="bar-label">{bar.label}</span>
