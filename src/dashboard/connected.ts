@@ -1435,6 +1435,9 @@ function renderRepositories(): string {
 }
 function renderSettings(): string {
   const s = snapshot!.settings;
+  const advancedAnalysisAuthorized =
+    (workspace?.role === "owner" || workspace?.role === "admin") &&
+    workspace.featureAccess?.includes("advanced_analysis") === true;
   const providers =
     auth.currentUser?.providerData.map((p) => p.providerId) ?? [];
   const methods = (["github", "google"] as const)
@@ -1461,10 +1464,15 @@ function renderSettings(): string {
         <label>Analysis mode<select name="analysisMode" disabled><option>Deterministic static analysis</option></select></label>
         <label class="ig-checkbox"><input type="checkbox" name="syncDefaultBranch" ${s.syncDefaultBranch ? "checked" : ""} ${writeDisabled()}> Sync default branch when code changes</label>
          <label class="ig-checkbox"><input type="checkbox" name="prCommentsEnabled" ${s.prCommentsEnabled ? "checked" : ""} ${writeDisabled()}> Publish findings as pull request comments</label>
-         <label class="ig-checkbox"><input type="checkbox" name="externalModelsEnabled" ${s.externalModelsEnabled ? "checked" : ""} ${!session?.capabilities.externalModels ? "disabled" : writeDisabled()}> Allow external model analysis</label>
-         <label class="ig-checkbox"><input type="checkbox" name="aiSummaryEnabled" ${s.aiSummaryEnabled ? "checked" : ""} ${!session?.capabilities.externalModels ? "disabled" : writeDisabled()}> Add optional model summary to PR comments</label>
-         ${!session?.capabilities.externalModels ? `${button("external-model-info", "Why is this unavailable?", "", true)}<p class="ig-note">External model analysis is unavailable on this deployment; deterministic analysis remains active.</p>` : ""}
-         ${session?.capabilities.externalModels ? '<p class="ig-note">Optional model summaries explain the deterministic report only. They cannot change the tier, findings, or evidence.</p>' : ""}
+         ${advancedAnalysisAuthorized ? `<fieldset class="ig-settings-investigation"><legend>Analysis and post-index investigation</legend>
+          <label class="ig-checkbox"><input type="checkbox" name="externalModelsEnabled" ${s.externalModelsEnabled ? "checked" : ""} ${writeDisabled()}> Allow external model analysis</label>
+          <label class="ig-checkbox"><input type="checkbox" name="aiSummaryEnabled" ${s.aiSummaryEnabled ? "checked" : ""} ${writeDisabled()}> Add optional model summary to PR comments</label>
+          <label class="ig-checkbox"><input type="checkbox" name="postIndexAnalysisEnabled" ${s.postIndexAnalysisEnabled ? "checked" : ""} ${writeDisabled()}> Investigate unresolved calls after indexing</label>
+          <label class="ig-checkbox"><input type="checkbox" name="sourceEvidenceExcerpts" ${s.sourceEvidencePolicy === "source_excerpts" ? "checked" : ""} ${writeDisabled()}> Allow relevant source excerpts to be sent to configured AI providers</label>
+          <p class="ig-note">Both settings are required for source investigation. Accepted AI and static mappings have equal weight in API flows and normal or draft pull request impact; each relationship shows its origin.</p>
+          <label class="ig-checkbox"><input type="checkbox" name="apiReviewEnabled" ${s.apiReviewEnabled ? "checked" : ""} ${writeDisabled()}> Generate advisory analyzer-improvement suggestions from indexing metadata</label>
+          ${!session?.capabilities.externalModels ? '<p class="ig-note">Model features will run after an AI provider is configured for this deployment.</p>' : '<p class="ig-note">Optional model summaries explain the deterministic report only. They cannot change the tier, findings, or evidence.</p>'}
+         </fieldset>` : ""}
         <label>History retention in days<input type="number" name="retentionDays" min="7" max="365" required value="${s.retentionDays}" ${writeDisabled()}></label>
         <p class="ig-note">Applies to job and pull request history and reviews. Current repository snapshots remain while selected.</p>
         <button class="ig-button" type="submit" ${writeDisabled()}>Save preferences</button><p data-save-status role="status" aria-live="polite"></p>
@@ -2825,12 +2833,18 @@ document.addEventListener("submit", (event) => {
       version: snapshot.settings.version,
       syncDefaultBranch: fields.has("syncDefaultBranch"),
       prCommentsEnabled: fields.has("prCommentsEnabled"),
-      externalModelsEnabled: session?.capabilities.externalModels
-        ? fields.has("externalModelsEnabled")
-        : snapshot.settings.externalModelsEnabled,
-      aiSummaryEnabled: session?.capabilities.externalModels
-        ? fields.has("aiSummaryEnabled")
-        : snapshot.settings.aiSummaryEnabled,
+      ...(workspace?.featureAccess?.includes("advanced_analysis") &&
+      (workspace.role === "owner" || workspace.role === "admin")
+        ? {
+            externalModelsEnabled: fields.has("externalModelsEnabled"),
+            aiSummaryEnabled: fields.has("aiSummaryEnabled"),
+            postIndexAnalysisEnabled: fields.has("postIndexAnalysisEnabled"),
+            sourceEvidencePolicy: fields.has("sourceEvidenceExcerpts")
+              ? "source_excerpts"
+              : "metadata_only",
+            apiReviewEnabled: fields.has("apiReviewEnabled"),
+          }
+        : {}),
       retentionDays: Number(fields.get("retentionDays")),
     };
     void mutate(async () => {

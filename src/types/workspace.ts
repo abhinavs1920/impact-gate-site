@@ -36,6 +36,7 @@ export interface WorkspaceMembership {
   installationId: number;
   accountLogin: string;
   installationStatus: "active" | "suspended" | "deleted";
+  featureAccess?: string[];
 }
 export interface SessionResponse {
   version: 1;
@@ -380,6 +381,11 @@ export interface WorkspaceSettings {
   analysisMode: "deterministic";
   externalModelsEnabled: boolean;
   aiSummaryEnabled: boolean;
+  postIndexAnalysisEnabled?: boolean;
+  sourceEvidencePolicy?: "metadata_only" | "source_excerpts";
+  apiReviewEnabled?: boolean;
+  apiReviewSharePatterns?: boolean;
+  impactEvidencePolicy?: "legacy" | "equal_weight";
   syncDefaultBranch: boolean;
   prCommentsEnabled: boolean;
   retentionDays: number;
