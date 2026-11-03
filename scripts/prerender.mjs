@@ -115,8 +115,11 @@ function documentationHtml(template, route, renderedRoot) {
       "@type": "ListItem",
       position: 2,
       name: route.contact ? "Contact" : route.learn ? "What we're learning" : "Documentation",
-      item: route.contact || route.learn ? canonical : `${origin}/docs`,
+      item: route.contact ? canonical : route.learnDetail ? `${origin}/learn` : route.learn ? canonical : `${origin}/docs`,
     },
+    ...(route.learnDetail
+      ? [{ "@type": "ListItem", position: 3, name: route.title, item: canonical }]
+      : []),
     ...(route.page
       ? [{ "@type": "ListItem", position: 3, name: route.title, item: canonical }]
       : []),
@@ -225,6 +228,14 @@ try {
     description:
       "What 21 engineering teams told us about finding the real downstream consumers of an API change - the confirmations, the coping mechanisms, and the pushback.",
     learn: true,
+  });
+  routes.push({
+    pathname: "/learn/details",
+    title: "The full findings",
+    description:
+      "Detailed, anonymized findings from 21 engineer conversations about API contract changes: how teams find downstream consumers today, the pain points they confirmed, and where current mechanisms stop.",
+    learn: true,
+    learnDetail: true,
   });
   const docsChunks = collectLazyChunks(/^DocsApp-.*\.js$/);
   for (const route of routes) {
