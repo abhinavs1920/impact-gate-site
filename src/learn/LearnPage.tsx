@@ -117,6 +117,10 @@ export default function LearnPage() {
             small, self-selected set of conversations from the founder&rsquo;s own network, not
             market statistics.
           </p>
+          <p className="learn-note">
+            Want the detail? <a href="/learn/details">Read the full findings</a> - every
+            mechanism, pain point and pushback, anonymized.
+          </p>
         </div>
       </section>
 
