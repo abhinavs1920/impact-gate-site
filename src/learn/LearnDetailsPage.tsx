@@ -11,6 +11,14 @@ export default function LearnDetailsPage() {
             </span>{" "}
             What we’re learning
           </div>
+          <nav className="learn-switch" aria-label="Summary and full findings">
+            <a className="learn-switch-tab" href="/learn">
+              <span aria-hidden="true">←</span> Summary
+            </a>
+            <span className="learn-switch-tab current" aria-current="page">
+              Full findings
+            </span>
+          </nav>
           <h1>
             The full findings<span className="period">.</span>
           </h1>
