@@ -233,7 +233,7 @@ try {
     pathname: "/learn/details",
     title: "The full findings",
     description:
-      "Detailed, anonymized findings from 21 engineer conversations about API contract changes: how teams find downstream consumers today, the pain points they confirmed, and where current mechanisms stop.",
+      "Detailed, anonymized findings from one-on-one conversations with engineers about API contract changes: how teams find downstream consumers today, the pain points they confirmed, and where current mechanisms stop.",
     learn: true,
     learnDetail: true,
   });
