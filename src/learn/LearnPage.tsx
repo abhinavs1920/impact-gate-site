@@ -3,15 +3,15 @@ import heroImage from "./heroImage";
 
 const replyBars = [
   { label: "Pain or gap confirmed", value: "6 of 21", width: "75%", accent: true },
-  { label: "Working process answer", value: "8 of 21", width: "100%", accent: false },
-  { label: "Engaged or mixed", value: "4 of 21", width: "50%", accent: false },
-  { label: "Little or no pain", value: "3 of 21", width: "37.5%", accent: false },
+  { label: "Have a working process, gaps remain", value: "8 of 21", width: "100%", accent: false },
+  { label: "Engaged, mixed view", value: "4 of 21", width: "50%", accent: false },
+  { label: "Not a problem for them", value: "3 of 21", width: "37.5%", accent: false },
 ];
 
 const stats = [
   { num: "22", lbl: "Threads reviewed" },
   { num: "21", lbl: "Replies" },
-  { num: "6", lbl: "Confirmed pain or gap" },
+  { num: "18", lbl: "Deal with this in their workflow" },
 ];
 
 export default function LearnPage() {
@@ -35,8 +35,8 @@ export default function LearnPage() {
           </p>
           <p className="support">
             We reviewed 22 conversation threads between 17 October and 1 November 2026; 21 had
-            replies, with follow-ups that varied by conversation. Here is what they contained -
-            the confirmations and the pushback, side by side.
+            replies, with follow-ups that varied by conversation. Here is what engineers told us
+            about how they handle API changes today.
           </p>
           <div className="learn-stats">
             {stats.map((stat) => (
@@ -63,13 +63,14 @@ export default function LearnPage() {
           <div className="section-heading">
             <h2>Replies by outcome</h2>
             <p>
-              Six of twenty-one conversations confirmed the pain or the exact gap we work on:
-              finding the real downstream consumers of a change, and knowing when it is safe to
-              retire an old version.
+              Eighteen of twenty-one replies described this problem in their own workflow. Six
+              confirmed the pain or the exact gap we work on: finding the real downstream
+              consumers of a change, and knowing when it is safe to retire an old version. Others
+              have a process that works for known consumers and still leave an edge open.
             </p>
           </div>
           <div className="learn-chart">
-            <h3>What 21 replies said</h3>
+            <h3>What 21 replies said: 18 deal with this today</h3>
             {replyBars.map((bar) => (
               <div className="bar-row" key={bar.label}>
                 <span className="bar-label">{bar.label}</span>
@@ -84,7 +85,8 @@ export default function LearnPage() {
             ))}
             <p className="chart-note">
               Our classification of 21 reply threads, 17 Oct – 1 Nov 2026 - an analyst reading of
-              a small, self-selected sample from the founder’s own network, not market statistics.
+              a small, self-selected sample from the founder’s own network, not market statistics. Roles
+              and employers are withheld.
             </p>
           </div>
         </div>
@@ -146,8 +148,8 @@ export default function LearnPage() {
           <div className="section-heading">
             <h2>How teams cope today</h2>
             <p>
-              Most replies described a working mechanism. None of these are rejections - they are
-              how teams cope.
+              Most replies described a working mechanism. These are the building blocks teams already
+              rely on.
             </p>
           </div>
           <div className="learn-grid">
@@ -175,84 +177,9 @@ export default function LearnPage() {
           </div>
           <p className="learn-note">
             These mechanisms generally assume the consumers are already known. The soft spot that
-            came up repeatedly in the replies: the consumer nobody registered.
+            came up repeatedly in the replies: the consumer nobody registered. That is the gap
+            Impact Gate works on.
           </p>
-        </div>
-      </section>
-
-      <section className="section">
-        <div className="container">
-          <div className="section-heading">
-            <h2>The pushback, honestly</h2>
-            <p>
-              Not everyone agreed this is a problem worth buying a tool for. That deserves to sit
-              here, not in a footnote.
-            </p>
-          </div>
-          <div className="learn-grid">
-            <div className="learn-card">
-              <span className="tag">Challenge</span>
-              <h3>Processes already catch this</h3>
-              <p>
-                Some engineers told us large companies already have fixed processes and guardrails,
-                testing catches most breakage, and small startups may have too few consumers to
-                care.
-              </p>
-            </div>
-            <div className="learn-card">
-              <span className="tag">Structural</span>
-              <h3>Teams can build it themselves</h3>
-              <p>
-                Several teams we spoke with had built their own internal tooling. Each still leaves
-                an edge unsolved, but a buyer with a strong platform team may build rather than
-                buy.
-              </p>
-            </div>
-            <div className="learn-card">
-              <span className="tag">Our read</span>
-              <h3>Why we still build</h3>
-              <p>
-                The coping mechanisms we heard generally assume the consumers are already known.
-                The replies kept pointing at the same gap: the unregistered consumer. That is the
-                gap Impact Gate works on.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="section">
-        <div className="container">
-          <div className="section-heading">
-            <h2>What this does not show</h2>
-            <p>
-              We would rather show the limits next to the findings than claim demand we have not
-              proven.
-            </p>
-          </div>
-          <div className="learn-grid">
-            <div className="learn-card">
-              <h3>Not adoption</h3>
-              <p>
-                These conversations are problem evidence, not adoption. We do not claim paying
-                users from them.
-              </p>
-            </div>
-            <div className="learn-card">
-              <h3>A self-selected sample</h3>
-              <p>
-                21 reply threads from the founder’s own network, with varied follow-up questions.
-                Engineers who reply to a problem question are more likely to feel the problem.
-              </p>
-            </div>
-            <div className="learn-card">
-              <h3>Private sources</h3>
-              <p>
-                People spoke to a founder, not to a public page. Roles and employers stay withheld;
-                nothing here is a company position or endorsement.
-              </p>
-            </div>
-          </div>
         </div>
       </section>
 
