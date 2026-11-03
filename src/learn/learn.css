@@ -343,3 +343,27 @@
     animation: none;
   }
 }
+
+.learn-switch {
+  display: inline-flex;
+  gap: 4px;
+  margin: 20px 0 8px;
+  padding: 4px;
+  border: 1px solid var(--border, rgba(127, 127, 127, 0.4));
+  border-radius: 999px;
+}
+.learn-switch-tab {
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-weight: 600;
+  text-decoration: none;
+  color: inherit;
+}
+.learn-switch-tab.current {
+  background: #26ba66;
+  color: #0d1e38;
+}
+a.learn-switch-tab:hover,
+a.learn-switch-tab:focus-visible {
+  text-decoration: underline;
+}
