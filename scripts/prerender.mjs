@@ -59,7 +59,7 @@ function replaceRequired(html, expression, replacement, label) {
 }
 
 function documentationHtml(template, route, renderedRoot) {
-  const title = `${route.title} | Impact Gate${route.contact ? "" : " Docs"}`;
+  const title = `${route.title} | Impact Gate${route.contact || route.learn ? "" : " Docs"}`;
   const canonical = `${origin}${route.pathname}`;
   let html = template.replace(rootPlaceholder, () => renderedRoot);
   html = replaceRequired(
@@ -77,14 +77,18 @@ function documentationHtml(template, route, renderedRoot) {
 
   const metadata = [
     ["name", "description", route.description],
-    ["property", "og:type", route.page ? "article" : "website"],
+    ["property", "og:type", route.page || route.learn ? "article" : "website"],
     ["property", "og:title", title],
     ["property", "og:description", route.description],
     ["property", "og:url", canonical],
     [
       "property",
       "og:image:alt",
-      route.contact ? "Contact the Impact Gate team" : "Impact Gate product documentation",
+      route.contact
+          ? "Contact the Impact Gate team"
+          : route.learn
+            ? "What engineering teams told us about API changes"
+            : "Impact Gate product documentation",
     ],
     ["name", "twitter:title", title],
     ["name", "twitter:description", route.description],
@@ -110,8 +114,8 @@ function documentationHtml(template, route, renderedRoot) {
     {
       "@type": "ListItem",
       position: 2,
-      name: route.contact ? "Contact" : "Documentation",
-      item: route.contact ? canonical : `${origin}/docs`,
+      name: route.contact ? "Contact" : route.learn ? "What we're learning" : "Documentation",
+      item: route.contact || route.learn ? canonical : `${origin}/docs`,
     },
     ...(route.page
       ? [{ "@type": "ListItem", position: 3, name: route.title, item: canonical }]
@@ -121,7 +125,8 @@ function documentationHtml(template, route, renderedRoot) {
     "@context": "https://schema.org",
     "@graph": [
       {
-        "@type": route.contact ? "ContactPage" : route.page ? "TechArticle" : "CollectionPage",
+        "@type":
+        route.contact ? "ContactPage" : route.page || route.learn ? "TechArticle" : "CollectionPage",
         "@id": `${canonical}#document`,
         url: canonical,
         headline: route.title,
@@ -213,6 +218,13 @@ try {
     description:
       "Contact Impact Gate for product support, onboarding, business inquiries, billing, privacy requests, and security disclosures.",
     contact: true,
+  });
+  routes.push({
+    pathname: "/learn",
+    title: "What we're learning",
+    description:
+      "What 21 engineering teams told us about finding the real downstream consumers of an API change - the confirmations, the coping mechanisms, and the pushback.",
+    learn: true,
   });
   const docsChunks = collectLazyChunks(/^DocsApp-.*\.js$/);
   for (const route of routes) {

@@ -4,6 +4,7 @@ const DocsApp = lazy(() =>
   import("./docs/DocsApp").then((module) => ({ default: module.default })),
 );
 import ContactPage from "./contact/ContactPage";
+import LearnPage from "./learn/LearnPage";
 import { emailHref, emails } from "./ui/contact";
 import { leadAttribution, trackEvent, trackVideoProgress } from "./analytics";
 import AnalyticsToggle from "./components/AnalyticsToggle";
@@ -937,6 +938,7 @@ function Footer({ innerPage = false }: { innerPage?: boolean }) {
     ["#faq", "FAQ"],
     ["#contact", "Get started"],
     ["/docs", "Documentation"],
+    ["/learn", "What we're learning"],
     ["/docs/mcp-server", "MCP server"],
     ["/docs/connect-mcp-clients", "Connect MCP clients"],
     ["/docs/mcp-tools", "MCP tools"],
@@ -1079,6 +1081,17 @@ export default function App({ pathname: requestedPath }: { pathname?: string } =
         <Footer innerPage />
       </>
     );
+  if (pathname === "/learn")
+    return (
+      <>
+        <a className="skip-link" href="#main-content">
+          Skip to content
+        </a>
+        <Header innerPage />
+        <LearnPage />
+        <Footer innerPage />
+      </>
+    );
   if (pathname === "/demo")
     return (
       <Suspense fallback={<main className="product-screen-loading"><LoadingIndicator label="Loading the live demo…" centered /></main>}>
@@ -1130,4 +1143,4 @@ export default function App({ pathname: requestedPath }: { pathname?: string } =
       <Footer />
     </>
   );
-}
+      }
