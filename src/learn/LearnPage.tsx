@@ -1,4 +1,5 @@
 import "./learn.css";
+import heroImage from "./heroImage";
 
 const replyBars = [
   { label: "Pain or gap confirmed", value: "6 of 21", width: "75%", accent: true },
@@ -47,7 +48,7 @@ export default function LearnPage() {
           </div>
           <figure className="learn-figure">
             <img
-              src="/media/learn-hero.png"
+              src={heroImage}
               width={1536}
               height={1024}
               alt="Abstract diagram: one change passes a gate and its impact fans out to downstream consumers"
