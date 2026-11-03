@@ -5,6 +5,7 @@ const DocsApp = lazy(() =>
 );
 import ContactPage from "./contact/ContactPage";
 import LearnPage from "./learn/LearnPage";
+import LearnDetailsPage from "./learn/LearnDetailsPage";
 import { emailHref, emails } from "./ui/contact";
 import { leadAttribution, trackEvent, trackVideoProgress } from "./analytics";
 import AnalyticsToggle from "./components/AnalyticsToggle";
@@ -1089,6 +1090,18 @@ export default function App({ pathname: requestedPath }: { pathname?: string } =
         </a>
         <Header innerPage />
         <LearnPage />
+        <Footer innerPage />
+      </>
+    );
+
+  if (pathname === "/learn/details")
+    return (
+      <>
+        <a className="skip-link" href="#main-content">
+          Skip to content
+        </a>
+        <Header innerPage />
+        <LearnDetailsPage />
         <Footer innerPage />
       </>
     );
