@@ -4,7 +4,7 @@ import ImpactFlow from "./ImpactFlow";
 const stats = [
   { num: "22", lbl: "Threads reviewed" },
   { num: "21", lbl: "Replies" },
-  { num: "3 wks", lbl: "17 Oct - 1 Nov 2026" },
+  { num: "17 Oct - 1 Nov", lbl: "Research window, 2026" },
 ];
 
 export default function LearnPage() {
@@ -22,7 +22,7 @@ export default function LearnPage() {
             What engineering teams told us about API changes<span className="period">.</span>
           </h1>
           <p className="lede">
-            For three weeks we asked engineers a simple question: when an API contract changes,
+            Between 17 October and 1 November we asked engineers a simple question: when an API contract changes,
             can your team find every real downstream consumer, and coordinate the owners, before
             merge?
           </p>
