@@ -1,17 +1,10 @@
 import "./learn.css";
 import heroImage from "./heroImage";
 
-const replyBars = [
-  { label: "Pain or gap confirmed", value: "6 of 21", width: "75%", accent: true },
-  { label: "Working process described", value: "8 of 21", width: "100%", accent: false },
-  { label: "Engaged or mixed", value: "4 of 21", width: "50%", accent: false },
-  { label: "Little or no pain", value: "3 of 21", width: "37.5%", accent: false },
-];
-
 const stats = [
   { num: "22", lbl: "Threads reviewed" },
   { num: "21", lbl: "Replies" },
-  { num: "6", lbl: "Confirmed pain or gap" },
+  { num: "3 wks", lbl: "17 Oct - 1 Nov 2026" },
 ];
 
 export default function LearnPage() {
@@ -61,124 +54,73 @@ export default function LearnPage() {
       <section className="section">
         <div className="container">
           <div className="section-heading">
-            <h2>Replies by outcome</h2>
+            <h2>How teams manage API changes today</h2>
             <p>
-              Six of twenty-one replies confirmed the pain or the exact gap we work on: finding the
-              real downstream consumers of a change, and knowing when it is safe to retire an old
-              version. Eight described a working process, four were engaged with a mixed view, and
-              three saw little or no pain.
-            </p>
-          </div>
-          <div className="learn-chart">
-            <h3>What 21 replies said</h3>
-            {replyBars.map((bar) => (
-              <div className="bar-row" key={bar.label}>
-                <span className="bar-label">{bar.label}</span>
-                <div className="bar-track">
-                  <div
-                    className={bar.accent ? "bar-fill accent" : "bar-fill"}
-                    style={{ width: bar.width }}
-                  />
-                </div>
-                <span className="bar-val">{bar.value}</span>
-              </div>
-            ))}
-            <p className="chart-note">
-              Our classification of 21 reply threads, 17 Oct – 1 Nov 2026 - an analyst reading of
-              a small, self-selected sample from the founder’s own network, not market statistics. Roles
-              and employers are withheld.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <section className="section">
-        <div className="container">
-          <div className="section-heading">
-            <h2>Where the pain showed up</h2>
-            <p>
-              Faithful paraphrases of private one-on-one replies. Roles and employers are withheld
-              deliberately; these were personal conversations, never company positions.
-            </p>
-          </div>
-          <div className="learn-grid">
-            <div className="learn-card">
-              <span className="tag">Pain confirmed</span>
-              <h3>Blast radius is discovered late</h3>
-              <p>
-                Several engineers said the people making or reviewing a change are often not aware
-                of its blast radius. Finding the real downstream consumers - and knowing when an
-                old version is safe to retire - came up as the hard part.
-              </p>
-            </div>
-            <div className="learn-card">
-              <span className="tag">Gap confirmed</span>
-              <h3>Consumer notification is manual</h3>
-              <p>
-                Teams inform consumers beforehand, by hand, with room for human error. One
-                engineer said a tool that identifies the downstream services of a contract and
-                notifies their owners would address a genuine problem - and agreed to take a look
-                at the product.
-              </p>
-            </div>
-            <div className="learn-card">
-              <span className="tag">Gap remains</span>
-              <h3>Tooling covers the registered, misses the rest</h3>
-              <p>
-                Teams with schema registries or in-house impact tooling told us one-off and older
-                clients still slip past, and testing workflows around contract changes still have
-                gaps.
-              </p>
-            </div>
-          </div>
-          <div className="learn-quote">
-            <p>
-              A diff tool can tell you the contract changed; only knowing who actually reads what
-              tells you whether anyone will feel it.
-            </p>
-            <div className="attr">
-              Paraphrased from a practitioner’s public comment on one of our articles
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="section">
-        <div className="container">
-          <div className="section-heading">
-            <h2>How teams cope today</h2>
-            <p>
-              Most replies described a working mechanism. These are the building blocks teams already
-              rely on.
+              Paraphrases of private one-on-one replies, with no counts attached. Roles and
+              employers are withheld; these were personal conversations, never company positions.
             </p>
           </div>
           <div className="learn-grid">
             <div className="learn-card">
               <h3>Version and migrate</h3>
               <p>
-                Versioning with migration windows; dashboards and logs show who is still calling
-                before a version is retired.
+                Some replies described versioning, keeping older contracts working, and moving
+                clients over before an old version is retired.
               </p>
             </div>
             <div className="learn-card">
-              <h3>Know callers by credential</h3>
+              <h3>Watch who is calling</h3>
               <p>
-                Caller credentials or service IDs in logs and telemetry tell the owning team who
-                its registered consumers are.
+                Some described using logs, dashboards and telemetry, or caller credentials and
+                service IDs, to see which clients still use a version.
               </p>
             </div>
             <div className="learn-card">
-              <h3>Coordinate by list</h3>
+              <h3>Coordinate across teams</h3>
               <p>
-                Known-consumer lists circulate over email, or in-house tooling maps the impact.
-                Both take coordination.
+                Some described circulating changes to known consumers by email, or building
+                in-house tooling to track downstream services.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section">
+        <div className="container">
+          <div className="section-heading">
+            <h2>Where it gets hard</h2>
+            <p>
+              A few replies pointed at the same limit: these approaches work best when the
+              consumers are already known.
+            </p>
+          </div>
+          <div className="learn-grid">
+            <div className="learn-card">
+              <h3>Blast radius is easy to miss</h3>
+              <p>
+                One reply said the people making or reviewing a change are often not aware of its
+                blast radius.
+              </p>
+            </div>
+            <div className="learn-card">
+              <h3>Consumers are not always known</h3>
+              <p>
+                One reply said consumers can be unknown, with only the hits visible in monitoring.
+              </p>
+            </div>
+            <div className="learn-card">
+              <h3>Process leans on known lists</h3>
+              <p>
+                One reply described a process that relies on known consumers, with unidentified
+                ones expected to flag their own dependencies.
               </p>
             </div>
           </div>
           <p className="learn-note">
-            These mechanisms generally assume the consumers are already known. The soft spot that
-            came up repeatedly in the replies: the consumer nobody registered. That is the gap
-            Impact Gate works on.
+            Finding the consumer nobody registered is the gap Impact Gate works on. These are a
+            small, self-selected set of conversations from the founder&rsquo;s own network, not
+            market statistics.
           </p>
         </div>
       </section>
