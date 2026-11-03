@@ -1,5 +1,5 @@
 import "./learn.css";
-import heroImage from "./heroImage";
+import ImpactFlow from "./ImpactFlow";
 
 const stats = [
   { num: "22", lbl: "Threads reviewed" },
@@ -40,12 +40,7 @@ export default function LearnPage() {
             ))}
           </div>
           <figure className="learn-figure">
-            <img
-              src={heroImage}
-              width={1536}
-              height={1024}
-              alt="Abstract diagram: one change passes a gate and its impact fans out to downstream consumers"
-            />
+            <ImpactFlow />
             <figcaption>A change passes the gate. Who downstream actually feels it?</figcaption>
           </figure>
         </div>
