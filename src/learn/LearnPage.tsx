@@ -18,6 +18,14 @@ export default function LearnPage() {
             </span>{" "}
             What we’re learning
           </div>
+          <nav className="learn-switch" aria-label="Summary and full findings">
+            <span className="learn-switch-tab current" aria-current="page">
+              Summary
+            </span>
+            <a className="learn-switch-tab" href="/learn/details">
+              Full findings <span aria-hidden="true">→</span>
+            </a>
+          </nav>
           <h1>
             What engineering teams told us about API changes<span className="period">.</span>
           </h1>
@@ -43,14 +51,6 @@ export default function LearnPage() {
             <ImpactFlow />
             <figcaption>A change passes the gate. Who downstream actually feels it?</figcaption>
           </figure>
-          <nav className="learn-switch" aria-label="Summary and full findings">
-            <span className="learn-switch-tab current" aria-current="page">
-              Summary
-            </span>
-            <a className="learn-switch-tab" href="/learn/details">
-              Full findings <span aria-hidden="true">→</span>
-            </a>
-          </nav>
         </div>
       </section>
 
