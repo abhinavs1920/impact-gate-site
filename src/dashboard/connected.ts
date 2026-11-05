@@ -1554,6 +1554,12 @@ function focusEndpointTab(tab: string): void {
 }
 function render(): void {
   if (disposed || !snapshot) return;
+  const activeCodeQuery = document.activeElement?.matches("[data-code-query]")
+    ? (document.activeElement as HTMLInputElement)
+    : null;
+  const codeQuerySelection = activeCodeQuery
+    ? { start: activeCodeQuery.selectionStart, end: activeCodeQuery.selectionEnd }
+    : null;
   if (page === "dependency-graph" && graph) {
     graph.update(snapshot);
     renderShell();
@@ -1594,6 +1600,13 @@ function render(): void {
   const flow = $<HTMLElement>("[data-code-flow]", main);
   if (flow)
     codeGraph = mountCodeFlow(snapshot, flow, $("[data-code-inspector]", main));
+  if (codeQuerySelection) {
+    const input = $<HTMLInputElement>("[data-code-query]");
+    input?.focus();
+    if (codeQuerySelection.start !== null && codeQuerySelection.end !== null) {
+      input?.setSelectionRange(codeQuerySelection.start, codeQuerySelection.end);
+    }
+  }
 }
 
 function renderOnboarding(): string {
@@ -2155,6 +2168,10 @@ function snapshotPageParams(search: URLSearchParams): void {
     if (query) search.set("q", query);
     if (apiServiceFilters.size)
       search.set("services", [...apiServiceFilters].join(","));
+  } else if (page === "function-usage") {
+    search.set("page", String(codePage + 1));
+    search.set("limit", "50");
+    if (codeQuery) search.set("q", codeQuery);
   } else if (page === "pr-impact") {
     search.set("page", String(collectionPage));
     search.set("limit", "10");
@@ -2512,13 +2529,17 @@ document.addEventListener("input", (event) => {
   ) {
     codeQuery = event.target.value;
     codePage = 0;
-    const position = event.target.selectionStart;
-    const card = event.target.closest(".ig-card");
-    if (card && snapshot)
-      card.outerHTML = renderFunctionInventory(snapshot, codeQuery);
-    const field = $<HTMLInputElement>("[data-code-query]");
-    field?.focus();
-    field?.setSelectionRange(position, position);
+    if (snapshot?.pagination?.functions) {
+      scheduleCollectionRefresh();
+    } else {
+      const position = event.target.selectionStart;
+      const card = event.target.closest(".ig-card");
+      if (card && snapshot)
+        card.outerHTML = renderFunctionInventory(snapshot, codeQuery);
+      const field = $<HTMLInputElement>("[data-code-query]");
+      field?.focus();
+      field?.setSelectionRange(position, position);
+    }
     return;
   }
   const input = event.target;
@@ -3061,18 +3082,22 @@ document.addEventListener("click", (event) => {
   }
   if (action === "function-page" && snapshot) {
     codePage = Math.max(0, Number(trigger.dataset.page) || 0);
-    const direction =
-      trigger.dataset.direction === "previous" ? "previous" : "next";
-    const card = trigger.closest(".ig-card");
-    if (card)
-      card.outerHTML = renderFunctionInventory(snapshot, codeQuery, codePage);
-    const next = $<HTMLButtonElement>(
-      `[data-action="function-page"][data-direction="${direction}"]`,
-    );
-    (next?.disabled
-      ? $<HTMLButtonElement>('[data-action="function-page"]:not(:disabled)')
-      : next
-    )?.focus();
+    if (snapshot.pagination?.functions) {
+      void refresh().catch(handleError);
+    } else {
+      const direction =
+        trigger.dataset.direction === "previous" ? "previous" : "next";
+      const card = trigger.closest(".ig-card");
+      if (card)
+        card.outerHTML = renderFunctionInventory(snapshot, codeQuery, codePage);
+      const next = $<HTMLButtonElement>(
+        `[data-action="function-page"][data-direction="${direction}"]`,
+      );
+      (next?.disabled
+        ? $<HTMLButtonElement>('[data-action="function-page"]:not(:disabled)')
+        : next
+      )?.focus();
+    }
     return;
   }
   const runtimeProvider = trigger.dataset.provider;
