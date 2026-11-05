@@ -450,6 +450,7 @@ export interface WorkspaceSnapshot {
     endpoints?: WorkspaceCollectionPage;
     findings?: WorkspaceCollectionPage;
     candidates?: WorkspaceCollectionPage;
+    functions?: WorkspaceCollectionPage;
   };
 }
 

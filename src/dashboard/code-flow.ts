@@ -371,21 +371,47 @@ export function renderFunctionInventory(snapshot: WorkspaceSnapshot, query = "",
   const code = snapshot.code;
   if (!code)
     return '<section class="ig-card" id="function-usage" aria-labelledby="function-usage-title"><h2 id="function-usage-title">Function usage</h2><p class="ig-note">Reindex repositories after the code observability update to populate function flows.</p></section>';
-  const functions = code.functions.filter(
-    (fn) =>
-      fn.kind !== "module" &&
-      `${fn.qualifiedName} ${fn.source.filePath} ${snapshot.services.find((service) => service.id === fn.serviceId)?.name}`
-        .toLowerCase()
-        .includes(query.toLowerCase()),
-  );
-  const pageSize = 25;
-  const currentPage = Math.max(
-    0,
-    Math.min(Math.trunc(page), Math.max(0, Math.ceil(functions.length / pageSize) - 1)),
-  );
-  const visible = functions.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
-  const pagination = `<div class="ig-code-summary"><span>Showing ${functions.length ? currentPage * pageSize + 1 : 0}–${currentPage * pageSize + visible.length} of ${functions.length}</span><button type="button" class="ig-button ig-button-secondary" data-action="function-page" data-direction="previous" data-page="${currentPage - 1}" ${currentPage === 0 ? "disabled" : ""}>Previous</button><button type="button" class="ig-button ig-button-secondary" data-action="function-page" data-direction="next" data-page="${currentPage + 1}" ${(currentPage + 1) * pageSize >= functions.length ? "disabled" : ""}>Next</button></div>`;
-  return `<section class="ig-card" id="function-usage" aria-labelledby="function-usage-title"><h2 id="function-usage-title">Function usage</h2><p class="ig-note">Static indexing maps possible function flows and HTTP dependencies without runtime connections. Connected telemetry adds API request counts; measured function entries require instrumentation.</p><div class="ig-filters"><input data-code-query aria-label="Search functions and source files" placeholder="Search functions and source files" value="${escape(query)}"></div><p class="ig-note">${functions.length} functions match${code.missingRepositoryIds.length ? ` · ${code.missingRepositoryIds.length} repositories need reindexing` : ""}</p>${pagination}${table(
+
+  const serverPagination = snapshot.pagination?.functions;
+  let visible: WorkspaceCodeFunction[];
+  let totalCount: number;
+  let currentPage: number;
+  let hasPrev: boolean;
+  let hasNext: boolean;
+  let startIdx: number;
+  let endIdx: number;
+
+  if (serverPagination) {
+    visible = code.functions;
+    totalCount = serverPagination.total;
+    currentPage = serverPagination.page - 1;
+    hasPrev = serverPagination.page > 1;
+    hasNext = serverPagination.hasNext;
+    startIdx = totalCount ? (serverPagination.page - 1) * serverPagination.pageSize + 1 : 0;
+    endIdx = Math.min(totalCount, (serverPagination.page - 1) * serverPagination.pageSize + visible.length);
+  } else {
+    const functions = code.functions.filter(
+      (fn) =>
+        fn.kind !== "module" &&
+        `${fn.qualifiedName} ${fn.source.filePath} ${snapshot.services.find((service) => service.id === fn.serviceId)?.name}`
+          .toLowerCase()
+          .includes(query.toLowerCase()),
+    );
+    const pageSize = 25;
+    currentPage = Math.max(
+      0,
+      Math.min(Math.trunc(page), Math.max(0, Math.ceil(functions.length / pageSize) - 1)),
+    );
+    visible = functions.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
+    totalCount = functions.length;
+    hasPrev = currentPage > 0;
+    hasNext = (currentPage + 1) * pageSize < functions.length;
+    startIdx = functions.length ? currentPage * pageSize + 1 : 0;
+    endIdx = currentPage * pageSize + visible.length;
+  }
+
+  const pagination = `<div class="ig-code-summary"><span>Showing ${startIdx}–${endIdx} of ${totalCount}</span><button type="button" class="ig-button ig-button-secondary" data-action="function-page" data-direction="previous" data-page="${currentPage - 1}" ${!hasPrev ? "disabled" : ""}>Previous</button><button type="button" class="ig-button ig-button-secondary" data-action="function-page" data-direction="next" data-page="${currentPage + 1}" ${!hasNext ? "disabled" : ""}>Next</button></div>`;
+  return `<section class="ig-card" id="function-usage" aria-labelledby="function-usage-title"><h2 id="function-usage-title">Function usage</h2><p class="ig-note">Static indexing maps possible function flows and HTTP dependencies without runtime connections. Connected telemetry adds API request counts; measured function entries require instrumentation.</p><div class="ig-filters"><input data-code-query aria-label="Search functions and source files" placeholder="Search functions and source files" value="${escape(query)}"></div><p class="ig-note">${totalCount} functions match${code.missingRepositoryIds.length ? ` · ${code.missingRepositoryIds.length} repositories need reindexing` : ""}</p>${pagination}${table(
     [
       "Function",
       "Service",

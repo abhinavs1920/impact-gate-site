@@ -172,6 +172,21 @@ many.code.functions = Array.from({ length: 201 }, (_, index) => fn(`f${index}`))
 document = parseHTML(renderFunctionInventory(many, "", 2)).document;
 assert.equal(document.querySelectorAll("tbody tr").length, 25);
 assert.match(document.querySelector(".ig-card").textContent, /51–75 of 201/);
+const paginatedSnapshot = structuredClone(snapshot);
+paginatedSnapshot.code.functions = Array.from({ length: 50 }, (_, index) => fn(`fn${index}`));
+paginatedSnapshot.pagination = {
+  functions: { page: 1, pageSize: 50, total: 3786, hasNext: true },
+};
+document = parseHTML(renderFunctionInventory(paginatedSnapshot, "")).document;
+assert.equal(document.querySelectorAll("tbody tr").length, 50);
+assert.match(document.querySelector(".ig-card").textContent, /Showing 1–50 of 3786/);
+assert.equal(document.querySelector('[data-action="function-page"][data-direction="previous"]').disabled, true);
+assert.equal(document.querySelector('[data-action="function-page"][data-direction="next"]').disabled, false);
+paginatedSnapshot.pagination.functions = { page: 2, pageSize: 50, total: 3786, hasNext: true };
+document = parseHTML(renderFunctionInventory(paginatedSnapshot, "")).document;
+assert.match(document.querySelector(".ig-card").textContent, /Showing 51–100 of 3786/);
+assert.equal(document.querySelector('[data-action="function-page"][data-direction="previous"]').disabled, false);
+assert.equal(document.querySelector('[data-action="function-page"][data-direction="next"]').disabled, false);
 const staticSnapshot = structuredClone(snapshot);
 staticSnapshot.endpoints.push({
   id: "checkout",
